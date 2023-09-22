@@ -242,7 +242,7 @@ def get_digikey_part_info(digikey_pn):
     if not table:
         return
 
-    table_to_info = {
+    table_to_infofunc = {
         "resistor":             get_digikey_resistor_info,
         # "capacitor":
         # "inductor":
@@ -263,8 +263,12 @@ def get_digikey_part_info(digikey_pn):
         # "voltage_regulator":
         }
 
-    data = table_to_info[table](part)
-    print(data)
+    data = table_to_infofunc[table](part)
+    insert_string = (f"INSERT INTO {table} VALUES("
+                     f":{', :'.join(tables[table].split(', '))})")
+    # TODO: figure out if this is how we want to handle this - perhaps better
+    # to do the db insert action within this function?
+    return insert_string, data
 
 
 if __name__ == "__main__":
