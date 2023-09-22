@@ -1,1 +1,4 @@
 env/
+*.kicad_dbl
+*.db
+*.sqlite
