@@ -5,7 +5,7 @@ for use as a database library for KiCad.
 
 This is likely only useful for my particular workflow.
 
-== Setup
+## Setup
 
 Use your preferred python environment management tool. With venv:
 
