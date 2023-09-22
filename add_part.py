@@ -232,7 +232,7 @@ def get_table_from_digikey_part(digikey_pn, part):
         return None
 
 
-def get_digikey_part_info(digikey_pn):
+def add_digikey_part_to_db(digikey_pn):
     part = digikey.product_details(digikey_pn)
     if not part:
         print(f"Could not get info for part {digikey_pn}")
@@ -266,9 +266,16 @@ def get_digikey_part_info(digikey_pn):
     data = table_to_infofunc[table](part)
     insert_string = (f"INSERT INTO {table} VALUES("
                      f":{', :'.join(tables[table].split(', '))})")
-    # TODO: figure out if this is how we want to handle this - perhaps better
-    # to do the db insert action within this function?
-    return insert_string, data
+    print(data)
+    print(insert_string)
+
+    con = sqlite3.connect(f"file:{DB_FILENAME}?mode=rw", uri=True)
+    # con = sqlite3.connect(":memory:")
+    with con:
+        cur = con.cursor()
+        cur.execute(insert_string, data)
+
+    con.close()
 
 
 if __name__ == "__main__":
@@ -276,15 +283,12 @@ if __name__ == "__main__":
 
     if args.initializedb:
         initialize_database()
-    else:
-        # con = sqlite3.connect(f"file:{DB_FILENAME}?mode=rw", uri=True)
-        con = sqlite3.connect(":memory:")
+
     # TODO: implement lookup by part number or manual entry
     if not (args.digikey or args.mouser or args.params):
         print("no parts to add")
         sys.exit()
     if args.digikey:
         setup_digikey()
-        get_digikey_part_info(args.digikey)
+        add_digikey_part_to_db(args.digikey)
     # TODO: error if we haven't selected a part type
-    con.close()
