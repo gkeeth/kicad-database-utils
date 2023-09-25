@@ -5,13 +5,12 @@ import os
 import argparse
 import sqlite3
 import json
-# import requests
 import digikey
 import mouser
 
 CONFIG_FILENAME = os.path.expanduser("~/.dblib_add_part_config.json")
+# TODO: put cache dir and db filename into the configuration file
 DIGIKEY_CACHE_DIR = os.path.expanduser("~/.dblib_digikey_cache_dir")
-
 DB_FILENAME = "test.db"
 
 common_cols = [
@@ -266,8 +265,8 @@ def add_digikey_part_to_db(digikey_pn):
     data = table_to_infofunc[table](part)
     insert_string = (f"INSERT INTO {table} VALUES("
                      f":{', :'.join(tables[table].split(', '))})")
-    print(data)
-    print(insert_string)
+    print(f"data: {data}")
+    print(f"insert_string: {insert_string}")
 
     con = sqlite3.connect(f"file:{DB_FILENAME}?mode=rw", uri=True)
     # con = sqlite3.connect(":memory:")
