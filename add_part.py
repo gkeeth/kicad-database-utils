@@ -124,7 +124,11 @@ def parse_args():
     return parser.parse_args()
 
 
-class PartInfoNotFoundException(Exception):
+class PartInfoNotFoundError(Exception):
+    pass
+
+
+class UnknownFootprintForPackageError(Exception):
     pass
 
 
@@ -179,13 +183,40 @@ def get_digikey_resistor_info(part):
     for p in part.parameters:
         if p.parameter in digikey_resistor_map:
             data[digikey_resistor_map[p.parameter]] = p.value
+
+    # above we're iterating through what Digikey returned and checking if we're
+    # interested, so now we need to check that we've found all the things that
+    # we care about
     for column in digikey_resistor_map.values():
         if column not in data:
-            raise PartInfoNotFoundException(
+            raise PartInfoNotFoundError(
                     f"Could not find info for database column '{column}' in part data for {data['DPN1']}.")
 
-    # TODO: now add to dictionary
+    # TODO: post process data fields to be normalized:
+    # - power = 0.1W
+    # - tolerance = 1%
+    # - resistance = 1k
+    # - composition = thin film
+
+    # TODO: construct custom description and IPN
+    # TODO: decide how to make unique identifier
+    footprint_map = {
+            "0201": "Resistor_SMD:R_0201_0603Metric",
+            "0402": "Resistor_SMD:R_0402_1005Metric",
+            "0603": "Resistor_SMD:R_0603_1608Metric",
+            "0805": "Resistor_SMD:R_0805_2012Metric",
+            "1206": "Resistor_SMD:R_1206_3216Metric",
+            "1210": "Resistor_SMD:R_1210_3225Metric",
+            }
+
     data["value"] = "${Resistance}"
+    data["kicad_symbol"] = "Device:R"
+    try:
+        data["kicad_footprint"] = footprint_map[data["package"]]
+    except KeyError as e:
+        raise UnknownFootprintForPackageError(e)
+
+    # display_name = f"R_{}"
 
     return data
 
