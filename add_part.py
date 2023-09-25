@@ -32,9 +32,9 @@ common_cols = [
         ]
 
 tables = {
-        "resistor":             ", ".join(common_cols + ["value", "tolerance", "power", "material", "package"]),
-        "capacitor":            ", ".join(common_cols + ["value", "tolerance", "voltage", "dielectric", "package"]),
-        "inductor":             ", ".join(common_cols + ["value", "tolerance", "package"]),
+        "resistor":             ", ".join(common_cols + ["value", "resistance", "tolerance", "power", "material", "package"]),
+        "capacitor":            ", ".join(common_cols + ["value", "capacitance", "tolerance", "voltage", "dielectric", "package"]),
+        "inductor":             ", ".join(common_cols + ["value", "inductance", "tolerance", "package"]),
         "ferrite_bead":         ", ".join(common_cols + ["impedance_at_freq", "current", "resistance", "package"]),
         "connector":            ", ".join(common_cols + ["series", "circuit_configuration", "gender", "orientation"]),
         "led":                  ", ".join(common_cols + ["color", "package"]),
@@ -168,7 +168,7 @@ def get_digikey_resistor_info(part):
 
     # map of digikey token names to database fields
     digikey_resistor_map = {
-            "Resistance": "value",
+            "Resistance": "resistance",
             "Tolerance": "tolerance",
             "Power (Watts)": "power",
             "Composition": "material",
@@ -185,6 +185,7 @@ def get_digikey_resistor_info(part):
                     f"Could not find info for database column '{column}' in part data for {data['DPN1']}.")
 
     # TODO: now add to dictionary
+    data["value"] = "${Resistance}"
 
     return data
 
