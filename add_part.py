@@ -2,6 +2,9 @@
 
 import sys
 import os
+import re
+from abc import ABC, abstractmethod
+from collections import OrderedDict
 import argparse
 import sqlite3
 import json
@@ -12,6 +15,179 @@ CONFIG_FILENAME = os.path.expanduser("~/.dblib_add_part_config.json")
 # TODO: put cache dir and db filename into the configuration file
 DIGIKEY_CACHE_DIR = os.path.expanduser("~/.dblib_digikey_cache_dir")
 DB_FILENAME = "test.db"
+
+
+class PartInfoNotFoundError(Exception):
+    pass
+
+
+class UnknownFootprintForPackageError(Exception):
+    pass
+
+
+class Component(ABC):
+    def __init__(self, IPN, datasheet, description, keywords, value,
+                 exclude_from_bom, exclude_from_board, kicad_symbol,
+                 kicad_footprint, manufacturer, MPN, distributor1, DPN1,
+                 distributor2, DPN2):
+        # columns that all types of components need. Many of these map onto
+        # KiCad builtin fields or properties.
+        self.columns = OrderedDict()
+        self.columns["IPN"] = IPN # unique ID for component
+        self.columns["datasheet"] = datasheet
+        self.columns["description"] = description
+        self.columns["keywords"] = keywords
+        self.columns["value"] = value
+        self.columns["exclude_from_bom"] = exclude_from_bom
+        self.columns["exclude_from_board"] = exclude_from_board
+        self.columns["kicad_symbol"] = kicad_symbol
+        self.columns["kicad_footprint"] = kicad_footprint
+        self.columns["manufacturer"] = manufacturer
+        self.columns["MPN"] = MPN
+        self.columns["distributor1"] = distributor1
+        self.columns["DPN1"] = DPN1
+        self.columns["distributor2"] = distributor2
+        self.columns["DPN2"] = DPN2
+
+    @classmethod
+    @abstractmethod
+    def from_digikey(cls, digikey_part):
+        """
+        construct a component from a digikey part object.
+
+        Needs to be implemented for each child class. TODO: @abstractmethod?
+        """
+        raise NotImplementedError
+
+    @classmethod
+    def get_digikey_common_data(cls, digikey_part):
+        """return a dict of the common data from a digikey part object"""
+        common_data = {
+                "datasheet":            digikey_part.primary_datasheet,
+                "manufacturer":         digikey_part.manufacturer.value,
+                "MPN":                  digikey_part.manufacturer_part_number,
+                "distributor1":         "Digikey",
+                "DPN1":                 digikey_part.digi_key_part_number,
+                "distributor2":         "",
+                "DPN2":                 "",
+                }
+        return common_data
+
+    def get_create_table_string(self):
+        """return a sqlite string to create a table for the component type"""
+        column_names = self.columns.keys()
+        return f"CREATE TABLE {self.table}({column_names})"
+
+    def get_insert_string(self):
+        column_names = self.columns.keys()
+        placeholders = ":" + ", :".join(column_names)
+        return f"INSERT INTO {self.table} VALUES({placeholders})"
+
+
+class Resistor(Component):
+    table = "resistor"
+
+    def __init__(self, resistance, tolerance, power, composition, package, **kwargs):
+        super().__init__(**kwargs)
+        self.columns["resistance"] = resistance
+        self.columns["tolerance"] = tolerance
+        self.columns["power"] = power
+        self.columns["composition"] = composition
+        self.columns["package"] = package
+
+    @staticmethod
+    def process_resistance(param):
+        """return a processed resistance string in the form <resistance in ohms>"""
+        resistance = re.search(r"\d+\.?\d*[kKmMG]?", param).group(0)
+        return re.sub("k", "K", resistance)
+
+    @staticmethod
+    def process_tolerance(param):
+        """return a processed tolerance string in the form <tolerance>%"""
+        match = re.search(r"\d+\.?\d*", param)
+        if match:
+            return match.group(0) + "%"
+        else:
+            return "-"
+
+    @staticmethod
+    def process_power(param):
+        """return a processed power string in the form <power>W"""
+        match = re.search(r"\d+\.?\d*", param)
+        if match:
+            return match.group(0) + "W"
+        else:
+            return "-"
+
+    @staticmethod
+    def process_composition(param):
+        """return a processed composition string, e.g. ThinFilm"""
+        return re.sub(" ", "", param)
+
+    @classmethod
+    def from_digikey(cls, digikey_part):
+        data = cls.get_digikey_common_data(digikey_part)
+
+        for p in digikey_part.parameters:
+            if p.parameter == "Resistance":
+                data["resistance"] = cls.process_resistance(p.value)
+            elif p.parameter == "Tolerance":
+                data["tolerance"] = cls.process_tolerance(p.value)
+            elif p.parameter == "Power (Watts)":
+                data["power"] = cls.process_power(p.value)
+            elif p.parameter == "Composition":
+                raw_composition = p.value
+                data["composition"] = cls.process_composition(raw_composition)
+            elif p.parameter == "Supplier Device Package":
+                data["package"] = p.value
+
+        kicad_footprint_map = {
+                "0603": "Resistor_SMD:R_0603_1608Metric",
+                "0805": "Resistor_SMD:R_0805_2012Metric",
+                }
+
+        data["value"] = "${Resistance}"
+        data["kicad_symbol"] = "Device:R"
+        data["kicad_footprint"] = kicad_footprint_map[data["package"]]
+        data["exclude_from_bom"] = 0
+        data["exclude_from_board"] = 0
+
+        if data["resistance"] == "0":
+            data["IPN"] = (f"R_{data['resistance']}_Jumper_{data['package']}_"
+                           f"{data['composition']}")
+            data["description"] = f"0Ω Jumper {data['package']} {raw_composition}"
+            data["keywords"] = "jumper"
+        else:
+            data["IPN"] = (f"R_{data['resistance']}_{data['package']}_"
+                           f"{data['tolerance']}_{data['power']}_"
+                           f"{data['composition']}")
+            data["description"] = (f"{data['resistance']}Ω ±{data['tolerance']} "
+                                   f"{data['power']} Resistor {data['package']} "
+                                   f"{raw_composition}")
+            data["keywords"] = f"r res resistor {data['resistance']}"
+
+        return cls(**data)
+
+
+def create_component_from_digikey_pn(digikey_pn):
+    """
+    factory to construct the appropriate component type object for a given
+    digikey PN.
+
+    Queries the digikey API to get part data, determines the component type,
+    and then dispatches to the appropriate Component.from_digikey(part)
+    constructor.
+    """
+    part = digikey.product_details(digikey_pn)
+    if not part:
+        print(f"Could not get info for part {digikey_pn}")
+        return None
+
+    if part.limited_taxonomy.value == "Resistors":
+        return Resistor.from_digikey(part)
+    else:
+        raise NotImplementedError(f"No component type to handle part {digikey_pn}")
+
 
 common_cols = [
         "IPN",
@@ -32,7 +208,7 @@ common_cols = [
         ]
 
 tables = {
-        "resistor":             ", ".join(common_cols + ["value", "resistance", "tolerance", "power", "material", "package"]),
+        "resistor":             ", ".join(common_cols + ["value", "resistance", "tolerance", "power", "composition", "package"]),
         "capacitor":            ", ".join(common_cols + ["value", "capacitance", "tolerance", "voltage", "dielectric", "package"]),
         "inductor":             ", ".join(common_cols + ["value", "inductance", "tolerance", "package"]),
         "ferrite_bead":         ", ".join(common_cols + ["impedance_at_freq", "current", "resistance", "package"]),
@@ -43,7 +219,7 @@ tables = {
         "transistor_mosfet":    ", ".join(common_cols + ["type", "package"]),
         "transistor_jfet":      ", ".join(common_cols + ["type", "package"]),
         "crystal":              ", ".join(common_cols + ["frequency", "load_capacitance", "package"]),
-        "potentiometer":        ", ".join(common_cols + ["value", "tolerance", "power", "material", "orientation"]),
+        "potentiometer":        ", ".join(common_cols + ["value", "tolerance", "power", "composition", "orientation"]),
         "switch":               ", ".join(common_cols + ["type", "configuration", "orientation", "current"]),
         "relay":                ", ".join(common_cols + ["configuration", "coil_voltage", "coil_current", "switch_current"]),
         "opamp":                ", ".join(common_cols + ["input_type", "bandwidth", "package"]),
@@ -124,12 +300,6 @@ def parse_args():
     return parser.parse_args()
 
 
-class PartInfoNotFoundError(Exception):
-    pass
-
-
-class UnknownFootprintForPackageError(Exception):
-    pass
 
 
 def setup_digikey():
@@ -175,7 +345,7 @@ def get_digikey_resistor_info(part):
             "Resistance": "resistance",
             "Tolerance": "tolerance",
             "Power (Watts)": "power",
-            "Composition": "material",
+            "Composition": "composition",
             "Supplier Device Package": "package",
             }
 
@@ -322,5 +492,5 @@ if __name__ == "__main__":
         sys.exit()
     if args.digikey:
         setup_digikey()
-        add_digikey_part_to_db(args.digikey)
+        create_component_from_digikey_pn(args.digikey)
     # TODO: error if we haven't selected a part type
