@@ -360,10 +360,12 @@ def parse_args():
     source_group = parser.add_mutually_exclusive_group()
     source_group.add_argument(
             "--digikey", "-d", metavar="DIGIKEY_PN",
-            help="Digikey part number for part to add to database")
+            help=("Digikey part number, or comma-separated list of part "
+                  "numbers, for part(s) to add to database"))
     source_group.add_argument(
             "--mouser", "-m", metavar="MOUSER_PN",
-            help="Mouser part number for part to add to database")
+            help=("Mouser part number, or comma-separated list of part "
+                  "numbers, for part(s) to add to database"))
     source_group.add_argument(
             "--csv", "-p", metavar="CSVFILE",
             help=("CSV filename containing columns for all required part "
@@ -404,6 +406,71 @@ def load_config():
     return config_data
 
 
+def create_component_list_from_digikey_pns(digikey_pn_list):
+    """
+    create a list of components from a list of digikey part numbers.
+
+    Any part numbers that are invalid or otherwise cannot be used to create
+    a component will be skipped.
+
+    :arg: digikey_pn_list: list of digikey part numbers
+
+    :return: list of components corresponding to digikey part numbers
+    """
+
+    try:
+        setup_digikey(config_data)
+    except KeyError as e:
+        print(f"Error: key {e.args[0]} not found in configuration file",
+              file=sys.stderr)
+        return []
+
+    components = []
+    for pn in digikey_pn_list:
+        comp = create_component_from_digikey_pn(pn)
+        if comp:
+            components.append(comp)
+        else:
+            print(f"Could not get info for part {pn}", file=sys.stderr)
+    return components
+
+
+def create_component_list_from_csv(csv_path):
+    """
+    create a list of components from a CSV file. Each line must contain all
+    necessary fields for the component type in question.
+
+    Any parts that are not successfully created are ignored.
+
+    :arg: csv_path: path to csv file to read
+    :return: a list of components corresponding to lines in the CSV file
+    """
+    parts = []
+    with open(args.csv, "r") as infile:
+        reader = csv.DictReader(infile)
+        for d in reader:
+            part = create_component_from_dict(d)
+            if part:
+                parts.append(part)
+    return parts
+
+
+def add_components_from_list_to_db(db_path, components):
+    """
+    add all components in a list to the database
+
+    :arg: db_path: absolute path to database
+    :arg: components: list of components to add to database
+    """
+    for comp in components:
+        print(f"Adding component {comp.columns['IPN']} to database")
+        try:
+            add_component_to_db(db_path, comp)
+        except TooManyDuplicateIPNsInTableError as e:
+            print(f"Error: too many parts with IPN '{e.IPN}' already in "
+                  f"table '{e.table}'; skipped")
+
+
 if __name__ == "__main__":
     args = parse_args()
     config_data = load_config()
@@ -418,29 +485,12 @@ if __name__ == "__main__":
     if not (args.digikey or args.mouser or args.csv):
         print("no parts to add")
         sys.exit()
-    parts = []
     if args.digikey:
-        digikey_pn = args.digikey
-        setup_digikey(config_data)
-        part = create_component_from_digikey_pn(digikey_pn)
-        if part:
-            parts.append(part)
-        else:
-            print(f"Could not get info for part {digikey_pn}")
+        digikey_pn_list = [pn.strip() for pn in args.digikey.split(",")]
+        components = create_component_list_from_digikey_pns(digikey_pn_list)
     if args.mouser:
         raise NotImplementedError
     if args.csv:
-        with open(args.csv, "r") as infile:
-            reader = csv.DictReader(infile)
-            for d in reader:
-                part = create_component_from_dict(d)
-                if part:
-                    parts.append(part)
+        components = create_component_list_from_csv(args.csv)
 
-    for part in parts:
-        print(f"Adding part {part.columns['IPN']} to database")
-        try:
-            add_component_to_db(db_path, part)
-        except TooManyDuplicateIPNsInTableError as e:
-            print(f"Error: too many parts with IPN '{e.IPN}' already in "
-                  f"table '{e.table}'; skipped")
+    add_components_from_list_to_db(db_path, components)
