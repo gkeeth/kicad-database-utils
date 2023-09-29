@@ -13,7 +13,10 @@ import digikey
 import mouser
 
 CONFIG_FILENAME = os.path.expanduser("~/.dblib_add_part_config.json")
+
 IPN_DUPLICATE_LIMIT = 10
+
+VERBOSE = False
 
 
 """
@@ -68,6 +71,17 @@ class TooManyDuplicateIPNsInTableError(Exception):
     def __init__(self, IPN, table):
         self.IPN = IPN
         self.table = table
+
+
+def print_message(message):
+    """print a message to stdout if global variable VERBOSE is True"""
+    if VERBOSE:
+        print(message)
+
+
+def print_error(message):
+    """print a message to stderr, with "ERROR: " prepended"""
+    print(f"Error: {message}")
 
 
 class Component(ABC):
@@ -256,7 +270,7 @@ def create_component_from_digikey_pn(digikey_pn):
     """
     part = digikey.product_details(digikey_pn)
     if not part:
-        print(f"Could not get info for part {digikey_pn}", file=sys.stderr)
+        print_error(f"Could not get info for part {digikey_pn}")
         return None
 
     if part.limited_taxonomy.value == "Resistors":
@@ -322,8 +336,7 @@ def create_component_list_from_digikey_pns(digikey_pn_list):
     try:
         setup_digikey(config_data)
     except KeyError as e:
-        print(f"Error: key {e.args[0]} not found in configuration file",
-              file=sys.stderr)
+        print_error(f"key {e.args[0]} not found in configuration file")
         return []
 
     components = []
@@ -332,7 +345,7 @@ def create_component_list_from_digikey_pns(digikey_pn_list):
         if comp:
             components.append(comp)
         else:
-            print(f"Could not get info for part {pn}", file=sys.stderr)
+            print_error(f"could not get info for part {pn}")
     return components
 
 
@@ -377,8 +390,7 @@ def add_component_to_db(db_path, comp):
         con = sqlite3.connect(f"file:{db_path}?mode=rw", uri=True)
         # con = sqlite3.connect(":memory:")
     except sqlite3.OperationalError:
-        print(f"Error connecting to database at path: {db_path}",
-              file=sys.stderr)
+        print_error(f"could not connect to database at path: {db_path}")
         return
 
     with con:
@@ -388,7 +400,7 @@ def add_component_to_db(db_path, comp):
         res = cur.execute("SELECT name from sqlite_master")
         tables = [t[0] for t in res.fetchall()]
         if comp.table not in tables:
-            print(f"Creating table '{comp.table}'")
+            print_message(f"Creating table '{comp.table}'")
             cur.execute(comp.get_create_table_string())
 
         # Before adding the part to the table, check if a part with the same
@@ -410,9 +422,8 @@ def add_component_to_db(db_path, comp):
         # add part to table
         cur.execute(insert_string, values)
 
-        # check that it's been added
-        res = cur.execute(f"SELECT IPN from {comp.table}")
-        print(f"IPN added to table {comp.table}: {res.fetchall()}")
+        print_message(f"Added component '{comp.columns['IPN']}' to table "
+                      f"'{comp.table}'")
 
     con.close()
 
@@ -425,12 +436,11 @@ def add_components_from_list_to_db(db_path, components):
     :arg: components: list of components to add to database
     """
     for comp in components:
-        print(f"Adding component {comp.columns['IPN']} to database")
         try:
             add_component_to_db(db_path, comp)
         except TooManyDuplicateIPNsInTableError as e:
-            print(f"Error: too many parts with IPN '{e.IPN}' already in "
-                  f"table '{e.table}'; skipped")
+            print_error(f"too many parts with IPN '{e.IPN}' already in table "
+                        f"'{e.table}'; skipped")
 
 
 def load_config():
@@ -446,6 +456,8 @@ def parse_args():
     parser = argparse.ArgumentParser(
             description=("Add a part to the parts database, either manually "
                          "or by distributor lookup."))
+    parser.add_argument("--verbose", "-v", action="store_true",
+                        help="Print informational messages")
     parser.add_argument("--initializedb", action="store_true",
                         help="Initialize new, empty database")
     """
@@ -473,6 +485,7 @@ def parse_args():
 
 if __name__ == "__main__":
     args = parse_args()
+    VERBOSE = args.verbose
     config_data = load_config()
     try:
         db_path = os.path.abspath(config_data["db"]["path"])
@@ -483,7 +496,7 @@ if __name__ == "__main__":
         initialize_database(db_path)
 
     if not (args.digikey or args.mouser or args.csv):
-        print("no parts to add")
+        print_message("no parts to add")
         sys.exit()
     if args.digikey:
         digikey_pn_list = [pn.strip() for pn in args.digikey.split(",")]
