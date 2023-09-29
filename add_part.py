@@ -75,7 +75,7 @@ class Component(ABC):
 
     def get_create_table_string(self):
         """return a sqlite string to create a table for the component type"""
-        column_names = self.columns.keys()
+        column_names = ", ".join(self.columns.keys())
         return f"CREATE TABLE {self.table}({column_names})"
 
     def to_sql(self):
