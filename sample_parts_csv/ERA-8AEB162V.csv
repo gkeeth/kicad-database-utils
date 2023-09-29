@@ -1,0 +1,2 @@
+IPN,datasheet,description,keywords,value,exclude_from_bom,exclude_from_board,kicad_symbol,kicad_footprint,manufacturer,MPN,distributor1,DPN1,distributor2,DPN2,resistance,tolerance,power,composition,package
+R_1.6_1206_0.1%_0.25W_ThinFilm,https://industrial.panasonic.com/cdbs/www-data/pdf/RDM0000/AOA0000C307.pdf,1.6Ω ±0.1% 0.25W Resistor 1206 Thin Film,r res resistor 1.6,${Resistance},0,0,Device:R,Resistor_SMD:R_1206_3216Metric,Panasonic Electronic Components,ERA-8AEB162V,Digikey,P1.6KBCCT-ND,,,1.6,0.1%,0.25W,ThinFilm,1206

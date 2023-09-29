@@ -1,0 +1,2 @@
+IPN,datasheet,description,keywords,value,exclude_from_bom,exclude_from_board,kicad_symbol,kicad_footprint,manufacturer,MPN,distributor1,DPN1,distributor2,DPN2,resistance,tolerance,power,composition,package
+R_0_Jumper_0603_ThickFilm,https://www.yageo.com/upload/media/product/productsearch/datasheet/rchip/PYu-RC_Group_51_RoHS_L_12.pdf,0Ω Jumper 0603 Thick Film,jumper,${Resistance},0,0,Device:R,Resistor_SMD:R_0603_1608Metric,YAGEO,RC0603JR-070RL,Digikey,311-0.0GRCT-ND,,,0,-,-,ThickFilm,0603

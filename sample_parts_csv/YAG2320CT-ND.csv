@@ -1,0 +1,2 @@
+IPN,datasheet,description,keywords,value,exclude_from_bom,exclude_from_board,kicad_symbol,kicad_footprint,manufacturer,MPN,distributor1,DPN1,distributor2,DPN2,resistance,tolerance,power,composition,package
+R_100_0603_1%_0.1W_ThinFilm,https://www.yageo.com/upload/media/product/productsearch/datasheet/rchip/PYu-RT_1-to-0.01_RoHS_L_13.pdf,100Ω ±1% 0.1W Resistor 0603 Thin Film,r res resistor 100,${Resistance},0,0,Device:R,Resistor_SMD:R_0603_1608Metric,YAGEO,RT0603FRE07100RL,Digikey,YAG2320CT-ND,,,100,1%,0.1W,ThinFilm,0603
