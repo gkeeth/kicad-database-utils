@@ -34,7 +34,7 @@ class Component(ABC):
         # columns that all types of components need. Many of these map onto
         # KiCad builtin fields or properties.
         self.columns = OrderedDict()
-        self.columns["IPN"] = IPN # unique ID for component
+        self.columns["IPN"] = IPN  # unique ID for component
         self.columns["datasheet"] = datasheet
         self.columns["description"] = description
         self.columns["keywords"] = keywords
@@ -165,16 +165,27 @@ class Resistor(Component):
             raise UnknownFootprintForPackageError(e)
 
         if data["resistance"] == "0":
-            data["IPN"] = (f"R_{data['resistance']}_Jumper_{data['package']}_"
+            data["IPN"] = (f"R_"
+                           f"{data['resistance']}_"
+                           f"Jumper_"
+                           f"{data['package']}_"
                            f"{data['composition']}")
-            data["description"] = f"0Ω Jumper {data['package']} {raw_composition}"
+            data["description"] = (f"0Ω Jumper "
+                                   f"{data['package']} "
+                                   f"{raw_composition}")
             data["keywords"] = "jumper"
         else:
-            data["IPN"] = (f"R_{data['resistance']}_{data['package']}_"
-                           f"{data['tolerance']}_{data['power']}_"
+            data["IPN"] = (f"R_"
+                           f"{data['resistance']}_"
+                           f"{data['package']}_"
+                           f"{data['tolerance']}_"
+                           f"{data['power']}_"
                            f"{data['composition']}")
-            data["description"] = (f"{data['resistance']}Ω ±{data['tolerance']} "
-                                   f"{data['power']} Resistor {data['package']} "
+            data["description"] = (f"{data['resistance']}Ω "
+                                   f"±{data['tolerance']} "
+                                   f"{data['power']} "
+                                   f"Resistor "
+                                   f"{data['package']} "
                                    f"{raw_composition}")
             data["keywords"] = f"r res resistor {data['resistance']}"
 
@@ -294,7 +305,7 @@ def parse_args():
     parser.add_argument("--update-existing", "-u", action="store_true",
                         help="Update existing part in database instead of erroring if specified part already exists")
 
-    #TODO: add arg for adding new tables (including columns) to existing database
+    # TODO: add arg for adding new tables (including columns) to existing database
 
     table_group = parser.add_mutually_exclusive_group()
     for t in tables:
