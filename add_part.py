@@ -144,7 +144,8 @@ class Component(ABC):
 class Resistor(Component):
     table = "resistor"
 
-    def __init__(self, resistance, tolerance, power, composition, package, **kwargs):
+    def __init__(self, resistance, tolerance, power, composition, package,
+                 **kwargs):
         super().__init__(**kwargs)
         self.columns["resistance"] = resistance
         self.columns["tolerance"] = tolerance
@@ -154,7 +155,9 @@ class Resistor(Component):
 
     @staticmethod
     def process_resistance(param):
-        """return a processed resistance string in the form <resistance in ohms>"""
+        """
+        return a processed resistance string in the form <resistance in ohms>
+        """
         resistance = re.search(r"\d+\.?\d*[kKmMG]?", param).group(0)
         return re.sub("k", "K", resistance)
 
@@ -259,7 +262,8 @@ def create_component_from_digikey_pn(digikey_pn):
     if part.limited_taxonomy.value == "Resistors":
         return Resistor.from_digikey(part)
     else:
-        raise NotImplementedError(f"No component type to handle part {digikey_pn}")
+        raise NotImplementedError("No component type to handle part "
+                                  f"{digikey_pn}")
 
 
 def create_component_from_dict(columns_and_values):
@@ -337,31 +341,7 @@ def initialize_database(db_path):
         sys.exit(f"Error: {db_path} already exists and cannot be "
                  "re-initialized.")
     con = sqlite3.connect(f"file:{db_path}", uri=True)
-    # con = sqlite3.connect(":memory:")
     con.close()
-
-    # try:
-    #     with con:
-    #         cur = con.cursor()
-    #         for table in tables:
-    #             cur.execute(f"CREATE TABLE {table}({tables[table]})")
-
-    #         # print out tables to check that we did it right:
-    #         res = cur.execute("SELECT name from sqlite_master")
-    #         print(res.fetchall())
-
-    #         if 0:
-    #             # add some dummy data to resistor and capacitor tables
-    #             # check
-    #             res = cur.execute("SELECT display_name from resistor")
-    #             print(res.fetchall())
-    #             res = cur.execute("SELECT display_name from capacitor")
-    #             print(res.fetchall())
-
-
-    # except sqlite3.Error as err:
-    #     print(err)
-    #     """
 
 
 def parse_args():
@@ -398,7 +378,8 @@ def setup_digikey(config_data):
 
     :arg: config_data: dict of configuration data from config file
     """
-    DIGIKEY_DEFAULT_CACHE_DIR = os.path.expanduser("~/.dblib_digikey_cache_dir")
+    DIGIKEY_DEFAULT_CACHE_DIR = os.path.expanduser(
+            "~/.dblib_digikey_cache_dir")
 
     dk_config = config_data["digikey"]
     os.environ["DIGIKEY_CLIENT_ID"] = dk_config["client_id"]
