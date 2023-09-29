@@ -28,9 +28,9 @@ class UnknownFootprintForPackageError(Exception):
 
 class Component(ABC):
     def __init__(self, IPN, datasheet, description, keywords, value,
-                 exclude_from_bom, exclude_from_board, kicad_symbol,
-                 kicad_footprint, manufacturer, MPN, distributor1, DPN1,
-                 distributor2, DPN2):
+                 kicad_symbol, kicad_footprint, manufacturer, MPN,
+                 distributor1, DPN1, distributor2, DPN2,
+                 exclude_from_bom=0, exclude_from_board=0):
         # columns that all types of components need. Many of these map onto
         # KiCad builtin fields or properties.
         self.columns = OrderedDict()
@@ -163,8 +163,6 @@ class Resistor(Component):
             data["kicad_footprint"] = kicad_footprint_map[data["package"]]
         except KeyError as e:
             raise UnknownFootprintForPackageError(e)
-        data["exclude_from_bom"] = 0
-        data["exclude_from_board"] = 0
 
         if data["resistance"] == "0":
             data["IPN"] = (f"R_{data['resistance']}_Jumper_{data['package']}_"
