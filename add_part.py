@@ -7,6 +7,7 @@ from abc import ABC, abstractmethod
 from collections import OrderedDict
 import argparse
 import sqlite3
+import csv
 import json
 import digikey
 import mouser
@@ -48,6 +49,12 @@ class Component(ABC):
         self.columns["DPN1"] = DPN1
         self.columns["distributor2"] = distributor2
         self.columns["DPN2"] = DPN2
+
+    def to_csv(self):
+        """write self.columns to stdout, formatted as csv"""
+        csvwriter = csv.writer(sys.stdout)
+        csvwriter.writerow(self.columns.keys())
+        csvwriter.writerow(self.columns.values())
 
     @classmethod
     @abstractmethod
@@ -422,5 +429,6 @@ if __name__ == "__main__":
         sys.exit()
     if args.digikey:
         setup_digikey()
-        create_component_from_digikey_pn(args.digikey)
+        part = create_component_from_digikey_pn(args.digikey)
+        part.to_csv()
     # TODO: error if we haven't selected a part type
