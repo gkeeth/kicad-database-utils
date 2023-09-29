@@ -283,97 +283,6 @@ def create_component_from_dict(columns_and_values):
         raise NotImplementedError(f"No component type to handle part {IPN}")
 
 
-def add_component_to_db(db_path, comp):
-    insert_string, values = comp.to_sql()
-
-    try:
-        con = sqlite3.connect(f"file:{db_path}?mode=rw", uri=True)
-        # con = sqlite3.connect(":memory:")
-    except sqlite3.OperationalError:
-        print(f"Error connecting to database at path: {db_path}",
-              file=sys.stderr)
-        return
-
-    with con:
-        cur = con.cursor()
-
-        # check if table exists, and create it if not
-        res = cur.execute("SELECT name from sqlite_master")
-        tables = [t[0] for t in res.fetchall()]
-        if comp.table not in tables:
-            print(f"Creating table '{comp.table}'")
-            cur.execute(comp.get_create_table_string())
-
-        # Before adding the part to the table, check if a part with the same
-        # IPN is already in the table. If so, append a suffix to the IPN and
-        # try again.
-        res = cur.execute(f"SELECT IPN from {comp.table}")
-        ipns = [t[0] for t in res.fetchall()]
-        test_ipn = comp.columns["IPN"]
-        for i in range(1, IPN_DUPLICATE_LIMIT + 1):
-            if test_ipn not in ipns:
-                comp.columns["IPN"] = test_ipn
-                break
-            test_ipn = f"{comp.columns['IPN']}_{i}"
-        if test_ipn != comp.columns["IPN"]:
-            # we didn't find a unique IPN
-            raise TooManyDuplicateIPNsInTableError(comp.columns["IPN"],
-                                                   comp.table)
-
-        # add part to table
-        cur.execute(insert_string, values)
-
-        # check that it's been added
-        res = cur.execute(f"SELECT IPN from {comp.table}")
-        print(f"IPN added to table {comp.table}: {res.fetchall()}")
-
-    con.close()
-
-
-def initialize_database(db_path):
-    """
-    Create a new, empty database file without any tables.
-
-    :arg: db_path: absolute path to database
-    """
-
-    if os.path.isfile(db_path):
-        sys.exit(f"Error: {db_path} already exists and cannot be "
-                 "re-initialized.")
-    con = sqlite3.connect(f"file:{db_path}", uri=True)
-    con.close()
-
-
-def parse_args():
-    """ set up CLI args and return the parsed arguments """
-    parser = argparse.ArgumentParser(
-            description=("Add a part to the parts database, either manually "
-                         "or by distributor lookup."))
-    parser.add_argument("--initializedb", action="store_true",
-                        help="Initialize new, empty database")
-    """
-    parser.add_argument("--update-existing", "-u", action="store_true",
-                        help=("Update existing part in database instead of "
-                        "erroring if specified part already exists")
-    """
-
-    source_group = parser.add_mutually_exclusive_group()
-    source_group.add_argument(
-            "--digikey", "-d", metavar="DIGIKEY_PN",
-            help=("Digikey part number, or comma-separated list of part "
-                  "numbers, for part(s) to add to database"))
-    source_group.add_argument(
-            "--mouser", "-m", metavar="MOUSER_PN",
-            help=("Mouser part number, or comma-separated list of part "
-                  "numbers, for part(s) to add to database"))
-    source_group.add_argument(
-            "--csv", "-p", metavar="CSVFILE",
-            help=("CSV filename containing columns for all required part "
-                  "parameters. Each row is a separate part"))
-
-    return parser.parse_args()
-
-
 def setup_digikey(config_data):
     """
     set up environment variables and cache for digikey API calls
@@ -396,14 +305,6 @@ def setup_digikey(config_data):
     os.environ["DIGIKEY_STORAGE_PATH"] = digikey_cache_dir
     if not os.path.isdir(digikey_cache_dir):
         os.mkdir(digikey_cache_dir)
-
-
-def load_config():
-    """return dict containing all config data in config file"""
-    with open(CONFIG_FILENAME, "r") as f:
-        config_data = json.load(f)
-
-    return config_data
 
 
 def create_component_list_from_digikey_pns(digikey_pn_list):
@@ -455,6 +356,67 @@ def create_component_list_from_csv(csv_path):
     return parts
 
 
+def initialize_database(db_path):
+    """
+    Create a new, empty database file without any tables.
+
+    :arg: db_path: absolute path to database
+    """
+
+    if os.path.isfile(db_path):
+        sys.exit(f"Error: {db_path} already exists and cannot be "
+                 "re-initialized.")
+    con = sqlite3.connect(f"file:{db_path}", uri=True)
+    con.close()
+
+
+def add_component_to_db(db_path, comp):
+    insert_string, values = comp.to_sql()
+
+    try:
+        con = sqlite3.connect(f"file:{db_path}?mode=rw", uri=True)
+        # con = sqlite3.connect(":memory:")
+    except sqlite3.OperationalError:
+        print(f"Error connecting to database at path: {db_path}",
+              file=sys.stderr)
+        return
+
+    with con:
+        cur = con.cursor()
+
+        # check if table exists, and create it if not
+        res = cur.execute("SELECT name from sqlite_master")
+        tables = [t[0] for t in res.fetchall()]
+        if comp.table not in tables:
+            print(f"Creating table '{comp.table}'")
+            cur.execute(comp.get_create_table_string())
+
+        # Before adding the part to the table, check if a part with the same
+        # IPN is already in the table. If so, append a suffix to the IPN and
+        # try again.
+        res = cur.execute(f"SELECT IPN from {comp.table}")
+        ipns = [t[0] for t in res.fetchall()]
+        test_ipn = comp.columns["IPN"]
+        for i in range(1, IPN_DUPLICATE_LIMIT + 1):
+            if test_ipn not in ipns:
+                comp.columns["IPN"] = test_ipn
+                break
+            test_ipn = f"{comp.columns['IPN']}_{i}"
+        if test_ipn != comp.columns["IPN"]:
+            # we didn't find a unique IPN
+            raise TooManyDuplicateIPNsInTableError(comp.columns["IPN"],
+                                                   comp.table)
+
+        # add part to table
+        cur.execute(insert_string, values)
+
+        # check that it's been added
+        res = cur.execute(f"SELECT IPN from {comp.table}")
+        print(f"IPN added to table {comp.table}: {res.fetchall()}")
+
+    con.close()
+
+
 def add_components_from_list_to_db(db_path, components):
     """
     add all components in a list to the database
@@ -469,6 +431,44 @@ def add_components_from_list_to_db(db_path, components):
         except TooManyDuplicateIPNsInTableError as e:
             print(f"Error: too many parts with IPN '{e.IPN}' already in "
                   f"table '{e.table}'; skipped")
+
+
+def load_config():
+    """return dict containing all config data in config file"""
+    with open(CONFIG_FILENAME, "r") as f:
+        config_data = json.load(f)
+
+    return config_data
+
+
+def parse_args():
+    """ set up CLI args and return the parsed arguments """
+    parser = argparse.ArgumentParser(
+            description=("Add a part to the parts database, either manually "
+                         "or by distributor lookup."))
+    parser.add_argument("--initializedb", action="store_true",
+                        help="Initialize new, empty database")
+    """
+    parser.add_argument("--update-existing", "-u", action="store_true",
+                        help=("Update existing part in database instead of "
+                        "erroring if specified part already exists")
+    """
+
+    source_group = parser.add_mutually_exclusive_group()
+    source_group.add_argument(
+            "--digikey", "-d", metavar="DIGIKEY_PN",
+            help=("Digikey part number, or comma-separated list of part "
+                  "numbers, for part(s) to add to database"))
+    source_group.add_argument(
+            "--mouser", "-m", metavar="MOUSER_PN",
+            help=("Mouser part number, or comma-separated list of part "
+                  "numbers, for part(s) to add to database"))
+    source_group.add_argument(
+            "--csv", "-p", metavar="CSVFILE",
+            help=("CSV filename containing columns for all required part "
+                  "parameters. Each row is a separate part"))
+
+    return parser.parse_args()
 
 
 if __name__ == "__main__":
