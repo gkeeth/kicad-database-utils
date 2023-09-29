@@ -17,6 +17,46 @@ CONFIG_FILENAME = os.path.expanduser("~/.dblib_add_part_config.json")
 DB_FILENAME = "test.db"
 
 
+"""
+common columns:
+    IPN
+    display_name
+    datasheet
+    description
+    keywords
+    exclude_from_bom
+    exclude_from_board
+    kicad_symbol
+    kicad_footprint
+    manufacturer
+    MPN
+    distributor1
+    DPN1
+    distributor2
+    DPN2
+
+tables:
+    resistor:             value, resistance, tolerance, power, composition, package
+    capacitor:            value, capacitance, tolerance, voltage, dielectric, package
+    inductor:             value, inductance, tolerance, package
+    ferrite_bead:         impedance_at_freq, current, resistance, package
+    connector:            series, circuit_configuration, gender, orientation
+    led:                  color, package
+    diode:                type, voltage, package
+    transistor_bjt:       type, package
+    transistor_mosfet:    type, package
+    transistor_jfet:      type, package
+    crystal:              frequency, load_capacitance, package
+    potentiometer:        value, tolerance, power, composition, orientation
+    switch:               type, configuration, orientation, current
+    relay:                configuration, coil_voltage, coil_current, switch_current
+    opamp:                input_type, bandwidth, package
+    logic:                function, package
+    microcontroller:      pins, max_frequency, package
+    voltage_regulator:    voltage, current, package
+"""
+
+
 class PartInfoNotFoundError(Exception):
     pass
 
@@ -267,46 +307,6 @@ def add_component_to_db(config_data, comp):
         print(f"IPN added to table {comp.table}: {res.fetchall()}")
 
     con.close()
-
-
-"""
-common columns:
-    IPN
-    display_name
-    datasheet
-    description
-    keywords
-    exclude_from_bom
-    exclude_from_board
-    kicad_symbol
-    kicad_footprint
-    manufacturer
-    MPN
-    distributor1
-    DPN1
-    distributor2
-    DPN2
-
-tables:
-    resistor:             value, resistance, tolerance, power, composition, package
-    capacitor:            value, capacitance, tolerance, voltage, dielectric, package
-    inductor:             value, inductance, tolerance, package
-    ferrite_bead:         impedance_at_freq, current, resistance, package
-    connector:            series, circuit_configuration, gender, orientation
-    led:                  color, package
-    diode:                type, voltage, package
-    transistor_bjt:       type, package
-    transistor_mosfet:    type, package
-    transistor_jfet:      type, package
-    crystal:              frequency, load_capacitance, package
-    potentiometer:        value, tolerance, power, composition, orientation
-    switch:               type, configuration, orientation, current
-    relay:                configuration, coil_voltage, coil_current, switch_current
-    opamp:                input_type, bandwidth, package
-    logic:                function, package
-    microcontroller:      pins, max_frequency, package
-    voltage_regulator:    voltage, current, package
-"""
 
 
 def initialize_database():
