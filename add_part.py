@@ -50,8 +50,18 @@ class Component(ABC):
         self.columns["distributor2"] = distributor2
         self.columns["DPN2"] = DPN2
 
+    def to_sql(self):
+        """
+        return a tuple of a SQL insert statement and a dict of values to
+        populate the insert statement with
+        """
+        insert_string = (f"INSERT INTO {self.table} VALUES("
+                         f":{', :'.join(self.columns.keys())}")
+        return (insert_string, self.columns)
+
     def to_csv(self):
         """write self.columns to stdout, formatted as csv"""
+        # TODO: return this as a string; don't directly print to stdout
         csvwriter = csv.writer(sys.stdout)
         csvwriter.writerow(self.columns.keys())
         csvwriter.writerow(self.columns.values())
@@ -212,44 +222,65 @@ def create_component_from_digikey_pn(digikey_pn):
         raise NotImplementedError(f"No component type to handle part {digikey_pn}")
 
 
-common_cols = [
-        "IPN",
-        "display_name",
-        "datasheet",
-        "description",
-        "keywords",
-        "exclude_from_bom",
-        "exclude_from_board",
-        "kicad_symbol",
-        "kicad_footprint",
-        "manufacturer",
-        "MPN",
-        "distributor1",
-        "DPN1",
-        "distributor2",
-        "DPN2",
-        ]
+def add_digikey_part_to_db(digikey_pn):
+    comp = create_component_from_digikey_pn(digikey_pn)
+    if not comp:
+        print(f"Could not get info for part {digikey_pn}")
+        return
 
-tables = {
-        "resistor":             ", ".join(common_cols + ["value", "resistance", "tolerance", "power", "composition", "package"]),
-        "capacitor":            ", ".join(common_cols + ["value", "capacitance", "tolerance", "voltage", "dielectric", "package"]),
-        "inductor":             ", ".join(common_cols + ["value", "inductance", "tolerance", "package"]),
-        "ferrite_bead":         ", ".join(common_cols + ["impedance_at_freq", "current", "resistance", "package"]),
-        "connector":            ", ".join(common_cols + ["series", "circuit_configuration", "gender", "orientation"]),
-        "led":                  ", ".join(common_cols + ["color", "package"]),
-        "diode":                ", ".join(common_cols + ["type", "voltage", "package"]),
-        "transistor_bjt":       ", ".join(common_cols + ["type", "package"]),
-        "transistor_mosfet":    ", ".join(common_cols + ["type", "package"]),
-        "transistor_jfet":      ", ".join(common_cols + ["type", "package"]),
-        "crystal":              ", ".join(common_cols + ["frequency", "load_capacitance", "package"]),
-        "potentiometer":        ", ".join(common_cols + ["value", "tolerance", "power", "composition", "orientation"]),
-        "switch":               ", ".join(common_cols + ["type", "configuration", "orientation", "current"]),
-        "relay":                ", ".join(common_cols + ["configuration", "coil_voltage", "coil_current", "switch_current"]),
-        "opamp":                ", ".join(common_cols + ["input_type", "bandwidth", "package"]),
-        "logic":                ", ".join(common_cols + ["function", "package"]),
-        "microcontroller":      ", ".join(common_cols + ["pins", "max_frequency", "package"]),
-        "voltage_regulator":    ", ".join(common_cols + ["voltage", "current", "package"]),
-        }
+    insert_string, values = comp.get_insert_string()
+
+    print(f"insert_string: {insert_string}")
+    print(f"values: {values}")
+
+    con = sqlite3.connect(f"file:{DB_FILENAME}?mode=rw", uri=True)
+    # con = sqlite3.connect(":memory:")
+    with con:
+        cur = con.cursor()
+        cur.execute(insert_string, values)
+
+    con.close()
+
+
+
+"""
+common columns:
+    IPN
+    display_name
+    datasheet
+    description
+    keywords
+    exclude_from_bom
+    exclude_from_board
+    kicad_symbol
+    kicad_footprint
+    manufacturer
+    MPN
+    distributor1
+    DPN1
+    distributor2
+    DPN2
+
+tables:
+    resistor:             value, resistance, tolerance, power, composition, package
+    capacitor:            value, capacitance, tolerance, voltage, dielectric, package
+    inductor:             value, inductance, tolerance, package
+    ferrite_bead:         impedance_at_freq, current, resistance, package
+    connector:            series, circuit_configuration, gender, orientation
+    led:                  color, package
+    diode:                type, voltage, package
+    transistor_bjt:       type, package
+    transistor_mosfet:    type, package
+    transistor_jfet:      type, package
+    crystal:              frequency, load_capacitance, package
+    potentiometer:        value, tolerance, power, composition, orientation
+    switch:               type, configuration, orientation, current
+    relay:                configuration, coil_voltage, coil_current, switch_current
+    opamp:                input_type, bandwidth, package
+    logic:                function, package
+    microcontroller:      pins, max_frequency, package
+    voltage_regulator:    voltage, current, package
+"""
 
 
 def initialize_database():
@@ -323,8 +354,6 @@ def parse_args():
     return parser.parse_args()
 
 
-
-
 def setup_digikey():
     with open(CONFIG_FILENAME, "r") as f:
         config_data = json.load(f)
@@ -334,96 +363,6 @@ def setup_digikey():
     os.environ["DIGIKEY_STORAGE_PATH"] = DIGIKEY_CACHE_DIR
     if not os.path.isdir(DIGIKEY_CACHE_DIR):
         os.mkdir(DIGIKEY_CACHE_DIR)
-
-
-def get_table_from_digikey_part(digikey_pn, part):
-    """
-    extract the part type from the digikey part metadata and convert it to a
-    table name in our database.
-
-    Returns the appropriate table name, or None if no appropriate table name
-    was found.
-
-    Prints a message if the appropriate table name wasn't found.
-    """
-
-    component_type_map = {
-            "Chip Resistor - Surface Mount": "resistor",
-            # TODO: add other resistor types
-            "Ceramic Capacitors": "capacitor",
-            # TODO: add other caps, like film and electrolytic
-            "": "inductor",
-            "": "ferrite_bead",
-            "Rectangular Connectors - Headers, Male Pins - Headers, Male Pins": "connector",
-            # TODO: add other types of connectors (including female)
-            "LED Indication - Discrete": "led",
-            "Diodes - Rectifiers - Single Diodes - Rectifiers - Single Diodes": "diode",
-            "": "transistor_bjt",
-            "": "transistor_mosfet",
-            "": "transistor_jfet",
-            "": "crystal",
-            "Rotary Potentiometers, Rheostats": "potentiometer",
-            "": "switch",
-            "": "relay",
-            "Linear - Amplifiers - Instrumentation, OP Amps, Buffer Amps - Amplifiers - Instrumentation, OP Amps, Buffer Amps": "opamp",
-            "": "logic",
-            "": "microcontroller",
-            "": "voltage_regulator",
-            }
-
-    part_type = part.limited_taxonomy.children[0].value
-
-    if part_type in component_type_map:
-        return component_type_map[part_type]
-    else:
-        print(f"Unknown part type: '{part_type}' for part {digikey_pn}")
-        return None
-
-
-def add_digikey_part_to_db(digikey_pn):
-    part = digikey.product_details(digikey_pn)
-    if not part:
-        print(f"Could not get info for part {digikey_pn}")
-        return
-
-    table = get_table_from_digikey_part(digikey_pn, part)
-    if not table:
-        return
-
-    table_to_infofunc = {
-        "resistor":             get_digikey_resistor_info,
-        # "capacitor":
-        # "inductor":
-        # "ferrite_bead":
-        # "connector":
-        # "led":
-        # "diode":
-        # "transistor_bjt":
-        # "transistor_mosfet":
-        # "transistor_jfet":
-        # "crystal":
-        # "potentiometer":
-        # "switch":
-        # "relay":
-        # "opamp":
-        # "logic":
-        # "microcontroller":
-        # "voltage_regulator":
-        }
-
-    data = table_to_infofunc[table](part)
-    insert_string = (f"INSERT INTO {table} VALUES("
-                     f":{', :'.join(tables[table].split(', '))})")
-    print(f"data: {data}")
-    print(f"insert_string: {insert_string}")
-
-    con = sqlite3.connect(f"file:{DB_FILENAME}?mode=rw", uri=True)
-    # con = sqlite3.connect(":memory:")
-    with con:
-        cur = con.cursor()
-        cur.execute(insert_string, data)
-
-    con.close()
 
 
 if __name__ == "__main__":
