@@ -142,13 +142,20 @@ class Resistor(Component):
                 data["package"] = p.value
 
         kicad_footprint_map = {
+                "0201": "Resistor_SMD:R_0201_0603Metric",
+                "0402": "Resistor_SMD:R_0402_1005Metric",
                 "0603": "Resistor_SMD:R_0603_1608Metric",
                 "0805": "Resistor_SMD:R_0805_2012Metric",
+                "1206": "Resistor_SMD:R_1206_3216Metric",
+                "1210": "Resistor_SMD:R_1210_3225Metric",
                 }
 
         data["value"] = "${Resistance}"
         data["kicad_symbol"] = "Device:R"
-        data["kicad_footprint"] = kicad_footprint_map[data["package"]]
+        try:
+            data["kicad_footprint"] = kicad_footprint_map[data["package"]]
+        except KeyError as e:
+            raise UnknownFootprintForPackageError(e)
         data["exclude_from_bom"] = 0
         data["exclude_from_board"] = 0
 
@@ -312,83 +319,6 @@ def setup_digikey():
     if not os.path.isdir(DIGIKEY_CACHE_DIR):
         os.mkdir(DIGIKEY_CACHE_DIR)
 
-
-
-
-digikey_capacitor_map = {
-        "value": "",
-        "tolerance": "Tolerance",
-        "voltage": "Voltage - Rated",
-        "dielectric": "",
-        }
-
-# TODO: add maps for categories other than resistors/caps
-
-
-def get_digikey_common_info(part):
-    common_data = {
-            "datasheet":            part.primary_datasheet,
-            "description":          part.detailed_description,
-            "manufacturer":         part.manufacturer.value,
-            "MPN":                  part.manufacturer_part_number,
-            "distributor1":         "Digikey",
-            "DPN1":                 part.digi_key_part_number,
-            "distributor2":         "",
-            "DPN2":                 "",
-            }
-    return common_data
-
-def get_digikey_resistor_info(part):
-
-    # map of digikey token names to database fields
-    digikey_resistor_map = {
-            "Resistance": "resistance",
-            "Tolerance": "tolerance",
-            "Power (Watts)": "power",
-            "Composition": "composition",
-            "Supplier Device Package": "package",
-            }
-
-    data = get_digikey_common_info(part)
-    for p in part.parameters:
-        if p.parameter in digikey_resistor_map:
-            data[digikey_resistor_map[p.parameter]] = p.value
-
-    # above we're iterating through what Digikey returned and checking if we're
-    # interested, so now we need to check that we've found all the things that
-    # we care about
-    for column in digikey_resistor_map.values():
-        if column not in data:
-            raise PartInfoNotFoundError(
-                    f"Could not find info for database column '{column}' in part data for {data['DPN1']}.")
-
-    # TODO: post process data fields to be normalized:
-    # - power = 0.1W
-    # - tolerance = 1%
-    # - resistance = 1k
-    # - composition = thin film
-
-    # TODO: construct custom description and IPN
-    # TODO: decide how to make unique identifier
-    footprint_map = {
-            "0201": "Resistor_SMD:R_0201_0603Metric",
-            "0402": "Resistor_SMD:R_0402_1005Metric",
-            "0603": "Resistor_SMD:R_0603_1608Metric",
-            "0805": "Resistor_SMD:R_0805_2012Metric",
-            "1206": "Resistor_SMD:R_1206_3216Metric",
-            "1210": "Resistor_SMD:R_1210_3225Metric",
-            }
-
-    data["value"] = "${Resistance}"
-    data["kicad_symbol"] = "Device:R"
-    try:
-        data["kicad_footprint"] = footprint_map[data["package"]]
-    except KeyError as e:
-        raise UnknownFootprintForPackageError(e)
-
-    # display_name = f"R_{}"
-
-    return data
 
 def get_table_from_digikey_part(digikey_pn, part):
     """
