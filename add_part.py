@@ -50,22 +50,6 @@ class Component(ABC):
         self.columns["distributor2"] = distributor2
         self.columns["DPN2"] = DPN2
 
-    def to_sql(self):
-        """
-        return a tuple of a SQL insert statement and a dict of values to
-        populate the insert statement with
-        """
-        insert_string = (f"INSERT INTO {self.table} VALUES("
-                         f":{', :'.join(self.columns.keys())}")
-        return (insert_string, self.columns)
-
-    def to_csv(self):
-        """write self.columns to stdout, formatted as csv"""
-        # TODO: return this as a string; don't directly print to stdout
-        csvwriter = csv.writer(sys.stdout)
-        csvwriter.writerow(self.columns.keys())
-        csvwriter.writerow(self.columns.values())
-
     @classmethod
     @abstractmethod
     def from_digikey(cls, digikey_part):
@@ -95,10 +79,22 @@ class Component(ABC):
         column_names = self.columns.keys()
         return f"CREATE TABLE {self.table}({column_names})"
 
-    def get_insert_string(self):
+    def to_sql(self):
+        """
+        return a tuple of a SQL insert statement and a dict of values to
+        populate the insert statement with
+        """
         column_names = self.columns.keys()
-        placeholders = ":" + ", :".join(column_names)
-        return f"INSERT INTO {self.table} VALUES({placeholders})"
+        column_keys = ":" + ", :".join(column_names)
+        insert_string = f"INSERT INTO {self.table} VALUES({column_keys})"
+        return (insert_string, self.columns)
+
+    def to_csv(self):
+        """write self.columns to stdout, formatted as csv"""
+        # TODO: return this as a string; don't directly print to stdout
+        csvwriter = csv.writer(sys.stdout)
+        csvwriter.writerow(self.columns.keys())
+        csvwriter.writerow(self.columns.values())
 
 
 class Resistor(Component):
@@ -222,6 +218,23 @@ def create_component_from_digikey_pn(digikey_pn):
         raise NotImplementedError(f"No component type to handle part {digikey_pn}")
 
 
+def create_component_from_dict(columns_and_values):
+    """
+    factory to construct the appropriate component type object from a dict of
+    column names to column values.
+
+    All appropriate fields for each component type must be present.
+
+    The type of component is determined from the value corresponding to the
+    `IPN` key.
+    """
+    IPN = columns_and_values["IPN"]
+    if IPN.startswith("R_"):
+        return Resistor(**columns_and_values)
+    else:
+        raise NotImplementedError(f"No component type to handle part {IPN}")
+
+
 def add_digikey_part_to_db(digikey_pn):
     comp = create_component_from_digikey_pn(digikey_pn)
     if not comp:
@@ -331,25 +344,25 @@ def initialize_database():
 def parse_args():
     """ set up CLI args and return the parsed arguments """
     parser = argparse.ArgumentParser(
-            description="Add a part to the parts database, either manually or by distributor lookup.")
+            description=("Add a part to the parts database, either manually "
+                         "or by distributor lookup."))
+    """
     parser.add_argument("--initializedb", action="store_true", help="Initialize database")
     parser.add_argument("--update-existing", "-u", action="store_true",
                         help="Update existing part in database instead of erroring if specified part already exists")
-
-    # TODO: add arg for adding new tables (including columns) to existing database
-
-    table_group = parser.add_mutually_exclusive_group()
-    for t in tables:
-        table_group.add_argument(f"--{t}", action="store_true",
-                                 help=f"Add a new part to the {t} table")
+    """
 
     source_group = parser.add_mutually_exclusive_group()
-    source_group.add_argument("--digikey", "-d", metavar="DIGIKEY_PN",
-                              help="Digikey part number for part to add to database")
-    source_group.add_argument("--mouser", "-m", metavar="MOUSER_PN",
-                              help="Mouser part number for part to add to database")
-    source_group.add_argument("--params", "-p", metavar="PARAMLIST",
-                              help="TODO: figure out how to specify these. csv?")
+    source_group.add_argument(
+            "--digikey", "-d", metavar="DIGIKEY_PN",
+            help="Digikey part number for part to add to database")
+    source_group.add_argument(
+            "--mouser", "-m", metavar="MOUSER_PN",
+            help="Mouser part number for part to add to database")
+    source_group.add_argument(
+            "--csv", "-p", metavar="CSVFILE",
+            help=("CSV filename containing columns for all required part "
+                  "parameters. Each row is a separate part"))
 
     return parser.parse_args()
 
@@ -371,12 +384,24 @@ if __name__ == "__main__":
     if args.initializedb:
         initialize_database()
 
-    # TODO: implement lookup by part number or manual entry
-    if not (args.digikey or args.mouser or args.params):
+    if not (args.digikey or args.mouser or args.csv):
         print("no parts to add")
         sys.exit()
+    parts = []
     if args.digikey:
         setup_digikey()
         part = create_component_from_digikey_pn(args.digikey)
-        part.to_csv()
-    # TODO: error if we haven't selected a part type
+        if part:
+            parts.append(part)
+    if args.mouser:
+        raise NotImplementedError
+    if args.csv:
+        with open(args.csv, "r") as infile:
+            reader = csv.DictReader(infile)
+            for d in reader:
+                part = create_component_from_dict(d)
+                if part:
+                    parts.append(part)
+
+    for part in parts:
+        print(part.columns["IPN"])
