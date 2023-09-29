@@ -13,8 +13,7 @@ import digikey
 import mouser
 
 CONFIG_FILENAME = os.path.expanduser("~/.dblib_add_part_config.json")
-# TODO: put cache dir and db filename into the configuration file
-DIGIKEY_CACHE_DIR = os.path.expanduser("~/.dblib_digikey_cache_dir")
+# TODO: put db filename into the configuration file
 DB_FILENAME = "test.db"
 
 
@@ -235,25 +234,32 @@ def create_component_from_dict(columns_and_values):
         raise NotImplementedError(f"No component type to handle part {IPN}")
 
 
-def add_digikey_part_to_db(digikey_pn):
-    comp = create_component_from_digikey_pn(digikey_pn)
-    if not comp:
-        print(f"Could not get info for part {digikey_pn}")
-        return
-
+def add_component_to_db(config_data, comp):
     insert_string, values = comp.get_insert_string()
 
     print(f"insert_string: {insert_string}")
     print(f"values: {values}")
 
-    con = sqlite3.connect(f"file:{DB_FILENAME}?mode=rw", uri=True)
-    # con = sqlite3.connect(":memory:")
+    try:
+        db_path = os.path.abspath(config_data["db"]["path"])
+    except KeyError:
+        print("Database path not found in config file", file=sys.stderr)
+        return
+
+    # con = sqlite3.connect(f"file:{db_path}?mode=rw", uri=True)
+    con = sqlite3.connect(":memory:")
     with con:
         cur = con.cursor()
+        # check if table exists, and create it if not
+        res = cur.execute("SELECT name from sqlite_master")
+        print(res.fetchall())
+        if comp.table not in res:
+            cur.execute(comp.get_create_table_string())
+
+        # add part to table
         cur.execute(insert_string, values)
 
     con.close()
-
 
 
 """
@@ -367,32 +373,55 @@ def parse_args():
     return parser.parse_args()
 
 
-def setup_digikey():
+def setup_digikey(config_data):
+    """
+    set up environment variables and cache for digikey API calls
+
+    :arg: config_data: dict of configuration data from config file
+    """
+    DIGIKEY_DEFAULT_CACHE_DIR = os.path.expanduser("~/.dblib_digikey_cache_dir")
+
+    dk_config = config_data["digikey"]
+    os.environ["DIGIKEY_CLIENT_ID"] = dk_config["client_id"]
+    os.environ["DIGIKEY_CLIENT_SECRET"] = dk_config["client_secret"]
+    os.environ["DIGIKEY_CLIENT_SANDBOX"] = "False"
+
+    try:
+        digikey_cache_dir = os.path.expanduser(dk_config["cache_dir"])
+    except KeyError:
+        digikey_cache_dir = DIGIKEY_DEFAULT_CACHE_DIR
+
+    os.environ["DIGIKEY_STORAGE_PATH"] = digikey_cache_dir
+    if not os.path.isdir(digikey_cache_dir):
+        os.mkdir(digikey_cache_dir)
+
+
+def load_config():
+    """return dict containing all config data in config file"""
     with open(CONFIG_FILENAME, "r") as f:
         config_data = json.load(f)
-    os.environ["DIGIKEY_CLIENT_ID"] = config_data["digikey"]["client_id"]
-    os.environ["DIGIKEY_CLIENT_SECRET"] = config_data["digikey"]["client_secret"]
-    os.environ["DIGIKEY_CLIENT_SANDBOX"] = "False"
-    os.environ["DIGIKEY_STORAGE_PATH"] = DIGIKEY_CACHE_DIR
-    if not os.path.isdir(DIGIKEY_CACHE_DIR):
-        os.mkdir(DIGIKEY_CACHE_DIR)
+    return config_data
 
 
 if __name__ == "__main__":
     args = parse_args()
+    config_data = load_config()
 
-    if args.initializedb:
-        initialize_database()
+    # if args.initializedb:
+    #     initialize_database()
 
     if not (args.digikey or args.mouser or args.csv):
         print("no parts to add")
         sys.exit()
     parts = []
     if args.digikey:
-        setup_digikey()
-        part = create_component_from_digikey_pn(args.digikey)
+        digikey_pn = args.digikey
+        setup_digikey(config_data)
+        part = create_component_from_digikey_pn(digikey_pn)
         if part:
             parts.append(part)
+        else:
+            print(f"Could not get info for part {digikey_pn}")
     if args.mouser:
         raise NotImplementedError
     if args.csv:
