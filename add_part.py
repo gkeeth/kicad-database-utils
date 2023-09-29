@@ -13,8 +13,7 @@ import digikey
 import mouser
 
 CONFIG_FILENAME = os.path.expanduser("~/.dblib_add_part_config.json")
-# TODO: put db filename into the configuration file
-DB_FILENAME = "test.db"
+IPN_DUPLICATE_LIMIT = 10
 
 
 """
@@ -63,6 +62,12 @@ class PartInfoNotFoundError(Exception):
 
 class UnknownFootprintForPackageError(Exception):
     pass
+
+
+class TooManyDuplicateIPNsInTableError(Exception):
+    def __init__(self, IPN, table):
+        self.IPN = IPN
+        self.table = table
 
 
 class Component(ABC):
@@ -274,30 +279,42 @@ def create_component_from_dict(columns_and_values):
         raise NotImplementedError(f"No component type to handle part {IPN}")
 
 
-def add_component_to_db(config_data, comp):
+def add_component_to_db(db_path, comp):
     insert_string, values = comp.to_sql()
 
     try:
-        db_path = os.path.abspath(config_data["db"]["path"])
-    except KeyError:
-        print("Database path not found in config file", file=sys.stderr)
-        return
-
-    try:
-        # con = sqlite3.connect(f"file:{db_path}?mode=rw", uri=True)
-        con = sqlite3.connect(":memory:")
+        con = sqlite3.connect(f"file:{db_path}?mode=rw", uri=True)
+        # con = sqlite3.connect(":memory:")
     except sqlite3.OperationalError:
         print(f"Error connecting to database at path: {db_path}",
               file=sys.stderr)
         return
+
     with con:
         cur = con.cursor()
 
         # check if table exists, and create it if not
         res = cur.execute("SELECT name from sqlite_master")
-        if comp.table not in res:
+        tables = [t[0] for t in res.fetchall()]
+        if comp.table not in tables:
             print(f"Creating table '{comp.table}'")
             cur.execute(comp.get_create_table_string())
+
+        # Before adding the part to the table, check if a part with the same
+        # IPN is already in the table. If so, append a suffix to the IPN and
+        # try again.
+        res = cur.execute(f"SELECT IPN from {comp.table}")
+        ipns = [t[0] for t in res.fetchall()]
+        test_ipn = comp.columns["IPN"]
+        for i in range(1, IPN_DUPLICATE_LIMIT + 1):
+            if test_ipn not in ipns:
+                comp.columns["IPN"] = test_ipn
+                break
+            test_ipn = f"{comp.columns['IPN']}_{i}"
+        if test_ipn != comp.columns["IPN"]:
+            # we didn't find a unique IPN
+            raise TooManyDuplicateIPNsInTableError(comp.columns["IPN"],
+                                                   comp.table)
 
         # add part to table
         cur.execute(insert_string, values)
@@ -309,49 +326,42 @@ def add_component_to_db(config_data, comp):
     con.close()
 
 
-def initialize_database():
+def initialize_database(db_path):
     """
-    create a new database file and create blank tables according to the tables
-    global variable.
+    Create a new, empty database file without any tables.
 
-    NOTE: does not close database connection
+    :arg: db_path: absolute path to database
     """
 
-    if os.path.isfile(DB_FILENAME):
-        sys.exit(f"error: {DB_FILENAME} already exists and cannot be re-initialized.")
-    con = sqlite3.connect(f"file:{DB_FILENAME}", uri=True)
+    if os.path.isfile(db_path):
+        sys.exit(f"Error: {db_path} already exists and cannot be "
+                 "re-initialized.")
+    con = sqlite3.connect(f"file:{db_path}", uri=True)
     # con = sqlite3.connect(":memory:")
+    con.close()
 
-    try:
-        with con:
-            cur = con.cursor()
-            for table in tables:
-                cur.execute(f"CREATE TABLE {table}({tables[table]})")
+    # try:
+    #     with con:
+    #         cur = con.cursor()
+    #         for table in tables:
+    #             cur.execute(f"CREATE TABLE {table}({tables[table]})")
 
-            # print out tables to check that we did it right:
-            res = cur.execute("SELECT name from sqlite_master")
-            print(res.fetchall())
+    #         # print out tables to check that we did it right:
+    #         res = cur.execute("SELECT name from sqlite_master")
+    #         print(res.fetchall())
 
-            if 0:
-                # add some dummy data to resistor and capacitor tables
-                cur.execute("""
-                    INSERT INTO resistor VALUES
-                        ("R001", "R_0603_10K_1%", "0603", "https://www.seielect.com/catalog/sei-rncp.pdf", "Device:R", "Resistor_SMD:R_0603_1608Metric", "Stackpole Electronics Inc", "RNCP0603FTD10K0", "Digikey", "RNCP0603FTD10K0CT-ND", "", "", "10k", "1%", "0.125", "Thin Film"),
-                        ("R002", "R_0603_1K_1%", "0603", "https://www.seielect.com/catalog/sei-rncp.pdf", "Device:R", "Resistor_SMD:R_0603_1608Metric", "Stackpole Electronics Inc", "RNCP0603FTD1K00", "Digikey", "RNCP0603FTD1K00CT-ND", "", "", "1k", "1%", "0.125", "Thin Film")""")
-                cur.execute("""
-                    INSERT INTO capacitor VALUES
-                        ("C001", "C_0603_100N_X7R_100V", "0603", "https://mm.digikey.com/Volume0/opasdata/d220001/medias/docus/609/CL10B104KB8NNNC_Spec.pdf", "Device:C", "Capacitor_SMD:C_0603_1608Metric", "Samsung Electro-Mechanics", "CL10B104KB8NNNC", "Digikey", "1276-1000-1-ND", "", "", "100n", "+/-10%", "50V", "X7R"),
-                        ("C002", "C_0603_10N_X7R_100V", "0603", "https://mm.digikey.com/Volume0/opasdata/d220001/medias/docus/609/CL10B104KB8NNNC_Spec.pdf", "Device:C", "Capacitor_SMD:C_0603_1608Metric", "Samsung Electro-Mechanics", "CL10B103KB8NNNC", "Digikey", "1276-1009-1-ND", "", "", "10n", "+/-10%", "50V", "X7R")""")
-
-                # check
-                res = cur.execute("SELECT display_name from resistor")
-                print(res.fetchall())
-                res = cur.execute("SELECT display_name from capacitor")
-                print(res.fetchall())
+    #         if 0:
+    #             # add some dummy data to resistor and capacitor tables
+    #             # check
+    #             res = cur.execute("SELECT display_name from resistor")
+    #             print(res.fetchall())
+    #             res = cur.execute("SELECT display_name from capacitor")
+    #             print(res.fetchall())
 
 
-    except sqlite3.Error as err:
-        print(err)
+    # except sqlite3.Error as err:
+    #     print(err)
+    #     """
 
 
 def parse_args():
@@ -359,10 +369,12 @@ def parse_args():
     parser = argparse.ArgumentParser(
             description=("Add a part to the parts database, either manually "
                          "or by distributor lookup."))
+    parser.add_argument("--initializedb", action="store_true",
+                        help="Initialize new, empty database")
     """
-    parser.add_argument("--initializedb", action="store_true", help="Initialize database")
     parser.add_argument("--update-existing", "-u", action="store_true",
-                        help="Update existing part in database instead of erroring if specified part already exists")
+                        help=("Update existing part in database instead of "
+                        "erroring if specified part already exists")
     """
 
     source_group = parser.add_mutually_exclusive_group()
@@ -407,15 +419,20 @@ def load_config():
     """return dict containing all config data in config file"""
     with open(CONFIG_FILENAME, "r") as f:
         config_data = json.load(f)
+
     return config_data
 
 
 if __name__ == "__main__":
     args = parse_args()
     config_data = load_config()
+    try:
+        db_path = os.path.abspath(config_data["db"]["path"])
+    except KeyError:
+        sys.exit("Error: database path not found in config file")
 
-    # if args.initializedb:
-    #     initialize_database()
+    if args.initializedb:
+        initialize_database(db_path)
 
     if not (args.digikey or args.mouser or args.csv):
         print("no parts to add")
@@ -441,4 +458,8 @@ if __name__ == "__main__":
 
     for part in parts:
         print(f"Adding part {part.columns['IPN']} to database")
-        add_component_to_db(config_data, part)
+        try:
+            add_component_to_db(db_path, part)
+        except TooManyDuplicateIPNsInTableError as e:
+            print(f"Error: too many parts with IPN '{e.IPN}' already in "
+                  f"table '{e.table}'; skipped")
