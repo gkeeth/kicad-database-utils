@@ -208,7 +208,7 @@ def create_component_from_digikey_pn(digikey_pn):
     """
     part = digikey.product_details(digikey_pn)
     if not part:
-        print(f"Could not get info for part {digikey_pn}")
+        print(f"Could not get info for part {digikey_pn}", file=sys.stderr)
         return None
 
     if part.limited_taxonomy.value == "Resistors":
@@ -235,10 +235,7 @@ def create_component_from_dict(columns_and_values):
 
 
 def add_component_to_db(config_data, comp):
-    insert_string, values = comp.get_insert_string()
-
-    print(f"insert_string: {insert_string}")
-    print(f"values: {values}")
+    insert_string, values = comp.to_sql()
 
     try:
         db_path = os.path.abspath(config_data["db"]["path"])
@@ -246,18 +243,28 @@ def add_component_to_db(config_data, comp):
         print("Database path not found in config file", file=sys.stderr)
         return
 
-    # con = sqlite3.connect(f"file:{db_path}?mode=rw", uri=True)
-    con = sqlite3.connect(":memory:")
+    try:
+        # con = sqlite3.connect(f"file:{db_path}?mode=rw", uri=True)
+        con = sqlite3.connect(":memory:")
+    except sqlite3.OperationalError:
+        print(f"Error connecting to database at path: {db_path}",
+              file=sys.stderr)
+        return
     with con:
         cur = con.cursor()
+
         # check if table exists, and create it if not
         res = cur.execute("SELECT name from sqlite_master")
-        print(res.fetchall())
         if comp.table not in res:
+            print(f"Creating table '{comp.table}'")
             cur.execute(comp.get_create_table_string())
 
         # add part to table
         cur.execute(insert_string, values)
+
+        # check that it's been added
+        res = cur.execute(f"SELECT IPN from {comp.table}")
+        print(f"IPN added to table {comp.table}: {res.fetchall()}")
 
     con.close()
 
@@ -433,4 +440,5 @@ if __name__ == "__main__":
                     parts.append(part)
 
     for part in parts:
-        print(part.columns["IPN"])
+        print(f"Adding part {part.columns['IPN']} to database")
+        add_component_to_db(config_data, part)
