@@ -2,6 +2,7 @@
 
 import sys
 import os
+import io
 import re
 from abc import ABC, abstractmethod
 from collections import OrderedDict
@@ -147,12 +148,20 @@ class Component(ABC):
         insert_string = f"INSERT INTO {self.table} VALUES({column_keys})"
         return (insert_string, self.columns)
 
-    def to_csv(self):
-        """write self.columns to stdout, formatted as csv"""
-        # TODO: return this as a string; don't directly print to stdout
-        csvwriter = csv.writer(sys.stdout)
-        csvwriter.writerow(self.columns.keys())
-        csvwriter.writerow(self.columns.values())
+    def to_csv(self, header=True):
+        """
+        return a string containing the component data, formatted as csv
+
+        :arg: header: if True, also print a header row containing column names
+        """
+
+        with io.StringIO() as csv_string:
+            csvwriter = csv.DictWriter(csv_string,
+                                       fieldnames=self.columns.keys())
+            if header:
+                csvwriter.writeheader()
+            csvwriter.writerow(self.columns)
+            return csv_string.getvalue()
 
 
 class Resistor(Component):
@@ -466,6 +475,10 @@ def parse_args():
                         "erroring if specified part already exists")
     """
 
+    parser.add_argument("--csv_output", action="store_true",
+                        help=("Write part data to stdout, formatted as CSV, "
+                              "in addition to adding component to database."))
+
     source_group = parser.add_mutually_exclusive_group()
     source_group.add_argument(
             "--digikey", "-d", metavar="DIGIKEY_PN",
@@ -507,3 +520,7 @@ if __name__ == "__main__":
         components = create_component_list_from_csv(args.csv)
 
     add_components_from_list_to_db(db_path, components)
+    if args.csv:
+        for comp in components:
+            print(comp.to_csv())
+
