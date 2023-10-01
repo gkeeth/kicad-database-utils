@@ -141,7 +141,7 @@ class Component(ABC):
                        else column
                        for column in self.columns.keys()]
         column_defs = ", ".join(column_defs)
-        return f"CREATE TABLE {self.table}({column_defs})"
+        return f"CREATE TABLE IF NOT EXIST {self.table}({column_defs})"
 
     def to_sql(self):
         """
@@ -410,7 +410,10 @@ def add_component_to_db(db_path, comp):
     with con:
         cur = con.cursor()
 
-        # check if table exists, and create it if not
+        # Check if table exists, and create it if not.
+        # We check explicitly, even though the create table string uses
+        # IF NOT EXIST, because it's nice to know when we're creating a new
+        # table so we can print an info message if needed.
         res = cur.execute("SELECT name from sqlite_master")
         tables = [t[0] for t in res.fetchall()]
         if comp.table not in tables:
