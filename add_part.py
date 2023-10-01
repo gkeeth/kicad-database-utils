@@ -86,6 +86,8 @@ def print_error(message):
 
 
 class Component(ABC):
+    primary_key = "IPN"
+
     def __init__(self, IPN, datasheet, description, keywords, value,
                  kicad_symbol, kicad_footprint, manufacturer, MPN,
                  distributor1, DPN1, distributor2, DPN2,
@@ -93,7 +95,7 @@ class Component(ABC):
         # columns that all types of components need. Many of these map onto
         # KiCad builtin fields or properties.
         self.columns = OrderedDict()
-        self.columns["IPN"] = IPN  # unique ID for component
+        self.columns[self.primary_key] = IPN  # unique ID for component
         self.columns["datasheet"] = datasheet
         self.columns["description"] = description
         self.columns["keywords"] = keywords
@@ -135,8 +137,11 @@ class Component(ABC):
 
     def get_create_table_string(self):
         """return a sqlite string to create a table for the component type"""
-        column_names = ", ".join(self.columns.keys())
-        return f"CREATE TABLE {self.table}({column_names})"
+        column_defs = [column + " PRIMARY KEY" if column == self.primary_key
+                       else column
+                       for column in self.columns.keys()]
+        column_defs = ", ".join(column_defs)
+        return f"CREATE TABLE {self.table}({column_defs})"
 
     def to_sql(self):
         """
