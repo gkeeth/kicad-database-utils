@@ -460,6 +460,12 @@ def add_components_from_list_to_db(db_path, components):
                         f"'{e.table}'; skipped")
 
 
+def print_components_from_list_as_csv(components):
+    """print all components in list to stdout, formatted as csv"""
+    for comp in components:
+        print(comp.to_csv())
+
+
 def load_config():
     """return dict containing all config data in config file"""
     with open(CONFIG_FILENAME, "r") as f:
@@ -483,9 +489,15 @@ def parse_args():
                         "erroring if specified part already exists")
     """
 
+    parser.add_argument("--no-db", action="store_true",
+                        help=("Don't add part to database. This may be useful "
+                              "in combination with another output format, "
+                              "such as CSV."))
+
     parser.add_argument("--csv_output", action="store_true",
-                        help=("Write part data to stdout, formatted as CSV, "
-                              "in addition to adding component to database."))
+                        help=("Write part data to stdout, formatted as CSV. "
+                              "Unless otherwise specified, parts are also "
+                              "added to the database."))
 
     source_group = parser.add_mutually_exclusive_group()
     source_group.add_argument(
@@ -531,4 +543,10 @@ if __name__ == "__main__":
     if args.csv:
         for comp in components:
             print(comp.to_csv())
+    if not args.no_db:
+        add_components_from_list_to_db(db_path, components,
+                                       update=args.update_existing)
+
+    if args.csv_output:
+        print_components_from_list_as_csv(components)
 
