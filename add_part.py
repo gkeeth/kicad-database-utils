@@ -193,6 +193,7 @@ class Resistor(Component):
         if match:
             return match.group(0) + "%"
         else:
+            # e.g. jumpers have no meaningful tolerance
             return "-"
 
     @staticmethod
@@ -202,6 +203,7 @@ class Resistor(Component):
         if match:
             return match.group(0) + "W"
         else:
+            # e.g. jumpers have no meaningful power rating
             return "-"
 
     @staticmethod
