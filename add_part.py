@@ -308,7 +308,7 @@ def create_component_from_dict(columns_and_values):
     if IPN.startswith("R_"):
         return Resistor(**columns_and_values)
     else:
-        raise NotImplementedError(f"No component type to handle part {IPN}")
+        raise NotImplementedError(f"No component type to handle part '{IPN}'")
 
 
 def setup_digikey(config_data):
