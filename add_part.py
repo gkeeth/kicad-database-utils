@@ -64,10 +64,6 @@ class PartInfoNotFoundError(Exception):
     pass
 
 
-class UnknownFootprintForPackageError(Exception):
-    pass
-
-
 class TooManyDuplicateIPNsInTableError(Exception):
     def __init__(self, IPN, table):
         self.IPN = IPN
@@ -117,7 +113,8 @@ class Component(ABC):
         """
         construct a component from a digikey part object.
 
-        Needs to be implemented for each child class. TODO: @abstractmethod?
+        :return: the constructed component. If the component cannot be
+        constructed for any reason, return None.
         """
         raise NotImplementedError
 
@@ -243,7 +240,8 @@ class Resistor(Component):
         try:
             data["kicad_footprint"] = kicad_footprint_map[data["package"]]
         except KeyError as e:
-            raise UnknownFootprintForPackageError(e)
+            print_error(f"unknown footprint for package '{e}'")
+            return None
 
         if data["resistance"] == "0":
             data["IPN"] = (f"R_"
