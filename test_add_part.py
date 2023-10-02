@@ -49,9 +49,5 @@ class TestComponentFromDict(unittest.TestCase):
             self.assertEqual(self.base_dict[k], resistor.columns[k])
 
 
-class TestDatabaseMethods(unittest.TestCase):
-    pass
-
-
 if __name__ == "__main__":
     unittest.main()
