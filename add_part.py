@@ -373,14 +373,14 @@ def create_component_list_from_csv(csv_path):
     :arg: csv_path: path to csv file to read
     :return: a list of components corresponding to lines in the CSV file
     """
-    parts = []
+    components = []
     with open(args.csv, "r") as infile:
         reader = csv.DictReader(infile)
         for d in reader:
-            part = create_component_from_dict(d)
-            if part:
-                parts.append(part)
-    return parts
+            comp = create_component_from_dict(d)
+            if comp:
+                components.append(comp)
+    return components
 
 
 def initialize_database(db_path):
