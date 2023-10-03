@@ -138,16 +138,22 @@ class Component(ABC):
                        else column
                        for column in self.columns.keys()]
         column_defs = ", ".join(column_defs)
-        return f"CREATE TABLE IF NOT EXIST {self.table}({column_defs})"
+        return f"CREATE TABLE IF NOT EXISTS {self.table}({column_defs})"
 
-    def to_sql(self):
+    def to_sql(self, update=False):
         """
         return a tuple of a SQL insert statement and a dict of values to
         populate the insert statement with
+
+        :arg: update: when True, the generated SQL command will cause duplicate
+        rows already in the database to be updated (REPLACE'd) on INSERT. When
+        False, the generated SQL command will not REPLACE any existing row with
+        the same key; instead sqlite will generate an error.
         """
         column_names = self.columns.keys()
         column_keys = ":" + ", :".join(column_names)
-        insert_string = f"INSERT INTO {self.table} VALUES({column_keys})"
+        command = "INSERT OR REPLACE" if update else "INSERT"
+        insert_string = f"{command} INTO {self.table} VALUES({column_keys})"
         return (insert_string, self.columns)
 
     def to_csv(self, header=True):
@@ -397,8 +403,25 @@ def initialize_database(db_path):
     con.close()
 
 
-def add_component_to_db(db_path, comp):
-    insert_string, values = comp.to_sql()
+def add_component_to_db(db_path, comp, update=False):
+    """
+    add the given component object to the database.
+
+    The database is opened and closed within this function. The appropriate
+    table is selected automatically, and created if it does not already exist.
+
+    :arg: db_path: path to database
+    :arg: comp: Component object to add to database
+    :arg: update: when True, an existing component in the database with the
+    same IPN as the new component will be updated (REPLACE'd) by the new
+    component. When False, the IPN of the new component will have a numeric
+    suffix ('_1') added to avoid overwriting the existing component. If the
+    modified IPN is still not unique, the suffix will be incremented (up to a
+    maximum defined by IPN_DUPLICATE_LIMIT) in an attempt to create a unique
+    IPN. After IPN_DUPLICATE_LIMIT unsuccessful attempts, the component will
+    be skipped.
+    """
+    insert_string, values = comp.to_sql(update)
 
     try:
         con = sqlite3.connect(f"file:{db_path}?mode=rw", uri=True)
@@ -412,7 +435,7 @@ def add_component_to_db(db_path, comp):
 
         # Check if table exists, and create it if not.
         # We check explicitly, even though the create table string uses
-        # IF NOT EXIST, because it's nice to know when we're creating a new
+        # IF NOT EXISTS, because it's nice to know when we're creating a new
         # table so we can print an info message if needed.
         res = cur.execute("SELECT name from sqlite_master")
         tables = [t[0] for t in res.fetchall()]

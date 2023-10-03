@@ -51,19 +51,25 @@ class TestComponentOutputs(unittest.TestCase):
         self.assertEqual(values, self.resistor.to_csv(header=False))
 
     def test_to_sql(self):
-        sql_expected = ("INSERT INTO resistor VALUES("
-                        ":IPN, :datasheet, :description, :keywords, :value, "
-                        ":exclude_from_bom, :exclude_from_board, "
-                        ":kicad_symbol, :kicad_footprint, :manufacturer, "
-                        ":MPN, :distributor1, :DPN1, :distributor2, :DPN2, "
-                        ":resistance, :tolerance, :power, :composition, "
-                        ":package)")
+        columns = (":IPN, :datasheet, :description, :keywords, :value, "
+                   ":exclude_from_bom, :exclude_from_board, :kicad_symbol, "
+                   ":kicad_footprint, :manufacturer, :MPN, :distributor1, "
+                   ":DPN1, :distributor2, :DPN2, :resistance, :tolerance, "
+                   ":power, :composition, :package)")
+        sql_update_expected = ("INSERT OR REPLACE INTO resistor VALUES("
+                               + columns)
+        sql_noupdate_expected = "INSERT INTO resistor VALUES(" + columns
+
         sql, vals = self.resistor.to_sql()
-        self.assertEqual(sql_expected, sql)
+        self.assertEqual(sql_noupdate_expected, sql)
+        self.assertEqual(self.base_dict, vals)
+
+        sql, vals = self.resistor.to_sql(update=True)
+        self.assertEqual(sql_update_expected, sql)
         self.assertEqual(self.base_dict, vals)
 
     def test_get_create_table_string(self):
-        sql_expected = ("CREATE TABLE IF NOT EXIST resistor("
+        sql_expected = ("CREATE TABLE IF NOT EXISTS resistor("
                         "IPN PRIMARY KEY, datasheet, description, keywords, "
                         "value, exclude_from_bom, exclude_from_board, "
                         "kicad_symbol, kicad_footprint, manufacturer, MPN, "
