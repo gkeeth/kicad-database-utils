@@ -71,13 +71,13 @@ class TooManyDuplicateIPNsInTableError(Exception):
 
 
 def print_message(message):
-    """print a message to stdout if global variable VERBOSE is True"""
+    """Print a message to stdout if global variable VERBOSE is True."""
     if VERBOSE:
         print(message)
 
 
 def print_error(message):
-    """print a message to stderr, with "ERROR: " prepended"""
+    """Print a message to stderr, with "ERROR: " prepended."""
     print(f"Error: {message}")
 
 
@@ -110,17 +110,17 @@ class Component(ABC):
     @classmethod
     @abstractmethod
     def from_digikey(cls, digikey_part):
-        """
-        construct a component from a digikey part object.
+        """Construct a component from a digikey part object.
 
-        :return: the constructed component. If the component cannot be
-        constructed for any reason, return None.
+        Returns:
+            The constructed component. If the component cannot be constructed
+            for any reason, return None.
         """
         raise NotImplementedError
 
     @classmethod
     def get_digikey_common_data(cls, digikey_part):
-        """return a dict of the common data from a digikey part object"""
+        """Return a dict of the common data from a digikey part object."""
         common_data = {
                 "datasheet":            digikey_part.primary_datasheet,
                 "manufacturer":         digikey_part.manufacturer.value,
@@ -133,7 +133,7 @@ class Component(ABC):
         return common_data
 
     def get_create_table_string(self):
-        """return a sqlite string to create a table for the component type"""
+        """Return a sqlite string to create a table for the component type."""
         column_defs = [column + " PRIMARY KEY" if column == self.primary_key
                        else column
                        for column in self.columns.keys()]
@@ -141,14 +141,20 @@ class Component(ABC):
         return f"CREATE TABLE IF NOT EXISTS {self.table}({column_defs})"
 
     def to_sql(self, update=False):
-        """
-        return a tuple of a SQL insert statement and a dict of values to
-        populate the insert statement with
+        """Create a SQL command string that will insert the component into the
+        database.
 
-        :arg: update: when True, the generated SQL command will cause duplicate
-        rows already in the database to be updated (REPLACE'd) on INSERT. When
-        False, the generated SQL command will not REPLACE any existing row with
-        the same key; instead sqlite will generate an error.
+        Args:
+            update: when True, the generated SQL command will cause duplicate
+                rows already in the database to be updated (REPLACE'd) on
+                INSERT.  When False, the generated SQL command will not REPLACE
+                any existing row with the same key; instead sqlite will
+                generate an error.
+
+        Returns:
+            A tuple (insert string, column data) of the parameterized SQL
+            insert string and the dict of values to populate the insert string
+            with.
         """
         column_names = self.columns.keys()
         column_keys = ":" + ", :".join(column_names)
@@ -157,10 +163,15 @@ class Component(ABC):
         return (insert_string, self.columns)
 
     def to_csv(self, header=True):
-        """
-        return a string containing the component data, formatted as csv
+        """Create a string containing the component data, formatted as CSV.
 
-        :arg: header: if True, also print a header row containing column names
+        Args:
+            header: if True, also print a header row containing column names
+
+        Returns:
+            A string containing a CSV representation of the component. If
+            `header` is true, the string is a multi-line string containing
+            a header row followed by a data row.
         """
 
         with io.StringIO() as csv_string:
@@ -186,15 +197,14 @@ class Resistor(Component):
 
     @staticmethod
     def process_resistance(param):
-        """
-        return a processed resistance string in the form <resistance in ohms>
+        """Return a processed resistance string, e.g. 10 or 1.0K.
         """
         resistance = re.search(r"\d+\.?\d*[kKmMG]?", param).group(0)
         return re.sub("k", "K", resistance)
 
     @staticmethod
     def process_tolerance(param):
-        """return a processed tolerance string in the form <tolerance>%"""
+        """Return a processed tolerance string, e.g. 5%, 1.0%, or -."""
         match = re.search(r"\d+\.?\d*", param)
         if match:
             return match.group(0) + "%"
@@ -204,7 +214,7 @@ class Resistor(Component):
 
     @staticmethod
     def process_power(param):
-        """return a processed power string in the form <power>W"""
+        """Return a processed power string, e.g. 5W or 0.125W."""
         match = re.search(r"\d+\.?\d*", param)
         if match:
             return match.group(0) + "W"
@@ -214,7 +224,7 @@ class Resistor(Component):
 
     @staticmethod
     def process_composition(param):
-        """return a processed composition string, e.g. ThinFilm"""
+        """Return a processed composition string, e.g. ThinFilm."""
         return re.sub(" ", "", param)
 
     @classmethod
@@ -280,13 +290,18 @@ class Resistor(Component):
 
 
 def create_component_from_digikey_pn(digikey_pn):
-    """
-    factory to construct the appropriate component type object for a given
+    """Factory to construct the appropriate component type object for a given
     digikey PN.
 
     Queries the digikey API to get part data, determines the component type,
     and then dispatches to the appropriate Component.from_digikey(part)
     constructor.
+
+    Args:
+        digikey_pn: string containing the digikey part number.
+
+    Returns:
+        A `Component` object constructed from the digikey part details.
     """
     part = digikey.product_details(digikey_pn)
     if not part:
@@ -301,14 +316,18 @@ def create_component_from_digikey_pn(digikey_pn):
 
 
 def create_component_from_dict(columns_and_values):
-    """
-    factory to construct the appropriate component type object from a dict of
-    column names to column values.
+    """Factory to construct the appropriate component type object from a dict
+    of column names to column values.
 
-    All appropriate fields for each component type must be present.
+    All appropriate fields for each component type must be present. The type of
+    component is determined from the value corresponding to the `IPN` key.
 
-    The type of component is determined from the value corresponding to the
-    `IPN` key.
+    Args:
+        columns_and_values: dict containing all necessary key/value pairs for
+            constructing the desired component.
+
+    Returns:
+        A `Component` object constructed from the given dict.
     """
     IPN = columns_and_values["IPN"]
     if IPN.startswith("R_"):
@@ -318,10 +337,10 @@ def create_component_from_dict(columns_and_values):
 
 
 def setup_digikey(config_data):
-    """
-    set up environment variables and cache for digikey API calls
+    """Set up environment variables and cache for digikey API calls.
 
-    :arg: config_data: dict of configuration data from config file
+    Args:
+        config_data: dict of configuration data from config file.
     """
     DIGIKEY_DEFAULT_CACHE_DIR = os.path.expanduser(
             "~/.dblib_digikey_cache_dir")
@@ -342,15 +361,16 @@ def setup_digikey(config_data):
 
 
 def create_component_list_from_digikey_pns(digikey_pn_list):
-    """
-    create a list of components from a list of digikey part numbers.
+    """Create a list of components from a list of digikey part numbers.
 
     Any part numbers that are invalid or otherwise cannot be used to create
     a component will be skipped.
 
-    :arg: digikey_pn_list: list of digikey part numbers
+    Args:
+        digikey_pn_list: list of digikey part number strings.
 
-    :return: list of components corresponding to digikey part numbers
+    Returns:
+        A list of Components corresponding to digikey part numbers.
     """
 
     try:
@@ -370,14 +390,16 @@ def create_component_list_from_digikey_pns(digikey_pn_list):
 
 
 def create_component_list_from_csv(csv_path):
-    """
-    create a list of components from a CSV file. Each line must contain all
+    """Create a list of components from a CSV file. Each line must contain all
     necessary fields for the component type in question.
 
     Any parts that are not successfully created are ignored.
 
-    :arg: csv_path: path to csv file to read
-    :return: a list of components corresponding to lines in the CSV file
+    Args:
+        csv_path: path to csv file to read.
+
+    Returns:
+        A list of Components corresponding to lines in the CSV file.
     """
     components = []
     with open(args.csv, "r") as infile:
@@ -390,12 +412,11 @@ def create_component_list_from_csv(csv_path):
 
 
 def initialize_database(db_path):
-    """
-    Create a new, empty database file without any tables.
+    """Create a new, empty database file without any tables.
 
-    :arg: db_path: absolute path to database
+    Args:
+        db_path: absolute path to database.
     """
-
     if os.path.isfile(db_path):
         sys.exit(f"Error: {db_path} already exists and cannot be "
                  "re-initialized.")
@@ -404,22 +425,22 @@ def initialize_database(db_path):
 
 
 def add_component_to_db(db_path, comp, update=False):
-    """
-    add the given component object to the database.
+    """Add the given component object to the database.
 
     The database is opened and closed within this function. The appropriate
     table is selected automatically, and created if it does not already exist.
 
-    :arg: db_path: path to database
-    :arg: comp: Component object to add to database
-    :arg: update: when True, an existing component in the database with the
-    same IPN as the new component will be updated (REPLACE'd) by the new
-    component. When False, the IPN of the new component will have a numeric
-    suffix ('_1') added to avoid overwriting the existing component. If the
-    modified IPN is still not unique, the suffix will be incremented (up to a
-    maximum defined by IPN_DUPLICATE_LIMIT) in an attempt to create a unique
-    IPN. After IPN_DUPLICATE_LIMIT unsuccessful attempts, the component will
-    be skipped.
+    Args:
+        db_path: path to database.
+        comp: Component object to add to database.
+        update: when True, an existing component in the database with the
+            same IPN as the new component will be updated (REPLACE'd) by the
+            new component. When False, the IPN of the new component will have a
+            numeric suffix ('_1') added to avoid overwriting the existing
+            component. If the modified IPN is still not unique, the suffix will
+            be incremented (up to a maximum defined by IPN_DUPLICATE_LIMIT) in
+            an attempt to create a unique IPN. After IPN_DUPLICATE_LIMIT
+            unsuccessful attempts, the component will be skipped.
     """
 
     # TODO: move the connect/close outside of this function, and pass a
@@ -485,13 +506,14 @@ def add_component_to_db(db_path, comp, update=False):
 
 
 def add_components_from_list_to_db(db_path, components, update=False):
-    """
-    add all components in a list to the database
+    """Add all components in a list to the database.
 
-    :arg: db_path: absolute path to database
-    :arg: components: list of components to add to database
-    :arg: update: if True, when duplicate components are encountered, update
-    existing components instead of attempting to create a unique component.
+    Args:
+        db_path: absolute path to database.
+        components: list of components to add to database.
+        update: if True, when duplicate components are encountered, update
+            existing components instead of attempting to create a unique
+            component.
     """
     for comp in components:
         try:
@@ -502,13 +524,13 @@ def add_components_from_list_to_db(db_path, components, update=False):
 
 
 def print_components_from_list_as_csv(components):
-    """print all components in list to stdout, formatted as csv"""
+    """Print all components in list to stdout, formatted as csv."""
     for comp in components:
         print(comp.to_csv())
 
 
 def load_config():
-    """return dict containing all config data in config file"""
+    """Return dict containing all config data in config file."""
     with open(CONFIG_FILENAME, "r") as f:
         config_data = json.load(f)
 
@@ -516,7 +538,9 @@ def load_config():
 
 
 def parse_args():
-    """ set up CLI args and return the parsed arguments """
+    """Set up CLI args and return the parsed arguments."""
+    # TODO: add args for --dry-run (don't actually update database, but execute
+    # everything up to db commit). Consider using a rolled-back transaction.
     parser = argparse.ArgumentParser(
             description=("Add a part to the parts database, either manually "
                          "or by distributor lookup."))
