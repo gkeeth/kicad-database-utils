@@ -582,10 +582,6 @@ if __name__ == "__main__":
     if args.csv:
         components = create_component_list_from_csv(args.csv)
 
-    add_components_from_list_to_db(db_path, components)
-    if args.csv:
-        for comp in components:
-            print(comp.to_csv())
     if not args.no_db:
         add_components_from_list_to_db(db_path, components,
                                        update=args.update_existing)
