@@ -1,11 +1,13 @@
 #! /usr/bin/env python
 
 import unittest
+import os
+import sqlite3
+
 import add_part
 from add_part import Resistor
 
 # TODO: add tests for
-# - add_component_to_db
 # - figure out how to test digikey PN -> component
 #   - Component.from_digikey() for each component type
 #   - digikey API calls (create_component_from_digikey_pn)
@@ -158,6 +160,105 @@ class TestComponentFromDict(unittest.TestCase):
         resistor = add_part.create_component_from_dict(self.base_dict)
         for k in self.base_dict.keys():
             self.assertEqual(self.base_dict[k], resistor.columns[k])
+
+
+class TestDatabaseFunctions(unittest.TestCase):
+    db_path = "unittests.db"
+
+    def setUp(self):
+        self.backup_IPN_DUPLICATE_LIMIT = add_part.IPN_DUPLICATE_LIMIT
+        self.base_dict = {
+                "IPN": "R_test",
+                "datasheet": "ds",
+                "description": "desc",
+                "keywords": "kw",
+                "value": "val",
+                "exclude_from_bom": 0,
+                "exclude_from_board": 0,
+                "kicad_symbol": "sym",
+                "kicad_footprint": "fp",
+                "manufacturer": "mfg",
+                "MPN": "mpn",
+                "distributor1": "dist1",
+                "DPN1": "dpn1",
+                "distributor2": "dist2",
+                "DPN2": "dpn2",
+                "resistance": "10k",
+                "tolerance": "1%",
+                "power": "0.125W",
+                "composition": "ThinFilm",
+                "package": "0603",
+                }
+        self.resistor = add_part.create_component_from_dict(self.base_dict)
+
+        add_part.initialize_database(self.db_path)
+
+    def tearDown(self):
+        add_part.IPN_DUPLICATE_LIMIT = self.backup_IPN_DUPLICATE_LIMIT
+        os.remove(self.db_path)
+
+    def test_table_automatically_created(self):
+        add_part.add_component_to_db(self.db_path, self.resistor)
+
+        con = sqlite3.connect(f"file:{self.db_path}?mode=ro", uri=True)
+        cur = con.cursor()
+        res = cur.execute("SELECT name from sqlite_master").fetchall()
+
+        self.assertIn(("resistor",), res)
+
+    def test_unique_parts_in_table(self):
+        add_part.add_component_to_db(self.db_path, self.resistor)
+        self.resistor.columns["IPN"] = "R_test2"
+        add_part.add_component_to_db(self.db_path, self.resistor)
+
+        con = sqlite3.connect(f"file:{self.db_path}?mode=ro", uri=True)
+        cur = con.cursor()
+        res = cur.execute("SELECT IPN from resistor").fetchall()
+
+        self.assertIn(("R_test",), res)
+        self.assertIn(("R_test2",), res)
+
+    def test_update_existing_component(self):
+        add_part.add_component_to_db(self.db_path, self.resistor)
+        self.resistor.columns["value"] = "val2"
+        add_part.add_component_to_db(self.db_path, self.resistor, update=True)
+
+        con = sqlite3.connect(f"file:{self.db_path}?mode=ro", uri=True)
+        cur = con.cursor()
+        res = cur.execute("SELECT value from resistor").fetchall()
+
+        self.assertNotIn(("val",), res)
+        self.assertIn(("val2",), res)
+
+    def test_auto_increment_IPN(self):
+        add_part.IPN_DUPLICATE_LIMIT = 3
+        for n in range(add_part.IPN_DUPLICATE_LIMIT):
+            self.base_dict["value"] = f"val{n}"
+            r = add_part.create_component_from_dict(self.base_dict)
+            add_part.add_component_to_db(self.db_path, r)
+
+        con = sqlite3.connect(f"file:{self.db_path}?mode=ro", uri=True)
+        cur = con.cursor()
+        res = cur.execute("SELECT IPN, value from resistor").fetchall()
+
+        self.assertIn(("R_test", "val0"), res)
+        self.assertIn(("R_test_1", "val1"), res)
+        self.assertIn(("R_test_2", "val2"), res)
+
+    def test_too_many_duplicate_IPNs(self):
+        add_part.IPN_DUPLICATE_LIMIT = 3
+        for n in range(add_part.IPN_DUPLICATE_LIMIT):
+            self.base_dict["value"] = f"val{n}"
+            r = add_part.create_component_from_dict(self.base_dict)
+            add_part.add_component_to_db(self.db_path, r)
+
+        with self.assertRaises(
+                add_part.TooManyDuplicateIPNsInTableError) as cm:
+            r = add_part.create_component_from_dict(self.base_dict)
+            add_part.add_component_to_db(self.db_path, r)
+        e = cm.exception
+        self.assertEqual("R_test", e.IPN)
+        self.assertEqual("resistor", e.table)
 
 
 if __name__ == "__main__":

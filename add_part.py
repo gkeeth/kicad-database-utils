@@ -421,14 +421,19 @@ def add_component_to_db(db_path, comp, update=False):
     IPN. After IPN_DUPLICATE_LIMIT unsuccessful attempts, the component will
     be skipped.
     """
-    insert_string, values = comp.to_sql(update)
 
+    # TODO: move the connect/close outside of this function, and pass a
+    # connection as an argument. This will let us handle the case where we
+    # throw an exception in the unique-IPN loop without leaving a hanging
+    # database connection.
     try:
         con = sqlite3.connect(f"file:{db_path}?mode=rw", uri=True)
         # con = sqlite3.connect(":memory:")
     except sqlite3.OperationalError:
         print_error(f"could not connect to database at path: {db_path}")
         return
+
+    insert_string, values = comp.to_sql(update)
 
     with con:
         cur = con.cursor()
@@ -444,40 +449,53 @@ def add_component_to_db(db_path, comp, update=False):
             cur.execute(comp.get_create_table_string())
 
         # Before adding the part to the table, check if a part with the same
-        # IPN is already in the table. If so, append a suffix to the IPN and
-        # try again.
+        # IPN is already in the table.
         res = cur.execute(f"SELECT IPN from {comp.table}")
         ipns = [t[0] for t in res.fetchall()]
-        test_ipn = comp.columns["IPN"]
-        for i in range(1, IPN_DUPLICATE_LIMIT + 1):
-            if test_ipn not in ipns:
-                comp.columns["IPN"] = test_ipn
-                break
-            test_ipn = f"{comp.columns['IPN']}_{i}"
-        if test_ipn != comp.columns["IPN"]:
-            # we didn't find a unique IPN
-            raise TooManyDuplicateIPNsInTableError(comp.columns["IPN"],
-                                                   comp.table)
+        test_ipn = values["IPN"]
 
-        # add part to table
+        if test_ipn in ipns:
+            if update:
+                # we're going to overwrite the existing part. This is handled
+                # for us because the sql command is INSERT OR REPLACE
+                print_message(f"Updating existing component '{test_ipn}' in "
+                              f"table '{comp.table}'")
+            else:
+                # we need to try to create a unique IPN
+                for i in range(1, IPN_DUPLICATE_LIMIT):
+                    test_ipn = f"{values['IPN']}_{i}"
+                    if test_ipn not in ipns:
+                        values["IPN"] = test_ipn
+                        break
+                if test_ipn != values["IPN"]:
+                    # we didn't find a unique IPN
+                    raise TooManyDuplicateIPNsInTableError(values["IPN"],
+                                                           comp.table)
+
+        # add part to table, whether this is:
+        # 1) The base IPN (no duplicates)
+        # 2) The base IPN (duplicate, but we're replacing an existing part)
+        # 3) A modified IPN with a suffix to make it unique
         cur.execute(insert_string, values)
 
-        print_message(f"Added component '{comp.columns['IPN']}' to table "
+        print_message(f"Added component '{values['IPN']}' to table "
                       f"'{comp.table}'")
 
     con.close()
 
 
-def add_components_from_list_to_db(db_path, components):
+def add_components_from_list_to_db(db_path, components, update=False):
     """
     add all components in a list to the database
 
     :arg: db_path: absolute path to database
     :arg: components: list of components to add to database
+    :arg: update: if True, when duplicate components are encountered, update
+    existing components instead of attempting to create a unique component.
     """
     for comp in components:
         try:
-            add_component_to_db(db_path, comp)
+            add_component_to_db(db_path, comp, update)
         except TooManyDuplicateIPNsInTableError as e:
             print_error(f"too many parts with IPN '{e.IPN}' already in table "
                         f"'{e.table}'; skipped")
@@ -502,15 +520,17 @@ def parse_args():
     parser = argparse.ArgumentParser(
             description=("Add a part to the parts database, either manually "
                          "or by distributor lookup."))
+
     parser.add_argument("--verbose", "-v", action="store_true",
                         help="Print informational messages")
+
     parser.add_argument("--initializedb", action="store_true",
                         help="Initialize new, empty database")
-    """
+
     parser.add_argument("--update-existing", "-u", action="store_true",
-                        help=("Update existing part in database instead of "
-                        "erroring if specified part already exists")
-    """
+                        help=("If specified part already exists in database, "
+                              "update the existing component instead of "
+                              "adding a new, unique part"))
 
     parser.add_argument("--no-db", action="store_true",
                         help=("Don't add part to database. This may be useful "
