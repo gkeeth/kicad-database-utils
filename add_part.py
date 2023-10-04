@@ -311,7 +311,8 @@ def create_component_from_digikey_pn(digikey_pn):
     if part.limited_taxonomy.value == "Resistors":
         return Resistor.from_digikey(part)
     else:
-        raise NotImplementedError("No component type to handle part "
+        raise NotImplementedError("No component type to handle part type "
+                                  f"'{part.limited_taxonomy.value}' for part "
                                   f"{digikey_pn}")
 
 
