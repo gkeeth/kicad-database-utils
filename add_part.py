@@ -262,28 +262,32 @@ class Resistor(Component):
             return None
 
         if data["resistance"] == "0":
-            data["IPN"] = (f"R_"
-                           f"{data['resistance']}_"
-                           f"Jumper_"
-                           f"{data['package']}_"
-                           f"{data['composition']}")
-            data["description"] = (f"0Ω Jumper "
-                                   f"{data['package']} "
-                                   f"{raw_composition}")
+            data["IPN"] = (
+                    f"R_"
+                    f"{data['resistance']}_"
+                    f"Jumper_"
+                    f"{data['package']}_"
+                    f"{data['composition']}")
+            data["description"] = (
+                    f"0Ω Jumper "
+                    f"{data['package']} "
+                    f"{raw_composition}")
             data["keywords"] = "jumper"
         else:
-            data["IPN"] = (f"R_"
-                           f"{data['resistance']}_"
-                           f"{data['package']}_"
-                           f"{data['tolerance']}_"
-                           f"{data['power']}_"
-                           f"{data['composition']}")
-            data["description"] = (f"{data['resistance']}Ω "
-                                   f"±{data['tolerance']} "
-                                   f"{data['power']} "
-                                   f"Resistor "
-                                   f"{data['package']} "
-                                   f"{raw_composition}")
+            data["IPN"] = (
+                    f"R_"
+                    f"{data['resistance']}_"
+                    f"{data['package']}_"
+                    f"{data['tolerance']}_"
+                    f"{data['power']}_"
+                    f"{data['composition']}")
+            data["description"] = (
+                    f"{data['resistance']}Ω "
+                    f"±{data['tolerance']} "
+                    f"{data['power']} "
+                    f"Resistor "
+                    f"{data['package']} "
+                    f"{raw_composition}")
             data["keywords"] = f"r res resistor {data['resistance']}"
 
         return cls(**data)
