@@ -1,17 +1,50 @@
 #! /usr/bin/env python
 
 import unittest
+from unittest.mock import patch, MagicMock
 import os
 import sqlite3
+import csv
 
 import add_part
 from add_part import Resistor
 
-# TODO: add tests for
-# - figure out how to test digikey PN -> component
-#   - Component.from_digikey() for each component type
-#   - digikey API calls (create_component_from_digikey_pn)
-#   - Component.get_digikey_common_data probably doesn't need to be tested
+
+class TestCreateFromDigikey(unittest.TestCase):
+    @staticmethod
+    def expected_from_csv(csvpath):
+        with open(csvpath, "r") as infile:
+            reader = csv.DictReader(infile)
+            return add_part.create_component_from_dict(next(reader))
+
+    def disabled_test_resistor_from_digikey_pn_nomock(self):
+        add_part.setup_digikey(add_part.load_config())
+        actual = add_part.create_component_from_digikey_pn("YAG2320CT-ND")
+        expected = self.expected_from_csv("sample_parts_csv/YAG2320CT-ND.csv")
+        self.assertEqual(actual.to_csv(), expected.to_csv())
+
+    @patch("digikey.product_details")
+    def test_resistor_from_digikey_pn(self, mock_product_details):
+        mock_part = mock_product_details.return_value
+        mock_part.limited_taxonomy.value = "Resistors"
+        mock_part.primary_datasheet = (
+                "https://www.yageo.com/upload/media/product/productsearch/"
+                "datasheet/rchip/PYu-RT_1-to-0.01_RoHS_L_13.pdf")
+        mock_part.manufacturer.value = "YAGEO"
+        mock_part.manufacturer_part_number = "RT0603FRE07100RL"
+        mock_part.digi_key_part_number = "YAG2320CT-ND"
+
+        mock_part.parameters = [
+                MagicMock(parameter="Resistance", value="100Ω"),
+                MagicMock(parameter="Tolerance", value="±1%"),
+                MagicMock(parameter="Power (Watts)", value="0.1W"),
+                MagicMock(parameter="Composition", value="Thin Film"),
+                MagicMock(parameter="Supplier Device Package", value="0603"),
+                ]
+
+        actual = add_part.create_component_from_digikey_pn("YAG2320CT-ND")
+        expected = self.expected_from_csv("sample_parts_csv/YAG2320CT-ND.csv")
+        self.assertEqual(actual.to_csv(), expected.to_csv())
 
 
 class TestComponentOutputs(unittest.TestCase):
