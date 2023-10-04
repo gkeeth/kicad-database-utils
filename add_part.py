@@ -96,8 +96,8 @@ class Component(ABC):
         self.columns["description"] = description
         self.columns["keywords"] = keywords
         self.columns["value"] = value
-        self.columns["exclude_from_bom"] = exclude_from_bom
-        self.columns["exclude_from_board"] = exclude_from_board
+        self.columns["exclude_from_bom"] = int(exclude_from_bom)
+        self.columns["exclude_from_board"] = int(exclude_from_board)
         self.columns["kicad_symbol"] = kicad_symbol
         self.columns["kicad_footprint"] = kicad_footprint
         self.columns["manufacturer"] = manufacturer
