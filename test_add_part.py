@@ -231,7 +231,8 @@ class TestDatabaseFunctions(unittest.TestCase):
         os.remove(self.db_path)
 
     def test_table_automatically_created(self):
-        add_part.add_component_to_db(self.db_path, self.resistor)
+        add_part.open_connection_and_add_component_to_db(
+                self.db_path, self.resistor)
 
         con = sqlite3.connect(f"file:{self.db_path}?mode=ro", uri=True)
         cur = con.cursor()
@@ -240,9 +241,11 @@ class TestDatabaseFunctions(unittest.TestCase):
         self.assertIn(("resistor",), res)
 
     def test_unique_parts_in_table(self):
-        add_part.add_component_to_db(self.db_path, self.resistor)
+        add_part.open_connection_and_add_component_to_db(
+                self.db_path, self.resistor)
         self.resistor.columns["IPN"] = "R_test2"
-        add_part.add_component_to_db(self.db_path, self.resistor)
+        add_part.open_connection_and_add_component_to_db(
+                self.db_path, self.resistor)
 
         con = sqlite3.connect(f"file:{self.db_path}?mode=ro", uri=True)
         cur = con.cursor()
@@ -252,9 +255,11 @@ class TestDatabaseFunctions(unittest.TestCase):
         self.assertIn(("R_test2",), res)
 
     def test_update_existing_component(self):
-        add_part.add_component_to_db(self.db_path, self.resistor)
+        add_part.open_connection_and_add_component_to_db(
+                self.db_path, self.resistor)
         self.resistor.columns["value"] = "val2"
-        add_part.add_component_to_db(self.db_path, self.resistor, update=True)
+        add_part.open_connection_and_add_component_to_db(
+                self.db_path, self.resistor, update=True)
 
         con = sqlite3.connect(f"file:{self.db_path}?mode=ro", uri=True)
         cur = con.cursor()
@@ -265,12 +270,12 @@ class TestDatabaseFunctions(unittest.TestCase):
 
     def test_auto_increment_IPN(self):
         add_part.IPN_DUPLICATE_LIMIT = 3
+        con = sqlite3.connect(f"file:{self.db_path}?mode=rw", uri=True)
         for n in range(add_part.IPN_DUPLICATE_LIMIT):
             self.base_dict["value"] = f"val{n}"
             r = add_part.create_component_from_dict(self.base_dict)
-            add_part.add_component_to_db(self.db_path, r)
+            add_part.add_component_to_db(con, r)
 
-        con = sqlite3.connect(f"file:{self.db_path}?mode=ro", uri=True)
         cur = con.cursor()
         res = cur.execute("SELECT IPN, value from resistor").fetchall()
 
@@ -280,18 +285,20 @@ class TestDatabaseFunctions(unittest.TestCase):
 
     def test_too_many_duplicate_IPNs(self):
         add_part.IPN_DUPLICATE_LIMIT = 3
+        con = sqlite3.connect(f"file:{self.db_path}?mode=rw", uri=True)
         for n in range(add_part.IPN_DUPLICATE_LIMIT):
             self.base_dict["value"] = f"val{n}"
             r = add_part.create_component_from_dict(self.base_dict)
-            add_part.add_component_to_db(self.db_path, r)
+            add_part.add_component_to_db(con, r)
 
         with self.assertRaises(
                 add_part.TooManyDuplicateIPNsInTableError) as cm:
             r = add_part.create_component_from_dict(self.base_dict)
-            add_part.add_component_to_db(self.db_path, r)
+            add_part.add_component_to_db(con, r)
         e = cm.exception
         self.assertEqual("R_test", e.IPN)
         self.assertEqual("resistor", e.table)
+        con.close()
 
 
 if __name__ == "__main__":
