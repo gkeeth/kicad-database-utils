@@ -7,7 +7,7 @@ import sqlite3
 import csv
 
 import add_part
-from add_part import Resistor
+from add_part import Resistor, Capacitor
 
 
 class TestCreateFromDigikey(unittest.TestCase):
@@ -21,7 +21,7 @@ class TestCreateFromDigikey(unittest.TestCase):
         add_part.setup_digikey(add_part.load_config())
         actual = add_part.create_component_from_digikey_pn("YAG2320CT-ND")
         expected = self.expected_from_csv("sample_parts_csv/YAG2320CT-ND.csv")
-        self.assertEqual(actual.to_csv(), expected.to_csv())
+        self.assertEqual(expected.to_csv(), actual.to_csv())
 
     @patch("digikey.product_details")
     def test_resistor_from_digikey_pn(self, mock_product_details):
@@ -44,7 +44,79 @@ class TestCreateFromDigikey(unittest.TestCase):
 
         actual = add_part.create_component_from_digikey_pn("YAG2320CT-ND")
         expected = self.expected_from_csv("sample_parts_csv/YAG2320CT-ND.csv")
-        self.assertEqual(actual.to_csv(), expected.to_csv())
+        self.assertEqual(expected.to_csv(), actual.to_csv())
+
+    def disabled_test_ceramic_capacitor_from_digikey_pn_nomock(self):
+        add_part.setup_digikey(add_part.load_config())
+        actual = add_part.create_component_from_digikey_pn("1276-1123-1-ND")
+        expected = self.expected_from_csv(
+                "sample_parts_csv/1276-1123-1-ND.csv")
+        self.assertEqual(expected.to_csv(), actual.to_csv())
+
+    @patch("digikey.product_details")
+    def test_ceramic_capacitor_from_digikey_pn(self, mock_product_details):
+        mock_part = mock_product_details.return_value
+        mock_part.limited_taxonomy.value = "Capacitors"
+        mock_part.primary_datasheet = (
+                "https://mm.digikey.com/Volume0/opasdata/d220001/medias/docus/"
+                "1068/CL21B334KBFNNNE_Spec.pdf")
+        mock_part.manufacturer.value = "Samsung Electro-Mechanics"
+        mock_part.manufacturer_part_number = "CL21B334KBFNNNE"
+        mock_part.digi_key_part_number = "1276-1123-1-ND"
+
+        mock_part.family.value = "Ceramic Capacitors"
+
+        mock_part.parameters = [
+                MagicMock(parameter="Capacitance", value="0.33 µF"),
+                MagicMock(parameter="Tolerance", value="±10%"),
+                MagicMock(parameter="Voltage - Rated", value="50V"),
+                MagicMock(parameter="Temperature Coefficient", value="X7R"),
+                MagicMock(
+                    parameter="Package / Case", value="0805 (2012 Metric)"),
+                ]
+
+        actual = add_part.create_component_from_digikey_pn("1276-1123-1-ND")
+        expected = self.expected_from_csv(
+                "sample_parts_csv/1276-1123-1-ND.csv")
+        self.assertEqual(expected.to_csv(), actual.to_csv())
+
+    def disabled_test_electrolytic_capacitor_from_digikey_pn_nomock(self):
+        add_part.setup_digikey(add_part.load_config())
+        actual = add_part.create_component_from_digikey_pn("493-13313-1-ND")
+        expected = self.expected_from_csv(
+                "sample_parts_csv/493-13313-1-ND.csv")
+        self.assertEqual(expected.to_csv(), actual.to_csv())
+
+    @patch("digikey.product_details")
+    def test_electrolytic_capacitor_from_digikey_pn(self, mock_product_details):
+        mock_part = mock_product_details.return_value
+        mock_part.limited_taxonomy.value = "Capacitors"
+        mock_part.primary_datasheet = (
+                "https://www.nichicon.co.jp/english/series_items/"
+                "catalog_pdf/e-ucy.pdf")
+        mock_part.manufacturer.value = "Nichicon"
+        mock_part.manufacturer_part_number = "UCY2G100MPD1TD"
+        mock_part.digi_key_part_number = "493-13313-1-ND"
+
+        mock_part.family.value = "Aluminum Electrolytic Capacitors"
+
+        mock_part.parameters = [
+                MagicMock(parameter="Capacitance", value="10 µF"),
+                MagicMock(parameter="Tolerance", value="±20%"),
+                MagicMock(parameter="Voltage - Rated", value="400V"),
+                MagicMock(parameter="Package / Case", value="Radial, Can"),
+                MagicMock(parameter="Polarization", value="Polar"),
+                MagicMock(parameter="Size / Dimension",
+                          value='0.394" Dia (10.00mm)'),
+                MagicMock(parameter="Height - Seated (Max)",
+                          value='0.689" (17.50mm)'),
+                MagicMock(parameter="Lead Spacing", value='0.197" (5.00mm)'),
+                ]
+
+        actual = add_part.create_component_from_digikey_pn("493-13313-1-ND")
+        expected = self.expected_from_csv(
+                "sample_parts_csv/493-13313-1-ND.csv")
+        self.assertEqual(expected.to_csv(), actual.to_csv())
 
 
 class TestComponentOutputs(unittest.TestCase):
@@ -113,7 +185,7 @@ class TestComponentOutputs(unittest.TestCase):
         self.assertEqual(sql_expected, self.resistor.get_create_table_string())
 
 
-class TestResistorUtils(unittest.TestCase):
+class TestParameterUtils(unittest.TestCase):
     def test_process_resistance_no_suffix(self):
         self.assertEqual("1", Resistor.process_resistance("1"))
         self.assertEqual("10", Resistor.process_resistance("10"))
@@ -134,7 +206,7 @@ class TestResistorUtils(unittest.TestCase):
     def test_process_tolerance(self):
         self.assertEqual("1%", Resistor.process_tolerance("1"))
         self.assertEqual("1%", Resistor.process_tolerance("1%"))
-        self.assertEqual("10%", Resistor.process_tolerance("10%"))
+        self.assertEqual("10%", Capacitor.process_tolerance("10%"))
         self.assertEqual("1.00%", Resistor.process_tolerance("1.00%"))
         self.assertEqual("1%", Resistor.process_tolerance("±1%"))
         self.assertEqual("-", Resistor.process_tolerance("something weird"))
@@ -149,6 +221,60 @@ class TestResistorUtils(unittest.TestCase):
     def test_process_composition(self):
         self.assertEqual("ThinFilm", Resistor.process_composition("ThinFilm"))
         self.assertEqual("ThinFilm", Resistor.process_composition("Thin Film"))
+
+    def test_process_capacitance(self):
+        self.assertEqual("1nF", Capacitor.process_capacitance("1nF"))
+        self.assertEqual("1nF", Capacitor.process_capacitance("1n"))
+        self.assertEqual("1nF", Capacitor.process_capacitance("1 nF"))
+        self.assertEqual("4.7nF", Capacitor.process_capacitance("4.7nF"))
+        self.assertEqual("1fF", Capacitor.process_capacitance("1fF"))
+        self.assertEqual("1fF", Capacitor.process_capacitance("1f"))
+        self.assertEqual("1pF", Capacitor.process_capacitance("1pF"))
+        self.assertEqual("1pF", Capacitor.process_capacitance("1PF"))
+        self.assertEqual("1nF", Capacitor.process_capacitance("1NF"))
+        self.assertEqual("1μF", Capacitor.process_capacitance("1uF"))
+        self.assertEqual("1μF", Capacitor.process_capacitance("1UF"))
+        self.assertEqual("1μF", Capacitor.process_capacitance("1μF"))
+        self.assertEqual("1μF", Capacitor.process_capacitance("1µF"))
+        self.assertEqual("1mF", Capacitor.process_capacitance("1mF"))
+        self.assertEqual("1mF", Capacitor.process_capacitance("1MF"))
+        self.assertEqual("1nF", Capacitor.process_capacitance("1000pF"))
+        self.assertEqual("1.5μF", Capacitor.process_capacitance("1500nF"))
+        self.assertEqual("999nF", Capacitor.process_capacitance("999nF"))
+        self.assertEqual("999nF", Capacitor.process_capacitance("0.999uF"))
+        self.assertEqual("0.1fF", Capacitor.process_capacitance("0.1fF"))
+        self.assertEqual("1000mF", Capacitor.process_capacitance("1000mF"))
+        self.assertEqual(
+                "1000000mF", Capacitor.process_capacitance("1000000mF"))
+
+    def test_process_voltage(self):
+        self.assertEqual("5V", Capacitor.process_voltage("5V"))
+        self.assertEqual("50V", Capacitor.process_voltage("50V"))
+        self.assertEqual("50V", Capacitor.process_voltage("50 V"))
+        self.assertEqual("50.0V", Capacitor.process_voltage("50.0 V"))
+
+    def test_process_polarization(self):
+        self.assertEqual(
+                "Unpolarized", Capacitor.process_polarization("Bi-Polar"))
+        self.assertEqual(
+                "Polarized", Capacitor.process_polarization("Polar"))
+        with self.assertRaisesRegex(ValueError,
+                                    "Unknown capacitor polarization 'test'"):
+            Capacitor.process_polarization("test")
+
+    def test_process_package(self):
+        self.assertEqual(
+                "0805", Capacitor.process_package("0805 (2012 Metric)"))
+        self.assertEqual(
+                "Radial, Can", Capacitor.process_package("Radial, Can"))
+
+    def test_process_dimension(self):
+        self.assertEqual(
+                "5.00mm", Capacitor.process_dimension("12.7in (5.00mm)"))
+        self.assertEqual(
+                "10.0mm", Capacitor.process_dimension("25.4in (10.00 mm)"))
+        self.assertEqual(
+                "5.00mm", Capacitor.process_dimension("5 mm"))
 
 
 class TestComponentFromDict(unittest.TestCase):

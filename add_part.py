@@ -107,6 +107,16 @@ class Component(ABC):
         self.columns["distributor2"] = distributor2
         self.columns["DPN2"] = DPN2
 
+    @staticmethod
+    def process_tolerance(param):
+        """Return a processed tolerance string, e.g. 5%, 1.0%, or -."""
+        match = re.search(r"\d+\.?\d*", param)
+        if match:
+            return match.group(0) + "%"
+        else:
+            # e.g. jumpers have no meaningful tolerance
+            return "-"
+
     @classmethod
     @abstractmethod
     def from_digikey(cls, digikey_part):
@@ -173,7 +183,6 @@ class Component(ABC):
             `header` is true, the string is a multi-line string containing
             a header row followed by a data row.
         """
-
         with io.StringIO() as csv_string:
             csvwriter = csv.DictWriter(csv_string,
                                        fieldnames=self.columns.keys())
@@ -197,20 +206,9 @@ class Resistor(Component):
 
     @staticmethod
     def process_resistance(param):
-        """Return a processed resistance string, e.g. 10 or 1.0K.
-        """
+        """Return a processed resistance string, e.g. 10 or 1.0K."""
         resistance = re.search(r"\d+\.?\d*[kKmMG]?", param).group(0)
         return re.sub("k", "K", resistance)
-
-    @staticmethod
-    def process_tolerance(param):
-        """Return a processed tolerance string, e.g. 5%, 1.0%, or -."""
-        match = re.search(r"\d+\.?\d*", param)
-        if match:
-            return match.group(0) + "%"
-        else:
-            # e.g. jumpers have no meaningful tolerance
-            return "-"
 
     @staticmethod
     def process_power(param):
@@ -258,7 +256,7 @@ class Resistor(Component):
         try:
             data["kicad_footprint"] = kicad_footprint_map[data["package"]]
         except KeyError as e:
-            print_error(f"unknown footprint for package '{e}'")
+            print_error(f"unknown footprint for package {e}")
             return None
 
         if data["resistance"] == "0":
@@ -293,6 +291,187 @@ class Resistor(Component):
         return cls(**data)
 
 
+class Capacitor(Component):
+    table = "capacitor"
+
+    def __init__(self, capacitance, tolerance, voltage, dielectric, package,
+                 **kwargs):
+        super().__init__(**kwargs)
+        self.columns["capacitance"] = capacitance
+        self.columns["tolerance"] = tolerance
+        self.columns["voltage"] = voltage
+        self.columns["dielectric"] = dielectric
+        self.columns["package"] = package
+
+    @staticmethod
+    def process_capacitance(param):
+        """Return a processed capacitance string, normalized between 1 and 999,
+        e.g. 10nF or 1.0uF.
+        """
+        # regex includes both unicode mu and micro symbols
+        result = re.search(r"(\d+\.?\d*)\s*([fpPnNuUμµmM]?)", param)
+        value = float(result.group(1))
+        si_prefix = result.group(2)
+        si_prefix = re.sub(r"[uUμµ]", "μ", si_prefix)
+        si_prefix = re.sub(r"P", "p", si_prefix)
+        si_prefix = re.sub(r"N", "n", si_prefix)
+        si_prefix = re.sub(r"M", "m", si_prefix)
+
+        prefixes = ["f", "p", "n", "μ", "m"]
+        n = prefixes.index(si_prefix)
+        while value < 1 and n > 0:
+            # need to go down a level
+            value *= 1000
+            n -= 1
+            si_prefix = prefixes[n]
+        while value >= 1000 and n < len(prefixes) - 1:
+            # need to go up a level
+            value /= 1000
+            n += 1
+            si_prefix = prefixes[n]
+
+        value = str(value).rstrip("0").rstrip(".")
+        return value + si_prefix + "F"
+
+    @staticmethod
+    def process_voltage(param):
+        """Return a processed voltage rating string, e.g. 50V."""
+        match = re.search(r"\d+\.?\d*", param)
+        return match.group(0) + "V"
+
+    @staticmethod
+    def process_polarization(param):
+        """Return a polarization string, either 'Polarized' or 'Unpolarized'.
+        """
+        if param == "Bi-Polar":
+            return "Unpolarized"
+        elif param == "Polar":
+            return "Polarized"
+        else:
+            raise ValueError(f"Unknown capacitor polarization '{param}'.")
+
+    @staticmethod
+    def process_package(param):
+        """If param contains an SMD package name, like 0805, return that
+        substring. Otherwise return the original string.
+        """
+        match = re.search(r"\d\d\d\d", param)
+        if match:
+            return match.group(0)
+        else:
+            return param
+
+    @staticmethod
+    def process_dimension(param):
+        """Return a dimension string in mm, with 3 digits, e.g. 5.00mm or
+        12.7mm.
+        """
+        match = re.search(r"(\d+\.?\d*)\s*mm", param)
+        try:
+            dim = float(match.group(1))
+            return f"{dim:0<4}mm"
+        except AttributeError:
+            return "-"
+
+    @classmethod
+    def from_digikey(cls, digikey_part):
+        data = cls.get_digikey_common_data(digikey_part)
+
+        for p in digikey_part.parameters:
+            if p.parameter == "Capacitance":
+                data["capacitance"] = cls.process_capacitance(p.value)
+            elif p.parameter == "Tolerance":
+                data["tolerance"] = cls.process_tolerance(p.value)
+            elif p.parameter == "Voltage - Rated":
+                data["voltage"] = cls.process_voltage(p.value)
+            elif p.parameter == "Temperature Coefficient":
+                data["dielectric"] = p.value
+            elif p.parameter == "Package / Case":
+                data["package"] = cls.process_package(p.value)
+            elif p.parameter == "Polarization":
+                polarization = cls.process_polarization(p.value)
+            elif p.parameter == "Lead Spacing":
+                pitch = cls.process_dimension(p.value)
+            elif p.parameter == "Size / Dimension":
+                diameter = cls.process_dimension(p.value)
+            elif p.parameter == "Height - Seated (Max)":
+                height = cls.process_dimension(p.value)
+
+        family = digikey_part.family.value
+        if family == "Ceramic Capacitors":
+            polarization = "Unpolarized"
+        elif family == "Aluminum Electrolytic Capacitors":
+            data["dielectric"] = f"{polarization} Electrolytic"
+        else:
+            print_error(f"capacitor family '{family}' is not implemented")
+            return None
+
+        kicad_footprint_map = {
+                "0201": "Capacitor_SMD:C_0201_0603Metric",
+                "0402": "Capacitor_SMD:C_0402_1005Metric",
+                "0603": "Capacitor_SMD:C_0603_1608Metric",
+                "0805": "Capacitor_SMD:C_0805_2012Metric",
+                "1206": "Capacitor_SMD:C_1206_3216Metric",
+                "1210": "Capacitor_SMD:C_1210_3225Metric",
+                }
+
+        data["value"] = "${Capacitance}"
+        if polarization == "Unpolarized":
+            data["kicad_symbol"] = "Device:C"
+        else:
+            data["kicad_symbol"] = "Device:C_Polarized_US"
+
+        if data["package"] in kicad_footprint_map:
+            data["kicad_footprint"] = kicad_footprint_map[data["package"]]
+            package_short = data["package"]
+            package_dims = ""
+        elif data["package"] == "Radial, Can":
+            pol = "P" if polarization == "Polarized" else ""
+            try:
+                package_short = "Radial"
+                package_dims = f"D{diameter}_H{height}_P{pitch}"
+                data["package"] = (
+                        f"C{pol}_{package_short}_{package_dims}")
+                data["kicad_footprint"] = (
+                        f"Capacitor_THT:"
+                        f"C{pol}_{package_short}_{package_dims}")
+            except ValueError:
+                print_error("unknown package dimensions: {e}")
+                return None
+        else:
+            print_error(f"unknown footprint for package {data['package']}")
+            return None
+
+        data["IPN"] = (
+                f"C_"
+                f"{data['capacitance']}_"
+                f"{package_short}_"
+                f"{data['tolerance']}_"
+                f"{data['voltage']}_"
+                f"{data['dielectric'].replace(' ', '')}")
+        if package_dims:
+            data["IPN"] += f"_{package_dims}"
+        data["description"] = (
+                f"{data['capacitance']} "
+                f"±{data['tolerance']} "
+                f"{data['voltage']} "
+                # f"{polarization} "
+                f"{data['dielectric']} "
+                f"Capacitor "
+                f"{package_short}")
+        if package_dims:
+            dims = (package_dims
+                    .replace("D", "diameter ")
+                    .replace("H", "height ")
+                    .replace("P", "pitch ")
+                    .replace("_", " "))
+            data["description"] += f" {dims}"
+        data["keywords"] = (f"c cap capacitor "
+                            f"{polarization.lower()} {data['capacitance']}")
+
+        return cls(**data)
+
+
 def create_component_from_digikey_pn(digikey_pn):
     """Factory to construct the appropriate component type object for a given
     digikey PN.
@@ -312,8 +491,11 @@ def create_component_from_digikey_pn(digikey_pn):
         print_error(f"Could not get info for part {digikey_pn}")
         return None
 
-    if part.limited_taxonomy.value == "Resistors":
+    part_type = part.limited_taxonomy.value
+    if part_type == "Resistors":
         return Resistor.from_digikey(part)
+    elif part_type == "Capacitors":
+        return Capacitor.from_digikey(part)
     else:
         raise NotImplementedError("No component type to handle part type "
                                   f"'{part.limited_taxonomy.value}' for part "
@@ -337,6 +519,8 @@ def create_component_from_dict(columns_and_values):
     IPN = columns_and_values["IPN"]
     if IPN.startswith("R_"):
         return Resistor(**columns_and_values)
+    elif IPN.startswith("C_"):
+        return Capacitor(**columns_and_values)
     else:
         raise NotImplementedError(f"No component type to handle part '{IPN}'")
 
