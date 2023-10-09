@@ -7,7 +7,7 @@ import sqlite3
 import csv
 
 import add_part
-from add_part import Resistor, Capacitor
+from add_part import Component, Resistor, Capacitor
 
 
 class TestCreateFromDigikey(unittest.TestCase):
@@ -232,95 +232,134 @@ class TestComponentOutputs(unittest.TestCase):
 
 
 class TestParameterUtils(unittest.TestCase):
-    def test_process_resistance_no_suffix(self):
-        self.assertEqual("1", Resistor.process_resistance("1"))
-        self.assertEqual("10", Resistor.process_resistance("10"))
-        self.assertEqual("1.0", Resistor.process_resistance("1.0"))
-        self.assertEqual("1", Resistor.process_resistance("1 Ohm"))
-        self.assertEqual("1", Resistor.process_resistance("1Ohm"))
-        self.assertEqual("1", Resistor.process_resistance("1R"))
-        self.assertEqual("1K", Resistor.process_resistance("1k"))
-        self.assertEqual("1K", Resistor.process_resistance("1K"))
-        self.assertEqual("1K", Resistor.process_resistance("1k Ohm"))
-        self.assertEqual("1K", Resistor.process_resistance("1kOhm"))
-        self.assertEqual("10K", Resistor.process_resistance("10kOhm"))
-        self.assertEqual("1.00K", Resistor.process_resistance("1.00kOhm"))
-        self.assertEqual("1m", Resistor.process_resistance("1m"))
-        self.assertEqual("1M", Resistor.process_resistance("1M"))
-        self.assertEqual("1G", Resistor.process_resistance("1G"))
+    def test_process_resistance(self):
+        testcases = [
+                ("1", "1"),
+                ("10", "10"),
+                ("1.0", "1.0"),
+                ("1", "1 Ohm"),
+                ("1", "1Ohm"),
+                ("1", "1R"),
+                ("1K", "1k"),
+                ("1K", "1K"),
+                ("1K", "1k Ohm"),
+                ("1K", "1kOhm"),
+                ("10K", "10kOhm"),
+                ("1.00K", "1.00kOhm"),
+                ("1m", "1m"),
+                ("1M", "1M"),
+                ("1G", "1G"),
+                ]
+        for expected, r in testcases:
+            with self.subTest(Resistance=r):
+                self.assertEqual(expected, Resistor.process_resistance(r))
 
     def test_process_tolerance(self):
-        self.assertEqual("1%", Resistor.process_tolerance("1"))
-        self.assertEqual("1%", Resistor.process_tolerance("1%"))
-        self.assertEqual("10%", Capacitor.process_tolerance("10%"))
-        self.assertEqual("1.00%", Resistor.process_tolerance("1.00%"))
-        self.assertEqual("1%", Resistor.process_tolerance("±1%"))
-        self.assertEqual("-", Resistor.process_tolerance("something weird"))
+        testcases = [
+                ("1%", "1"),
+                ("1%", "1%"),
+                ("10%", "10%"),
+                ("1.00%", "1.00%"),
+                ("1%", "±1%"),
+                ("-", "something weird"),
+                ]
+        for expected, tol in testcases:
+            with self.subTest(Tolerance=tol):
+                self.assertEqual(expected, Component.process_tolerance(tol))
 
     def test_process_power(self):
-        self.assertEqual("1W", Resistor.process_power("1"))
-        self.assertEqual("1W", Resistor.process_power("1W"))
-        self.assertEqual("10W", Resistor.process_power("10"))
-        self.assertEqual("1.00W", Resistor.process_power("1.00"))
-        self.assertEqual("-", Resistor.process_power("something weird"))
+        testcases = [
+                ("1W", "1"),
+                ("1W", "1W"),
+                ("10W", "10"),
+                ("1.00W", "1.00"),
+                ("-", "something weird"),
+                ]
+        for expected, power in testcases:
+            with self.subTest(Power=power):
+                self.assertEqual(expected, Resistor.process_power(power))
 
     def test_process_composition(self):
-        self.assertEqual("ThinFilm", Resistor.process_composition("ThinFilm"))
-        self.assertEqual("ThinFilm", Resistor.process_composition("Thin Film"))
+        testcases = [
+                ("ThinFilm", "ThinFilm"),
+                ("ThinFilm", "Thin Film")
+                ]
+        for expected, comp in testcases:
+            with self.subTest(Composition=comp):
+                self.assertEqual(expected, Resistor.process_composition(comp))
 
     def test_process_capacitance(self):
-        self.assertEqual("1nF", Capacitor.process_capacitance("1nF"))
-        self.assertEqual("1nF", Capacitor.process_capacitance("1n"))
-        self.assertEqual("1nF", Capacitor.process_capacitance("1 nF"))
-        self.assertEqual("4.7nF", Capacitor.process_capacitance("4.7nF"))
-        self.assertEqual("1fF", Capacitor.process_capacitance("1fF"))
-        self.assertEqual("1fF", Capacitor.process_capacitance("1f"))
-        self.assertEqual("1pF", Capacitor.process_capacitance("1pF"))
-        self.assertEqual("1pF", Capacitor.process_capacitance("1PF"))
-        self.assertEqual("1nF", Capacitor.process_capacitance("1NF"))
-        self.assertEqual("1μF", Capacitor.process_capacitance("1uF"))
-        self.assertEqual("1μF", Capacitor.process_capacitance("1UF"))
-        self.assertEqual("1μF", Capacitor.process_capacitance("1μF"))
-        self.assertEqual("1μF", Capacitor.process_capacitance("1µF"))
-        self.assertEqual("1mF", Capacitor.process_capacitance("1mF"))
-        self.assertEqual("1mF", Capacitor.process_capacitance("1MF"))
-        self.assertEqual("1nF", Capacitor.process_capacitance("1000pF"))
-        self.assertEqual("1.5μF", Capacitor.process_capacitance("1500nF"))
-        self.assertEqual("999nF", Capacitor.process_capacitance("999nF"))
-        self.assertEqual("999nF", Capacitor.process_capacitance("0.999uF"))
-        self.assertEqual("0.1fF", Capacitor.process_capacitance("0.1fF"))
-        self.assertEqual("1000mF", Capacitor.process_capacitance("1000mF"))
-        self.assertEqual(
-                "1000000mF", Capacitor.process_capacitance("1000000mF"))
+        testcases = [
+                ("1nF", "1nF"),
+                ("1nF", "1n"),
+                ("1nF", "1 nF"),
+                ("4.7nF", "4.7nF"),
+                ("1fF", "1fF"),
+                ("1fF", "1f"),
+                ("1pF", "1pF"),
+                ("1pF", "1PF"),
+                ("1nF", "1NF"),
+                ("1μF", "1uF"),
+                ("1μF", "1UF"),
+                ("1μF", "1μF"),
+                ("1μF", "1µF"),
+                ("1mF", "1mF"),
+                ("1mF", "1MF"),
+                ("1nF", "1000pF"),
+                ("1.5μF", "1500nF"),
+                ("999nF", "999nF"),
+                ("999nF", "0.999uF"),
+                ("0.1fF", "0.1fF"),
+                ("1000mF", "1000mF"),
+                ("1000000mF", "1000000mF"),
+                ]
+        for expected, cap in testcases:
+            with self.subTest(Capacitance=cap):
+                self.assertEqual(expected, Capacitor.process_capacitance(cap))
 
     def test_process_voltage(self):
-        self.assertEqual("5V", Capacitor.process_voltage("5V"))
-        self.assertEqual("50V", Capacitor.process_voltage("50V"))
-        self.assertEqual("50V", Capacitor.process_voltage("50 V"))
-        self.assertEqual("50.0V", Capacitor.process_voltage("50.0 V"))
+        testcases = [
+                ("5V", "5V"),
+                ("50V", "50V"),
+                ("50V", "50 V"),
+                ("50.0V", "50.0 V"),
+                ]
+        for expected, v in testcases:
+            with self.subTest(Voltage=v):
+                self.assertEqual(expected, Capacitor.process_voltage(v))
 
     def test_process_polarization(self):
-        self.assertEqual(
-                "Unpolarized", Capacitor.process_polarization("Bi-Polar"))
-        self.assertEqual(
-                "Polarized", Capacitor.process_polarization("Polar"))
-        with self.assertRaisesRegex(ValueError,
-                                    "Unknown capacitor polarization 'test'"):
-            Capacitor.process_polarization("test")
+        testcases = [
+                ("Unpolarized", "Bi-Polar"),
+                ("Polarized", "Polar"),
+                ]
+        for expected, pol in testcases:
+            with self.subTest(Polarization=pol):
+                self.assertEqual(expected, Capacitor.process_polarization(pol))
+
+        with self.subTest(Polarization="test"):
+            with self.assertRaisesRegex(
+                    ValueError, "Unknown capacitor polarization 'test'"):
+                Capacitor.process_polarization("test")
 
     def test_process_package(self):
-        self.assertEqual(
-                "0805", Capacitor.process_package("0805 (2012 Metric)"))
-        self.assertEqual(
-                "Radial, Can", Capacitor.process_package("Radial, Can"))
+        testcases = [
+                ("0805", "0805 (2012 Metric)"),
+                ("Radial, Can", "Radial, Can"),
+                ]
+        for expected, package in testcases:
+            with self.subTest(Package=package):
+                self.assertEqual(expected, Capacitor.process_package(package))
 
     def test_process_dimension(self):
-        self.assertEqual(
-                "5.00mm", Capacitor.process_dimension("12.7in (5.00mm)"))
-        self.assertEqual(
-                "10.0mm", Capacitor.process_dimension("25.4in (10.00 mm)"))
-        self.assertEqual(
-                "5.00mm", Capacitor.process_dimension("5 mm"))
+        testcases = [
+                ("5.00mm", "12.7in (5.00mm)"),
+                ("10.0mm", "25.4in (10.00 mm)"),
+                ("5.00mm", "5 mm"),
+                ]
+        for expected, dim in testcases:
+            with self.subTest(Dimension=dim):
+                self.assertEqual(expected, Capacitor.process_dimension(dim))
 
 
 class TestComponentFromDict(unittest.TestCase):
