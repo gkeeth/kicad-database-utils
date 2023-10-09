@@ -118,6 +118,47 @@ class TestCreateFromDigikey(unittest.TestCase):
                 "sample_parts_csv/493-13313-1-ND.csv")
         self.assertEqual(expected.to_csv(), actual.to_csv())
 
+    def disabled_test_nonpolarized_electrolytic_capacitor_from_digikey_pn_nomock(self):
+        add_part.setup_digikey(add_part.load_config())
+        actual = add_part.create_component_from_digikey_pn(
+                "10-ECE-A1HN100UBCT-ND")
+        expected = self.expected_from_csv(
+                "sample_parts_csv/10-ECE-A1HN100UBCT-ND.csv")
+        self.assertEqual(expected.to_csv(), actual.to_csv())
+
+    @patch("digikey.product_details")
+    def test_unpolarized_electrolytic_capacitor_from_digikey_pn(
+            self, mock_product_details):
+        mock_part = mock_product_details.return_value
+        mock_part.limited_taxonomy.value = "Capacitors"
+        mock_part.primary_datasheet = (
+           "https://industrial.panasonic.com/cdbs/www-data/pdf/"
+           "RDF0000/ABA0000C1053.pdf")
+        mock_part.manufacturer.value = "Panasonic Electronic Components"
+        mock_part.manufacturer_part_number = "ECE-A1HN100UB"
+        mock_part.digi_key_part_number = "10-ECE-A1HN100UBCT-ND"
+
+        mock_part.family.value = "Aluminum Electrolytic Capacitors"
+
+        mock_part.parameters = [
+                MagicMock(parameter="Capacitance", value="10 µF"),
+                MagicMock(parameter="Tolerance", value="±20%"),
+                MagicMock(parameter="Voltage - Rated", value="50V"),
+                MagicMock(parameter="Package / Case", value="Radial, Can"),
+                MagicMock(parameter="Polarization", value="Bi-Polar"),
+                MagicMock(parameter="Size / Dimension",
+                          value='0.248" Dia (6.30mm)'),
+                MagicMock(parameter="Height - Seated (Max)",
+                          value='0.480" (12.20mm)'),
+                MagicMock(parameter="Lead Spacing", value='0.197" (5.00mm)'),
+                ]
+
+        actual = add_part.create_component_from_digikey_pn(
+                "10-ECE-A1HN100UBCT-ND")
+        expected = self.expected_from_csv(
+                "sample_parts_csv/10-ECE-A1HN100UBCT-ND.csv")
+        self.assertEqual(expected.to_csv(), actual.to_csv())
+
 
 class TestComponentOutputs(unittest.TestCase):
     def setUp(self):
