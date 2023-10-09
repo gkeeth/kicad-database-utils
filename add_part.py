@@ -373,45 +373,43 @@ class Capacitor(Component):
         except AttributeError:
             return "-"
 
-    @classmethod
-    def from_digikey(cls, digikey_part):
-        data = cls.get_digikey_common_data(digikey_part)
+    @staticmethod
+    def _determine_symbol(data, polarization):
+        """Choose an appropriate capacitor symbol.
 
-        for p in digikey_part.parameters:
-            if p.parameter == "Capacitance":
-                data["capacitance"] = cls.process_capacitance(p.value)
-            elif p.parameter == "Tolerance":
-                data["tolerance"] = cls.process_tolerance(p.value)
-            elif p.parameter == "Voltage - Rated":
-                data["voltage"] = cls.process_voltage(p.value)
-            elif p.parameter == "Temperature Coefficient":
-                data["dielectric"] = p.value
-            elif p.parameter == "Package / Case":
-                data["package"] = cls.process_package(p.value)
-            elif p.parameter == "Polarization":
-                polarization = cls.process_polarization(p.value)
-            elif p.parameter == "Lead Spacing":
-                pitch = cls.process_dimension(p.value)
-            elif p.parameter == "Size / Dimension":
-                diameter = cls.process_dimension(p.value)
-            elif p.parameter == "Height - Seated (Max)":
-                height = cls.process_dimension(p.value)
-
-        family = digikey_part.family.value
-        if family == "Ceramic Capacitors":
-            polarization = "Unpolarized"
-        elif family == "Aluminum Electrolytic Capacitors":
-            data["dielectric"] = f"{polarization} Electrolytic"
-        else:
-            print_error(f"capacitor family '{family}' is not implemented")
-            return None
-
-        data["value"] = "${Capacitance}"
+        Args:
+            data:
+                dict of data pulled from digikey object. The function will
+                store `kicad_symbol` into this dict.
+            polarization:
+                "Polarized" or "Unpolarized".
+        """
         if polarization == "Unpolarized":
             data["kicad_symbol"] = "Device:C"
         else:
             data["kicad_symbol"] = "Device:C_Polarized_US"
 
+    @staticmethod
+    def _determine_footprint(data, polarization, dimensions):
+        """
+        Choose a footprint based on the component's parameters.
+
+        Args:
+            data:
+                dict of data pulled from digikey object. The function will
+                store `kicad_footprint` into this dict.
+            polarization:
+                "Polarized" or "Unpolarized".
+            dimensions:
+                dict of dimension name to (string) dimensions, such as
+                "diameter": "5.00mm". Different types of capacitors require
+                different types of dimensions.
+        Returns:
+            None, if a footprint could not be determined.
+            tuple of package_short (e.g. "0805" or "Radial") and package_dims
+            (e.g. "" or "D5.00mm_H10.0mm_P2.00mm")
+        """
+        # TODO: make this pull from the actual list of kicad footprints
         kicad_footprint_map = {
                 "0201": "Capacitor_SMD:C_0201_0603Metric",
                 "0402": "Capacitor_SMD:C_0402_1005Metric",
@@ -426,8 +424,15 @@ class Capacitor(Component):
             package_short = data["package"]
             package_dims = ""
         elif data["package"] == "Radial, Can":
+            # for SMD radial electrolytic caps, the footprint standard naming
+            # is diameter x height (with no decimal points):
+            # f"Capacitor_SMD:C{pol}_Elec_{diameter}x{height}"
             pol = "P" if polarization == "Polarized" else ""
             try:
+                diameter = dimensions["diameter"]
+                height = dimensions["height"]
+                pitch = dimensions["pitch"]
+
                 package_short = "Radial"
                 package_dims = f"D{diameter}_H{height}_P{pitch}"
                 data["package"] = (
@@ -435,13 +440,31 @@ class Capacitor(Component):
                 data["kicad_footprint"] = (
                         f"Capacitor_THT:"
                         f"C{pol}_{package_short}_{package_dims}")
-            except ValueError:
+            except KeyError:
                 print_error("unknown package dimensions: {e}")
                 return None
         else:
             print_error(f"unknown footprint for package {data['package']}")
             return None
 
+        return package_short, package_dims
+
+    @staticmethod
+    def _determine_metadata(data, polarization, package_short, package_dims):
+        """Create an IPN, description, and keywords for the component.
+
+        Args:
+            data:
+                dict of data pulled from digikey object. The function will
+                store `IPN`, `description`, and `keywords` into this dict.
+            polarization:
+                "Polarized" or "Unpolarized".
+            package_short:
+                short description of package, e.g. "8085" or "Radial".
+            package_dims:
+                short dimension string of package, which can be blank, e.g.
+                "" or "D5.00mm_H10.0mm_P2.00mm".
+        """
         data["IPN"] = (
                 f"C_"
                 f"{data['capacitance']}_"
@@ -467,6 +490,51 @@ class Capacitor(Component):
             data["description"] += f" {dims}"
         data["keywords"] = (f"c cap capacitor "
                             f"{polarization.lower()} {data['capacitance']}")
+
+    @classmethod
+    def from_digikey(cls, digikey_part):
+        data = cls.get_digikey_common_data(digikey_part)
+
+        dimensions = {}
+        for p in digikey_part.parameters:
+            if p.parameter == "Capacitance":
+                data["capacitance"] = cls.process_capacitance(p.value)
+            elif p.parameter == "Tolerance":
+                data["tolerance"] = cls.process_tolerance(p.value)
+            elif p.parameter == "Voltage - Rated":
+                data["voltage"] = cls.process_voltage(p.value)
+            elif p.parameter == "Temperature Coefficient":
+                data["dielectric"] = p.value
+            elif p.parameter == "Package / Case":
+                data["package"] = cls.process_package(p.value)
+            elif p.parameter == "Polarization":
+                polarization = cls.process_polarization(p.value)
+            elif p.parameter == "Lead Spacing":
+                dimensions["pitch"] = cls.process_dimension(p.value)
+            elif p.parameter == "Size / Dimension":
+                dimensions["diameter"] = cls.process_dimension(p.value)
+            elif p.parameter == "Height - Seated (Max)":
+                dimensions["height"] = cls.process_dimension(p.value)
+
+        family = digikey_part.family.value
+        if family == "Ceramic Capacitors":
+            polarization = "Unpolarized"
+        elif family == "Aluminum Electrolytic Capacitors":
+            data["dielectric"] = f"{polarization} Electrolytic"
+        else:
+            print_error(f"capacitor family '{family}' is not implemented")
+            return None
+
+        data["value"] = "${Capacitance}"
+        cls._determine_symbol(data, polarization)
+
+        package_data = cls._determine_footprint(data, polarization, dimensions)
+        if package_data:
+            package_short, package_dims = package_data
+        else:
+            return None
+
+        cls._determine_metadata(data, polarization, package_short, package_dims)
 
         return cls(**data)
 
