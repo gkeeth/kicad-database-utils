@@ -17,7 +17,8 @@ class TestCreateFromDigikey(unittest.TestCase):
             reader = csv.DictReader(infile)
             return add_part.create_component_from_dict(next(reader))
 
-    def disabled_test_resistor_from_digikey_pn_nomock(self):
+    @unittest.skip("external API call")
+    def test_resistor_from_digikey_pn_nomock(self):
         add_part.setup_digikey(add_part.load_config())
         actual = add_part.create_component_from_digikey_pn("YAG2320CT-ND")
         expected = self.expected_from_csv("sample_parts_csv/YAG2320CT-ND.csv")
@@ -46,7 +47,8 @@ class TestCreateFromDigikey(unittest.TestCase):
         expected = self.expected_from_csv("sample_parts_csv/YAG2320CT-ND.csv")
         self.assertEqual(expected.to_csv(), actual.to_csv())
 
-    def disabled_test_ceramic_capacitor_from_digikey_pn_nomock(self):
+    @unittest.skip("external API call")
+    def test_ceramic_capacitor_from_digikey_pn_nomock(self):
         add_part.setup_digikey(add_part.load_config())
         actual = add_part.create_component_from_digikey_pn("1276-1123-1-ND")
         expected = self.expected_from_csv(
@@ -80,7 +82,8 @@ class TestCreateFromDigikey(unittest.TestCase):
                 "sample_parts_csv/1276-1123-1-ND.csv")
         self.assertEqual(expected.to_csv(), actual.to_csv())
 
-    def disabled_test_electrolytic_capacitor_from_digikey_pn_nomock(self):
+    @unittest.skip("external API call")
+    def test_electrolytic_capacitor_from_digikey_pn_nomock(self):
         add_part.setup_digikey(add_part.load_config())
         actual = add_part.create_component_from_digikey_pn("493-13313-1-ND")
         expected = self.expected_from_csv(
@@ -88,7 +91,8 @@ class TestCreateFromDigikey(unittest.TestCase):
         self.assertEqual(expected.to_csv(), actual.to_csv())
 
     @patch("digikey.product_details")
-    def test_electrolytic_capacitor_from_digikey_pn(self, mock_product_details):
+    def test_electrolytic_capacitor_from_digikey_pn(
+            self, mock_product_details):
         mock_part = mock_product_details.return_value
         mock_part.limited_taxonomy.value = "Capacitors"
         mock_part.primary_datasheet = (
@@ -118,7 +122,8 @@ class TestCreateFromDigikey(unittest.TestCase):
                 "sample_parts_csv/493-13313-1-ND.csv")
         self.assertEqual(expected.to_csv(), actual.to_csv())
 
-    def disabled_test_nonpolarized_electrolytic_capacitor_from_digikey_pn_nomock(self):
+    @unittest.skip("external API call")
+    def test_nonpolarized_electrolytic_capacitor_from_digikey_pn_nomock(self):
         add_part.setup_digikey(add_part.load_config())
         actual = add_part.create_component_from_digikey_pn(
                 "10-ECE-A1HN100UBCT-ND")
