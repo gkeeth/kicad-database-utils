@@ -406,6 +406,12 @@ class Capacitor(Component):
             print_error(f"capacitor family '{family}' is not implemented")
             return None
 
+        data["value"] = "${Capacitance}"
+        if polarization == "Unpolarized":
+            data["kicad_symbol"] = "Device:C"
+        else:
+            data["kicad_symbol"] = "Device:C_Polarized_US"
+
         kicad_footprint_map = {
                 "0201": "Capacitor_SMD:C_0201_0603Metric",
                 "0402": "Capacitor_SMD:C_0402_1005Metric",
@@ -414,12 +420,6 @@ class Capacitor(Component):
                 "1206": "Capacitor_SMD:C_1206_3216Metric",
                 "1210": "Capacitor_SMD:C_1210_3225Metric",
                 }
-
-        data["value"] = "${Capacitance}"
-        if polarization == "Unpolarized":
-            data["kicad_symbol"] = "Device:C"
-        else:
-            data["kicad_symbol"] = "Device:C_Polarized_US"
 
         if data["package"] in kicad_footprint_map:
             data["kicad_footprint"] = kicad_footprint_map[data["package"]]
@@ -455,7 +455,6 @@ class Capacitor(Component):
                 f"{data['capacitance']} "
                 f"±{data['tolerance']} "
                 f"{data['voltage']} "
-                # f"{polarization} "
                 f"{data['dielectric']} "
                 f"Capacitor "
                 f"{package_short}")
