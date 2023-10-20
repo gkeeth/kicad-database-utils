@@ -61,10 +61,6 @@ tables:
 """
 
 
-class PartInfoNotFoundError(Exception):
-    pass
-
-
 class TooManyDuplicateIPNsInTableError(Exception):
     def __init__(self, IPN, table):
         self.IPN = IPN
