@@ -7,7 +7,7 @@ import sqlite3
 import csv
 
 import add_part
-from add_part import Component, Resistor, Capacitor
+from component import Component, Resistor, Capacitor
 
 
 class TestCreateFromDigikey(unittest.TestCase):
@@ -83,7 +83,7 @@ class TestCreateFromDigikey(unittest.TestCase):
         self.assertEqual(expected.to_csv(), actual.to_csv())
 
     @unittest.skip("external API call")
-    @patch("add_part.input",
+    @patch("component.input",
            return_value="Capacitor_THT:CP_Radial_D10.0mm_H17.5mm_P5.00mm")
     def test_electrolytic_capacitor_from_digikey_pn_nomock(self, mock_input):
         add_part.setup_digikey(add_part.load_config())
@@ -93,7 +93,7 @@ class TestCreateFromDigikey(unittest.TestCase):
         self.assertEqual(expected.to_csv(), actual.to_csv())
 
     @patch("digikey.product_details")
-    @patch("add_part.input",
+    @patch("component.input",
            return_value="Capacitor_THT:CP_Radial_D10.0mm_H17.5mm_P5.00mm")
     def test_electrolytic_capacitor_from_digikey_pn(
             self, mock_input, mock_product_details):
@@ -127,7 +127,7 @@ class TestCreateFromDigikey(unittest.TestCase):
         self.assertEqual(expected.to_csv(), actual.to_csv())
 
     @unittest.skip("external API call")
-    @patch("add_part.input",
+    @patch("component.input",
            return_value="Capacitor_THT:C_Radial_D6.30mm_H12.2mm_P5.00mm")
     def test_nonpolarized_electrolytic_capacitor_from_digikey_pn_nomock(
             self, mock_input):
@@ -139,7 +139,7 @@ class TestCreateFromDigikey(unittest.TestCase):
         self.assertEqual(expected.to_csv(), actual.to_csv())
 
     @patch("digikey.product_details")
-    @patch("add_part.input",
+    @patch("component.input",
            return_value="Capacitor_THT:C_Radial_D6.30mm_H12.2mm_P5.00mm")
     def test_unpolarized_electrolytic_capacitor_from_digikey_pn(
             self, mock_input, mock_product_details):
