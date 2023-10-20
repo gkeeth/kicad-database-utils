@@ -2,8 +2,9 @@
 
 import unittest
 
-import component
-from component import Component, Resistor, Capacitor
+# from partdb import component
+from partdb import component
+from partdb.component import Component, Resistor, Capacitor
 
 
 class TestComponentOutputs(unittest.TestCase):

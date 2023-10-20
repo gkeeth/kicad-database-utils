@@ -9,11 +9,11 @@ import os
 import sqlite3
 import sys
 
-import print_utils
-from print_utils import print_message, print_error
+from partdb import print_utils
+from partdb.print_utils import print_message, print_error
 
-from component import (create_component_from_digikey_part,
-                       create_component_from_dict)
+from partdb.component import (create_component_from_digikey_part,
+                              create_component_from_dict)
 
 CONFIG_FILENAME = os.path.expanduser("~/.dblib_add_part_config.json")
 
@@ -355,7 +355,7 @@ def parse_args():
     return parser.parse_args()
 
 
-if __name__ == "__main__":
+def main():
     args = parse_args()
     print_utils.set_verbose(args.verbose)
     config_data = load_config()
@@ -384,3 +384,7 @@ if __name__ == "__main__":
 
     if args.csv_output:
         print_components_from_list_as_csv(components)
+
+
+if __name__ == "__main__":
+    main()

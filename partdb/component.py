@@ -4,7 +4,7 @@ import re
 from abc import ABC, abstractmethod
 from collections import OrderedDict
 
-from print_utils import print_error
+from partdb.print_utils import print_error
 
 
 def create_component_from_digikey_part(part):
