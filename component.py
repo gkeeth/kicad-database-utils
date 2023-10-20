@@ -3,30 +3,23 @@ import io
 import re
 from abc import ABC, abstractmethod
 from collections import OrderedDict
-import digikey
-# import mouser
 
 from print_utils import print_error
 
 
-def create_component_from_digikey_pn(digikey_pn):
+def create_component_from_digikey_part(part):
     """Factory to construct the appropriate component type object for a given
-    digikey PN.
+    digikey part (API response object).
 
-    Queries the digikey API to get part data, determines the component type,
-    and then dispatches to the appropriate Component.from_digikey(part)
-    constructor.
+    Given a Digikey API response object, determines the component type, then
+    dispatches to the appropriate Component.from_digikey(part) constructor.
 
     Args:
-        digikey_pn: string containing the digikey part number.
+        part: Digikey part API response object.
 
     Returns:
-        A `Component` object constructed from the digikey part details.
+        A `Component` object constructed from the Digikey part details.
     """
-    part = digikey.product_details(digikey_pn)
-    if not part:
-        print_error(f"Could not get info for part {digikey_pn}")
-        return None
 
     part_type = part.limited_taxonomy.value
     if part_type == "Resistors":
@@ -36,7 +29,7 @@ def create_component_from_digikey_pn(digikey_pn):
     else:
         raise NotImplementedError("No component type to handle part type "
                                   f"'{part.limited_taxonomy.value}' for part "
-                                  f"{digikey_pn}")
+                                  f"{part.digi_key_part_number}")
 
 
 def create_component_from_dict(columns_and_values):

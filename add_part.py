@@ -2,7 +2,9 @@
 
 import argparse
 import csv
+import digikey
 import json
+# import mouser
 import os
 import sqlite3
 import sys
@@ -10,7 +12,7 @@ import sys
 import print_utils
 from print_utils import print_message, print_error
 
-from component import (create_component_from_digikey_pn,
+from component import (create_component_from_digikey_part,
                        create_component_from_dict)
 
 CONFIG_FILENAME = os.path.expanduser("~/.dblib_add_part_config.json")
@@ -91,11 +93,30 @@ def setup_digikey(config_data):
         os.mkdir(digikey_cache_dir)
 
 
+def create_component_from_digikey_pn(digikey_pn):
+    """Create a component from a Digikey part number.
+
+    Args:
+        digikey_pn: string containing a Digikey part number
+
+    Returns:
+        component based on digikey_pn, or None if a component cannot be
+        created from the part number.
+    """
+    part = digikey.product_details(digikey_pn)
+    if not part:
+        print_error(f"Could not get info for part {digikey_pn}")
+        return None
+    return create_component_from_digikey_part(part)
+
+
 def create_component_list_from_digikey_pns(digikey_pn_list):
     """Create a list of components from a list of digikey part numbers.
 
     Any part numbers that are invalid or otherwise cannot be used to create
     a component will be skipped.
+
+    Sets up the Digikey API config before starting.
 
     Args:
         digikey_pn_list: list of digikey part number strings.

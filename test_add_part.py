@@ -1,10 +1,177 @@
 #! /usr/bin/env python
 
+import csv
 import os
 import sqlite3
 import unittest
+from unittest.mock import patch, MagicMock
 
+import component  # for create_component_from_dict()
 import add_part
+
+
+class TestCreateFromDigikey(unittest.TestCase):
+    @staticmethod
+    def expected_from_csv(csvpath):
+        with open(csvpath, "r") as infile:
+            reader = csv.DictReader(infile)
+            return component.create_component_from_dict(next(reader))
+
+    @unittest.skip("external API call")
+    def test_resistor_from_digikey_pn_nomock(self):
+        add_part.setup_digikey(add_part.load_config())
+        actual = add_part.create_component_from_digikey_pn("YAG2320CT-ND")
+        expected = self.expected_from_csv("sample_parts_csv/YAG2320CT-ND.csv")
+        self.assertEqual(expected.to_csv(), actual.to_csv())
+
+    @patch("digikey.product_details")
+    def test_resistor_from_digikey_pn(self, mock_product_details):
+        mock_part = mock_product_details.return_value
+        mock_part.limited_taxonomy.value = "Resistors"
+        mock_part.primary_datasheet = (
+                "https://www.yageo.com/upload/media/product/productsearch/"
+                "datasheet/rchip/PYu-RT_1-to-0.01_RoHS_L_15.pdf")
+        mock_part.manufacturer.value = "YAGEO"
+        mock_part.manufacturer_part_number = "RT0603FRE07100RL"
+        mock_part.digi_key_part_number = "YAG2320CT-ND"
+
+        mock_part.parameters = [
+                MagicMock(parameter="Resistance", value="100Ω"),
+                MagicMock(parameter="Tolerance", value="±1%"),
+                MagicMock(parameter="Power (Watts)", value="0.1W"),
+                MagicMock(parameter="Composition", value="Thin Film"),
+                MagicMock(parameter="Supplier Device Package", value="0603"),
+                ]
+
+        actual = add_part.create_component_from_digikey_pn("YAG2320CT-ND")
+        expected = self.expected_from_csv("sample_parts_csv/YAG2320CT-ND.csv")
+        self.assertEqual(expected.to_csv(), actual.to_csv())
+
+    @unittest.skip("external API call")
+    def test_ceramic_capacitor_from_digikey_pn_nomock(self):
+        add_part.setup_digikey(add_part.load_config())
+        actual = add_part.create_component_from_digikey_pn("1276-1123-1-ND")
+        expected = self.expected_from_csv(
+                "sample_parts_csv/1276-1123-1-ND.csv")
+        self.assertEqual(expected.to_csv(), actual.to_csv())
+
+    @patch("digikey.product_details")
+    def test_ceramic_capacitor_from_digikey_pn(self, mock_product_details):
+        mock_part = mock_product_details.return_value
+        mock_part.limited_taxonomy.value = "Capacitors"
+        mock_part.primary_datasheet = (
+                "https://mm.digikey.com/Volume0/opasdata/d220001/medias/docus/"
+                "1068/CL21B334KBFNNNE_Spec.pdf")
+        mock_part.manufacturer.value = "Samsung Electro-Mechanics"
+        mock_part.manufacturer_part_number = "CL21B334KBFNNNE"
+        mock_part.digi_key_part_number = "1276-1123-1-ND"
+
+        mock_part.family.value = "Ceramic Capacitors"
+
+        mock_part.parameters = [
+                MagicMock(parameter="Capacitance", value="0.33 µF"),
+                MagicMock(parameter="Tolerance", value="±10%"),
+                MagicMock(parameter="Voltage - Rated", value="50V"),
+                MagicMock(parameter="Temperature Coefficient", value="X7R"),
+                MagicMock(
+                    parameter="Package / Case", value="0805 (2012 Metric)"),
+                ]
+
+        actual = add_part.create_component_from_digikey_pn("1276-1123-1-ND")
+        expected = self.expected_from_csv(
+                "sample_parts_csv/1276-1123-1-ND.csv")
+        self.assertEqual(expected.to_csv(), actual.to_csv())
+
+    @unittest.skip("external API call")
+    @patch("component.input",
+           return_value="Capacitor_THT:CP_Radial_D10.0mm_H17.5mm_P5.00mm")
+    def test_electrolytic_capacitor_from_digikey_pn_nomock(self, mock_input):
+        add_part.setup_digikey(add_part.load_config())
+        actual = add_part.create_component_from_digikey_pn("493-13313-1-ND")
+        expected = self.expected_from_csv(
+                "sample_parts_csv/493-13313-1-ND.csv")
+        self.assertEqual(expected.to_csv(), actual.to_csv())
+
+    @patch("digikey.product_details")
+    @patch("component.input",
+           return_value="Capacitor_THT:CP_Radial_D10.0mm_H17.5mm_P5.00mm")
+    def test_electrolytic_capacitor_from_digikey_pn(
+            self, mock_input, mock_product_details):
+        mock_part = mock_product_details.return_value
+        mock_part.limited_taxonomy.value = "Capacitors"
+        mock_part.primary_datasheet = (
+                "https://www.nichicon.co.jp/english/series_items/"
+                "catalog_pdf/e-ucy.pdf")
+        mock_part.manufacturer.value = "Nichicon"
+        mock_part.manufacturer_part_number = "UCY2G100MPD1TD"
+        mock_part.digi_key_part_number = "493-13313-1-ND"
+
+        mock_part.family.value = "Aluminum Electrolytic Capacitors"
+
+        mock_part.parameters = [
+                MagicMock(parameter="Capacitance", value="10 µF"),
+                MagicMock(parameter="Tolerance", value="±20%"),
+                MagicMock(parameter="Voltage - Rated", value="400V"),
+                MagicMock(parameter="Package / Case", value="Radial, Can"),
+                MagicMock(parameter="Polarization", value="Polar"),
+                MagicMock(parameter="Size / Dimension",
+                          value='0.394" Dia (10.00mm)'),
+                MagicMock(parameter="Height - Seated (Max)",
+                          value='0.689" (17.50mm)'),
+                MagicMock(parameter="Lead Spacing", value='0.197" (5.00mm)'),
+                ]
+
+        actual = add_part.create_component_from_digikey_pn("493-13313-1-ND")
+        expected = self.expected_from_csv(
+                "sample_parts_csv/493-13313-1-ND.csv")
+        self.assertEqual(expected.to_csv(), actual.to_csv())
+
+    @unittest.skip("external API call")
+    @patch("component.input",
+           return_value="Capacitor_THT:C_Radial_D6.30mm_H12.2mm_P5.00mm")
+    def test_nonpolarized_electrolytic_capacitor_from_digikey_pn_nomock(
+            self, mock_input):
+        add_part.setup_digikey(add_part.load_config())
+        actual = add_part.create_component_from_digikey_pn(
+                "10-ECE-A1HN100UBCT-ND")
+        expected = self.expected_from_csv(
+                "sample_parts_csv/10-ECE-A1HN100UBCT-ND.csv")
+        self.assertEqual(expected.to_csv(), actual.to_csv())
+
+    @patch("digikey.product_details")
+    @patch("component.input",
+           return_value="Capacitor_THT:C_Radial_D6.30mm_H12.2mm_P5.00mm")
+    def test_unpolarized_electrolytic_capacitor_from_digikey_pn(
+            self, mock_input, mock_product_details):
+        mock_part = mock_product_details.return_value
+        mock_part.limited_taxonomy.value = "Capacitors"
+        mock_part.primary_datasheet = (
+           "https://industrial.panasonic.com/cdbs/www-data/pdf/"
+           "RDF0000/ABA0000C1053.pdf")
+        mock_part.manufacturer.value = "Panasonic Electronic Components"
+        mock_part.manufacturer_part_number = "ECE-A1HN100UB"
+        mock_part.digi_key_part_number = "10-ECE-A1HN100UBCT-ND"
+
+        mock_part.family.value = "Aluminum Electrolytic Capacitors"
+
+        mock_part.parameters = [
+                MagicMock(parameter="Capacitance", value="10 µF"),
+                MagicMock(parameter="Tolerance", value="±20%"),
+                MagicMock(parameter="Voltage - Rated", value="50V"),
+                MagicMock(parameter="Package / Case", value="Radial, Can"),
+                MagicMock(parameter="Polarization", value="Bi-Polar"),
+                MagicMock(parameter="Size / Dimension",
+                          value='0.248" Dia (6.30mm)'),
+                MagicMock(parameter="Height - Seated (Max)",
+                          value='0.480" (12.20mm)'),
+                MagicMock(parameter="Lead Spacing", value='0.197" (5.00mm)'),
+                ]
+
+        actual = add_part.create_component_from_digikey_pn(
+                "10-ECE-A1HN100UBCT-ND")
+        expected = self.expected_from_csv(
+                "sample_parts_csv/10-ECE-A1HN100UBCT-ND.csv")
+        self.assertEqual(expected.to_csv(), actual.to_csv())
 
 
 class TestDatabaseFunctions(unittest.TestCase):
@@ -34,7 +201,7 @@ class TestDatabaseFunctions(unittest.TestCase):
                 "composition": "ThinFilm",
                 "package": "0603",
                 }
-        self.resistor = add_part.create_component_from_dict(self.base_dict)
+        self.resistor = component.create_component_from_dict(self.base_dict)
 
         add_part.initialize_database(self.db_path)
 
@@ -85,7 +252,7 @@ class TestDatabaseFunctions(unittest.TestCase):
         con = sqlite3.connect(f"file:{self.db_path}?mode=rw", uri=True)
         for n in range(add_part.IPN_DUPLICATE_LIMIT):
             self.base_dict["value"] = f"val{n}"
-            r = add_part.create_component_from_dict(self.base_dict)
+            r = component.create_component_from_dict(self.base_dict)
             add_part.add_component_to_db(con, r)
 
         cur = con.cursor()
@@ -100,12 +267,12 @@ class TestDatabaseFunctions(unittest.TestCase):
         con = sqlite3.connect(f"file:{self.db_path}?mode=rw", uri=True)
         for n in range(add_part.IPN_DUPLICATE_LIMIT):
             self.base_dict["value"] = f"val{n}"
-            r = add_part.create_component_from_dict(self.base_dict)
+            r = component.create_component_from_dict(self.base_dict)
             add_part.add_component_to_db(con, r)
 
         with self.assertRaises(
                 add_part.TooManyDuplicateIPNsInTableError) as cm:
-            r = add_part.create_component_from_dict(self.base_dict)
+            r = component.create_component_from_dict(self.base_dict)
             add_part.add_component_to_db(con, r)
         e = cm.exception
         self.assertEqual("R_test", e.IPN)
