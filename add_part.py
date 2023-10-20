@@ -117,6 +117,27 @@ class Component(ABC):
             # e.g. jumpers have no meaningful tolerance
             return "-"
 
+    @staticmethod
+    def _get_footprint_from_user(PN, prompt=True):
+        """Prompt user for a library:footprint combination for the given
+        footprint.
+
+        Args:
+            PN:
+                part number or display name of component. This is displayed to
+                the user while asking for a footprint name, so it should
+                probably be the MPN so that the user can look up the part.
+            prompt: if True, prompt the user for a footprint. If False, don't
+                prompt the user, and return an empty string instead.
+        """
+
+        if prompt:
+            fp = input("Enter footprint_library:footprint_name for component "
+                       f"{PN}")
+        else:
+            fp = ""
+        return fp
+
     @classmethod
     @abstractmethod
     def from_digikey(cls, digikey_part):
@@ -242,22 +263,7 @@ class Resistor(Component):
             elif p.parameter == "Supplier Device Package":
                 data["package"] = p.value
 
-        kicad_footprint_map = {
-                "0201": "Resistor_SMD:R_0201_0603Metric",
-                "0402": "Resistor_SMD:R_0402_1005Metric",
-                "0603": "Resistor_SMD:R_0603_1608Metric",
-                "0805": "Resistor_SMD:R_0805_2012Metric",
-                "1206": "Resistor_SMD:R_1206_3216Metric",
-                "1210": "Resistor_SMD:R_1210_3225Metric",
-                }
-
         data["value"] = "${Resistance}"
-        data["kicad_symbol"] = "Device:R"
-        try:
-            data["kicad_footprint"] = kicad_footprint_map[data["package"]]
-        except KeyError as e:
-            print_error(f"unknown footprint for package {e}")
-            return None
 
         if data["resistance"] == "0":
             data["IPN"] = (
@@ -287,6 +293,22 @@ class Resistor(Component):
                     f"{data['package']} "
                     f"{raw_composition}")
             data["keywords"] = f"r res resistor {data['resistance']}"
+
+        data["kicad_symbol"] = "Device:R"
+
+        kicad_footprint_map = {
+                "0201": "Resistor_SMD:R_0201_0603Metric",
+                "0402": "Resistor_SMD:R_0402_1005Metric",
+                "0603": "Resistor_SMD:R_0603_1608Metric",
+                "0805": "Resistor_SMD:R_0805_2012Metric",
+                "1206": "Resistor_SMD:R_1206_3216Metric",
+                "1210": "Resistor_SMD:R_1210_3225Metric",
+                }
+
+        if data["package"] in kicad_footprint_map:
+            data["kicad_footprint"] = kicad_footprint_map[data["package"]]
+        else:
+            data["kicad_footprint"] = cls._get_footprint_from_user(data["IPN"])
 
         return cls(**data)
 
@@ -374,23 +396,22 @@ class Capacitor(Component):
             return "-"
 
     @staticmethod
-    def _determine_symbol(data, polarization):
+    def _determine_symbol(polarization):
         """Choose an appropriate capacitor symbol.
 
         Args:
-            data:
-                dict of data pulled from digikey object. The function will
-                store `kicad_symbol` into this dict.
             polarization:
                 "Polarized" or "Unpolarized".
+        Returns:
+            String containing the symbol library and name ("lib:symbol")
         """
         if polarization == "Unpolarized":
-            data["kicad_symbol"] = "Device:C"
+            return "Device:C"
         else:
-            data["kicad_symbol"] = "Device:C_Polarized_US"
+            return "Device:C_Polarized_US"
 
-    @staticmethod
-    def _determine_footprint(data, polarization, dimensions):
+    @classmethod
+    def _determine_footprint(cls, data, polarization, dimensions):
         """
         Choose a footprint based on the component's parameters.
 
@@ -409,7 +430,6 @@ class Capacitor(Component):
             tuple of package_short (e.g. "0805" or "Radial") and package_dims
             (e.g. "" or "D5.00mm_H10.0mm_P2.00mm")
         """
-        # TODO: make this pull from the actual list of kicad footprints
         kicad_footprint_map = {
                 "0201": "Capacitor_SMD:C_0201_0603Metric",
                 "0402": "Capacitor_SMD:C_0402_1005Metric",
@@ -424,28 +444,22 @@ class Capacitor(Component):
             package_short = data["package"]
             package_dims = ""
         elif data["package"] == "Radial, Can":
-            # for SMD radial electrolytic caps, the footprint standard naming
-            # is diameter x height (with no decimal points):
-            # f"Capacitor_SMD:C{pol}_Elec_{diameter}x{height}"
+            data["kicad_footprint"] = cls._get_footprint_from_user(
+                    data["DPN1"])
             pol = "P" if polarization == "Polarized" else ""
             try:
                 diameter = dimensions["diameter"]
                 height = dimensions["height"]
                 pitch = dimensions["pitch"]
-
-                package_short = "Radial"
-                package_dims = f"D{diameter}_H{height}_P{pitch}"
-                data["package"] = (
-                        f"C{pol}_{package_short}_{package_dims}")
-                data["kicad_footprint"] = (
-                        f"Capacitor_THT:"
-                        f"C{pol}_{package_short}_{package_dims}")
             except KeyError:
                 print_error("unknown package dimensions: {e}")
                 return None
+            package_short = "Radial"
+            package_dims = f"D{diameter}_H{height}_P{pitch}"
+            data["package"] = f"C{pol}_{package_short}_{package_dims}"
         else:
-            print_error(f"unknown footprint for package {data['package']}")
-            return None
+            data["kicad_footprint"] = cls._get_footprint_from_user(
+                    data["DPN1"])
 
         return package_short, package_dims
 
@@ -526,7 +540,7 @@ class Capacitor(Component):
             return None
 
         data["value"] = "${Capacitance}"
-        cls._determine_symbol(data, polarization)
+        data["kicad_symbol"] = cls._determine_symbol(polarization)
 
         package_data = cls._determine_footprint(data, polarization, dimensions)
         if package_data:

@@ -83,7 +83,9 @@ class TestCreateFromDigikey(unittest.TestCase):
         self.assertEqual(expected.to_csv(), actual.to_csv())
 
     @unittest.skip("external API call")
-    def test_electrolytic_capacitor_from_digikey_pn_nomock(self):
+    @patch("add_part.input",
+           return_value="Capacitor_THT:CP_Radial_D10.0mm_H17.5mm_P5.00mm")
+    def test_electrolytic_capacitor_from_digikey_pn_nomock(self, mock_input):
         add_part.setup_digikey(add_part.load_config())
         actual = add_part.create_component_from_digikey_pn("493-13313-1-ND")
         expected = self.expected_from_csv(
@@ -91,8 +93,10 @@ class TestCreateFromDigikey(unittest.TestCase):
         self.assertEqual(expected.to_csv(), actual.to_csv())
 
     @patch("digikey.product_details")
+    @patch("add_part.input",
+           return_value="Capacitor_THT:CP_Radial_D10.0mm_H17.5mm_P5.00mm")
     def test_electrolytic_capacitor_from_digikey_pn(
-            self, mock_product_details):
+            self, mock_input, mock_product_details):
         mock_part = mock_product_details.return_value
         mock_part.limited_taxonomy.value = "Capacitors"
         mock_part.primary_datasheet = (
@@ -123,7 +127,10 @@ class TestCreateFromDigikey(unittest.TestCase):
         self.assertEqual(expected.to_csv(), actual.to_csv())
 
     @unittest.skip("external API call")
-    def test_nonpolarized_electrolytic_capacitor_from_digikey_pn_nomock(self):
+    @patch("add_part.input",
+           return_value="Capacitor_THT:C_Radial_D6.30mm_H12.2mm_P5.00mm")
+    def test_nonpolarized_electrolytic_capacitor_from_digikey_pn_nomock(
+            self, mock_input):
         add_part.setup_digikey(add_part.load_config())
         actual = add_part.create_component_from_digikey_pn(
                 "10-ECE-A1HN100UBCT-ND")
@@ -132,8 +139,10 @@ class TestCreateFromDigikey(unittest.TestCase):
         self.assertEqual(expected.to_csv(), actual.to_csv())
 
     @patch("digikey.product_details")
+    @patch("add_part.input",
+           return_value="Capacitor_THT:C_Radial_D6.30mm_H12.2mm_P5.00mm")
     def test_unpolarized_electrolytic_capacitor_from_digikey_pn(
-            self, mock_product_details):
+            self, mock_input, mock_product_details):
         mock_part = mock_product_details.return_value
         mock_part.limited_taxonomy.value = "Capacitors"
         mock_part.primary_datasheet = (
