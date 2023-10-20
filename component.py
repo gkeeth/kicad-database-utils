@@ -3,8 +3,63 @@ import io
 import re
 from abc import ABC, abstractmethod
 from collections import OrderedDict
+import digikey
+# import mouser
 
 from print_utils import print_error
+
+
+def create_component_from_digikey_pn(digikey_pn):
+    """Factory to construct the appropriate component type object for a given
+    digikey PN.
+
+    Queries the digikey API to get part data, determines the component type,
+    and then dispatches to the appropriate Component.from_digikey(part)
+    constructor.
+
+    Args:
+        digikey_pn: string containing the digikey part number.
+
+    Returns:
+        A `Component` object constructed from the digikey part details.
+    """
+    part = digikey.product_details(digikey_pn)
+    if not part:
+        print_error(f"Could not get info for part {digikey_pn}")
+        return None
+
+    part_type = part.limited_taxonomy.value
+    if part_type == "Resistors":
+        return Resistor.from_digikey(part)
+    elif part_type == "Capacitors":
+        return Capacitor.from_digikey(part)
+    else:
+        raise NotImplementedError("No component type to handle part type "
+                                  f"'{part.limited_taxonomy.value}' for part "
+                                  f"{digikey_pn}")
+
+
+def create_component_from_dict(columns_and_values):
+    """Factory to construct the appropriate component type object from a dict
+    of column names to column values.
+
+    All appropriate fields for each component type must be present. The type of
+    component is determined from the value corresponding to the `IPN` key.
+
+    Args:
+        columns_and_values: dict containing all necessary key/value pairs for
+            constructing the desired component.
+
+    Returns:
+        A `Component` object constructed from the given dict.
+    """
+    IPN = columns_and_values["IPN"]
+    if IPN.startswith("R_"):
+        return Resistor(**columns_and_values)
+    elif IPN.startswith("C_"):
+        return Capacitor(**columns_and_values)
+    else:
+        raise NotImplementedError(f"No component type to handle part '{IPN}'")
 
 
 class Component(ABC):
