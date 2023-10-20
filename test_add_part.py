@@ -30,7 +30,7 @@ class TestCreateFromDigikey(unittest.TestCase):
         mock_part.limited_taxonomy.value = "Resistors"
         mock_part.primary_datasheet = (
                 "https://www.yageo.com/upload/media/product/productsearch/"
-                "datasheet/rchip/PYu-RT_1-to-0.01_RoHS_L_13.pdf")
+                "datasheet/rchip/PYu-RT_1-to-0.01_RoHS_L_15.pdf")
         mock_part.manufacturer.value = "YAGEO"
         mock_part.manufacturer_part_number = "RT0603FRE07100RL"
         mock_part.digi_key_part_number = "YAG2320CT-ND"
