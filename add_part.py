@@ -290,6 +290,8 @@ def parse_args():
     """Set up CLI args and return the parsed arguments."""
     # TODO: add args for --dry-run (don't actually update database, but execute
     # everything up to db commit). Consider using a rolled-back transaction.
+    # TODO: default to skip adding part if distributor PN is already in table,
+    # add option to create duplicate / add anyway
     parser = argparse.ArgumentParser(
             description=("Add a part to the parts database, either manually "
                          "or by distributor lookup."))
