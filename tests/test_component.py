@@ -4,9 +4,8 @@ import csv
 import unittest
 from unittest.mock import patch, MagicMock
 
-# from partdb import component
 from partdb import component
-from partdb.component import Component, Resistor, Capacitor, OpAmp
+from partdb.component import Component, Resistor, Capacitor
 
 
 def expected_component_from_csv(csvpath):
