@@ -154,7 +154,7 @@ def create_component_list_from_csv(csv_path):
         A list of Components corresponding to lines in the CSV file.
     """
     components = []
-    with open(args.csv, "r") as infile:
+    with open(csv_path, "r") as infile:
         reader = csv.DictReader(infile)
         for d in reader:
             comp = create_component_from_dict(d)
