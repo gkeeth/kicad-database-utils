@@ -585,4 +585,3 @@ class OpAmp(Component):
                     data["DPN1"])
 
         return cls(**data)
-
