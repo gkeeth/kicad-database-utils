@@ -6,29 +6,25 @@ import sqlite3
 import unittest
 from unittest.mock import patch
 
+from tests.test_component import expected_component_from_csv
 from partdb import component  # for create_component_from_dict()
 from partdb import add_part
 
 
 @unittest.skip("external API call")
 class TestCreateFromDigikeyAPI(unittest.TestCase):
-    @staticmethod
-    def expected_from_csv(csvpath):
-        with open(csvpath, "r") as infile:
-            reader = csv.DictReader(infile)
-            return component.create_component_from_dict(next(reader))
-
     def setUp(self):
         add_part.setup_digikey(add_part.load_config())
 
     def test_resistor_from_digikey_pn(self):
         actual = add_part.create_component_from_digikey_pn("YAG2320CT-ND")
-        expected = self.expected_from_csv("sample_parts_csv/YAG2320CT-ND.csv")
+        expected = expected_component_from_csv(
+                "sample_parts_csv/YAG2320CT-ND.csv")
         self.assertEqual(expected.to_csv(), actual.to_csv())
 
     def test_ceramic_capacitor_from_digikey_pn(self):
         actual = add_part.create_component_from_digikey_pn("1276-1123-1-ND")
-        expected = self.expected_from_csv(
+        expected = expected_component_from_csv(
                 "sample_parts_csv/1276-1123-1-ND.csv")
         self.assertEqual(expected.to_csv(), actual.to_csv())
 
@@ -36,7 +32,7 @@ class TestCreateFromDigikeyAPI(unittest.TestCase):
            return_value="Capacitor_THT:CP_Radial_D10.0mm_H17.5mm_P5.00mm")
     def test_electrolytic_capacitor_from_digikey_pn(self, mock_input):
         actual = add_part.create_component_from_digikey_pn("493-13313-1-ND")
-        expected = self.expected_from_csv(
+        expected = expected_component_from_csv(
                 "sample_parts_csv/493-13313-1-ND.csv")
         self.assertEqual(expected.to_csv(), actual.to_csv())
 
@@ -46,7 +42,7 @@ class TestCreateFromDigikeyAPI(unittest.TestCase):
             self, mock_input):
         actual = add_part.create_component_from_digikey_pn(
                 "10-ECE-A1HN100UBCT-ND")
-        expected = self.expected_from_csv(
+        expected = expected_component_from_csv(
                 "sample_parts_csv/10-ECE-A1HN100UBCT-ND.csv")
         self.assertEqual(expected.to_csv(), actual.to_csv())
 
@@ -54,7 +50,7 @@ class TestCreateFromDigikeyAPI(unittest.TestCase):
            return_value="Amplifier_Operational:LM4562")
     def test_opamp_from_digikey_pn(self, mock_input):
         actual = add_part.create_component_from_digikey_pn("296-35279-1-ND")
-        expected = self.expected_from_csv(
+        expected = expected_component_from_csv(
                 "sample_parts_csv/296-35279-1-ND.csv")
         self.assertEqual(expected.to_csv(), actual.to_csv())
 

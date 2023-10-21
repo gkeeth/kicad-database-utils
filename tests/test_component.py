@@ -9,6 +9,12 @@ from partdb import component
 from partdb.component import Component, Resistor, Capacitor, OpAmp
 
 
+def expected_component_from_csv(csvpath):
+    with open(csvpath, "r") as infile:
+        reader = csv.DictReader(infile)
+        return component.create_component_from_dict(next(reader))
+
+
 class TestComponentOutputs(unittest.TestCase):
     def setUp(self):
         # we use Resistor here as the simplest (?) subclass of Component,
@@ -251,11 +257,6 @@ class TestComponentFromDict(unittest.TestCase):
 
 
 class TestFromDigikeyPart(unittest.TestCase):
-    @staticmethod
-    def expected_from_csv(csvpath):
-        with open(csvpath, "r") as infile:
-            reader = csv.DictReader(infile)
-            return component.create_component_from_dict(next(reader))
 
     def test_resistor_from_digikey(self):
         mock_part = MagicMock()
@@ -275,7 +276,8 @@ class TestFromDigikeyPart(unittest.TestCase):
                 ]
 
         actual = component.create_component_from_digikey_part(mock_part)
-        expected = self.expected_from_csv("sample_parts_csv/YAG2320CT-ND.csv")
+        expected = expected_component_from_csv(
+                "sample_parts_csv/YAG2320CT-ND.csv")
         self.assertEqual(expected.to_csv(), actual.to_csv())
 
     def test_ceramic_capacitor_from_digikey(self):
@@ -298,7 +300,7 @@ class TestFromDigikeyPart(unittest.TestCase):
                 ]
 
         actual = component.create_component_from_digikey_part(mock_part)
-        expected = self.expected_from_csv(
+        expected = expected_component_from_csv(
                 "sample_parts_csv/1276-1123-1-ND.csv")
         self.assertEqual(expected.to_csv(), actual.to_csv())
 
@@ -328,7 +330,7 @@ class TestFromDigikeyPart(unittest.TestCase):
                 ]
 
         actual = component.create_component_from_digikey_part(mock_part)
-        expected = self.expected_from_csv(
+        expected = expected_component_from_csv(
                 "sample_parts_csv/493-13313-1-ND.csv")
         self.assertEqual(expected.to_csv(), actual.to_csv())
 
@@ -359,7 +361,7 @@ class TestFromDigikeyPart(unittest.TestCase):
                 ]
 
         actual = component.create_component_from_digikey_part(mock_part)
-        expected = self.expected_from_csv(
+        expected = expected_component_from_csv(
                 "sample_parts_csv/10-ECE-A1HN100UBCT-ND.csv")
         self.assertEqual(expected.to_csv(), actual.to_csv())
 
@@ -389,7 +391,7 @@ class TestFromDigikeyPart(unittest.TestCase):
                 ]
 
         actual = component.create_component_from_digikey_part(mock_part)
-        expected = self.expected_from_csv(
+        expected = expected_component_from_csv(
                 "sample_parts_csv/296-35279-1-ND.csv")
         self.assertEqual(expected.to_csv(), actual.to_csv())
 
