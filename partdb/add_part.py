@@ -113,10 +113,11 @@ def create_component_from_digikey_pn(digikey_pn):
 def create_component_list_from_digikey_pns(digikey_pn_list):
     """Create a list of components from a list of digikey part numbers.
 
+    The Digikey API environment variables need to be set up before running
+    this function (via setup_digikey()).
+
     Any part numbers that are invalid or otherwise cannot be used to create
     a component will be skipped.
-
-    Sets up the Digikey API config before starting.
 
     Args:
         digikey_pn_list: list of digikey part number strings.
@@ -124,12 +125,6 @@ def create_component_list_from_digikey_pns(digikey_pn_list):
     Returns:
         A list of Components corresponding to digikey part numbers.
     """
-
-    try:
-        setup_digikey(config_data)
-    except KeyError as e:
-        print_error(f"key {e.args[0]} not found in configuration file")
-        return []
 
     components = []
     for pn in digikey_pn_list:
@@ -359,6 +354,7 @@ def main():
     args = parse_args()
     print_utils.set_verbose(args.verbose)
     config_data = load_config()
+    setup_digikey(config_data)
     try:
         db_path = os.path.abspath(config_data["db"]["path"])
     except KeyError:
