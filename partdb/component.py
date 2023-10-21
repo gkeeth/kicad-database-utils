@@ -26,10 +26,14 @@ def create_component_from_digikey_part(part):
         return Resistor.from_digikey(part)
     elif part_type == "Capacitors":
         return Capacitor.from_digikey(part)
-    else:
-        raise NotImplementedError("No component type to handle part type "
-                                  f"'{part.limited_taxonomy.value}' for part "
-                                  f"{part.digi_key_part_number}")
+    elif part_type == "Integrated Circuits (ICs)":
+        subtype = part.limited_taxonomy.children[0].value
+        if "OP Amps" in subtype:
+            return OpAmp.from_digikey(part)
+
+    raise NotImplementedError("No component type to handle part type "
+                              f"'{part.limited_taxonomy.value}' for part "
+                              f"{part.digi_key_part_number}")
 
 
 def create_component_from_dict(columns_and_values):
@@ -51,6 +55,8 @@ def create_component_from_dict(columns_and_values):
         return Resistor(**columns_and_values)
     elif IPN.startswith("C_"):
         return Capacitor(**columns_and_values)
+    elif IPN.startswith("OpAmp_"):
+        return OpAmp(**columns_and_values)
     else:
         raise NotImplementedError(f"No component type to handle part '{IPN}'")
 
@@ -92,25 +98,27 @@ class Component(ABC):
             return "-"
 
     @staticmethod
-    def _get_footprint_from_user(PN, prompt=True):
-        """Prompt user for a library:footprint combination for the given
-        footprint.
+    def _get_sym_or_fp_from_user(PN, fp=True, prompt=True):
+        """Prompt user for a library:symbol or library:footprint combination
+        for the given symbol or footprint.
 
         Args:
             PN:
                 part number or display name of component. This is displayed to
-                the user while asking for a footprint name, so it should
+                the user while asking for a symbol/footprint name, so it should
                 probably be the MPN so that the user can look up the part.
-            prompt: if True, prompt the user for a footprint. If False, don't
-                prompt the user, and return an empty string instead.
+            fp: True if prompting for a footprint, False if prompting for a
+                symbol.
+            prompt: if True, prompt the user for a symbol/footprint. If False,
+                don't prompt the user, and return an empty string instead.
         """
 
+        device = "footprint" if fp else "symbol"
         if prompt:
-            fp = input("Enter footprint_library:footprint_name for component "
-                       f"{PN}")
+            return input(f"Enter {device}_library:{device}_name for "
+                         f"component {PN}: ")
         else:
-            fp = ""
-        return fp
+            return ""
 
     @classmethod
     @abstractmethod
@@ -282,7 +290,8 @@ class Resistor(Component):
         if data["package"] in kicad_footprint_map:
             data["kicad_footprint"] = kicad_footprint_map[data["package"]]
         else:
-            data["kicad_footprint"] = cls._get_footprint_from_user(data["IPN"])
+            data["kicad_footprint"] = cls._get_sym_or_fp_from_user(
+                    data["DPN1"])
 
         return cls(**data)
 
@@ -418,7 +427,7 @@ class Capacitor(Component):
             package_short = data["package"]
             package_dims = ""
         elif data["package"] == "Radial, Can":
-            data["kicad_footprint"] = cls._get_footprint_from_user(
+            data["kicad_footprint"] = cls._get_sym_or_fp_from_user(
                     data["DPN1"])
             pol = "P" if polarization == "Polarized" else ""
             try:
@@ -432,7 +441,7 @@ class Capacitor(Component):
             package_dims = f"D{diameter}_H{height}_P{pitch}"
             data["package"] = f"C{pol}_{package_short}_{package_dims}"
         else:
-            data["kicad_footprint"] = cls._get_footprint_from_user(
+            data["kicad_footprint"] = cls._get_sym_or_fp_from_user(
                     data["DPN1"])
 
         return package_short, package_dims
@@ -526,3 +535,54 @@ class Capacitor(Component):
                 data, polarization, package_short, package_dims)
 
         return cls(**data)
+
+
+class OpAmp(Component):
+    table = "opamp"
+
+    def __init__(self, bandwidth, num_units, **kwargs):
+        super().__init__(**kwargs)
+        self.columns["bandwidth"] = bandwidth
+        self.columns["num_units"] = num_units
+
+    @classmethod
+    def from_digikey(cls, digikey_part):
+        data = cls.get_digikey_common_data(digikey_part)
+
+        for p in digikey_part.parameters:
+            if p.parameter == "Gain Bandwidth Product":
+                data["bandwidth"] = p.value
+            elif p.parameter == "Slew Rate":
+                slewrate = p.value
+            elif p.parameter == "Package / Case":
+                package = p.value
+            elif p.parameter == "Supplier Device Package":
+                short_package = p.value
+            elif p.parameter == "Number of Circuits":
+                data["num_units"] = p.value
+
+        data["value"] = "${MPN}"
+        data["keywords"] = "amplifier op amp opamp"
+
+        num_unit_map = {"1": "Single", "2": "Dual", "4": "Quad"}
+        data["description"] = (
+                f"{num_unit_map[data['num_units']]} "
+                f"{data['bandwidth']}, {slewrate} Op Amp, {short_package}")
+        IPN = f"OpAmp_{data['manufacturer']}_{data['MPN']}"
+        data["IPN"] = re.sub(r"\s+", "", IPN)
+
+        data["kicad_symbol"] = cls._get_sym_or_fp_from_user(
+                data["DPN1"], fp=False)
+
+        kicad_footprint_map = {
+                '8-SOIC (0.154", 3.90mm Width)':
+                "Package_SO:SOIC-8_3.9x4.9mm_P1.27mm",
+                }
+        if package in kicad_footprint_map:
+            data["kicad_footprint"] = kicad_footprint_map[package]
+        else:
+            data["kicad_footprint"] = cls._get_sym_or_fp_from_user(
+                    data["DPN1"])
+
+        return cls(**data)
+
