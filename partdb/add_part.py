@@ -39,9 +39,9 @@ common columns:
     DPN2
 
 tables:
-    resistor:             value, resistance, tolerance, power, composition,
+    x resistor:           value, resistance, tolerance, power, composition,
                           package
-    capacitor:            value, capacitance, tolerance, voltage, dielectric,
+    x capacitor:          value, capacitance, tolerance, voltage, dielectric,
                           package
     inductor:             value, inductance, tolerance, package
     ferrite_bead:         impedance_at_freq, current, resistance, package
@@ -56,10 +56,10 @@ tables:
     switch:               type, configuration, orientation, current
     relay:                configuration, coil_voltage, coil_current,
                           switch_current
-    opamp:                input_type, bandwidth, package
+    x opamp:              input_type, bandwidth, package
     logic:                function, package
-    microcontroller:      pins, max_frequency, package
-    voltage_regulator:    voltage, current, package
+    x microcontroller:    pins, max_frequency, package
+    x voltage_regulator:  voltage, current, package
 """
 
 
