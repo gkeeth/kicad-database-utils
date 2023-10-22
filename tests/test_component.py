@@ -434,6 +434,36 @@ class TestFromDigikeyPart(unittest.TestCase):
                 "sample_parts_csv/STM32F042K4T6TR-ND.csv")
         self.assertEqual(expected.to_csv(), actual.to_csv())
 
+    @patch("partdb.component.input",
+           return_value="Regulator_Linear:LM317_TO-220")
+    def test_voltage_regulator_from_digikey(self, mock_input):
+        mock_part = self.init_mock(
+                category="Integrated Circuits (ICs)",
+                subcategory=(
+                    "Power Management (PMIC) - Voltage Regulators - Linear, "
+                    "Low Drop Out (LDO) Regulators - Voltage Regulators - "
+                    "Linear, Low Drop Out (LDO) Regulators"),
+                datasheet=(
+                    "https://www.ti.com/general/docs/suppproductinfo.tsp?"
+                    "distId=10&gotoUrl=https%3A%2F%2Fwww.ti.com%2Flit%2Fgpn"
+                    "%2Flm117hv"),
+                mfg="Texas Instruments", MPN="LM317HVT/NOPB",
+                digikey_PN="LM317HVT/NOPB-ND",
+                parameters={
+                    "Supplier Device Package": "TO-220-3",
+                    "Voltage - Output (Min/Fixed)": "1.25V",
+                    "Voltage - Output (Max)": "57V",
+                    "Voltage - Input (Max)": "60V",
+                    "Current - Output": "1.5A",
+                    "Output Type": "Adjustable",
+                    }
+                )
+
+        actual = component.create_component_from_digikey_part(mock_part)
+        expected = expected_component_from_csv(
+                "sample_parts_csv/LM317HVT_NOPB-ND.csv")
+        self.assertEqual(expected.to_csv(), actual.to_csv())
+
 
 if __name__ == "__main__":
     unittest.main()

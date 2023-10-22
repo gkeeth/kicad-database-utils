@@ -32,6 +32,8 @@ def create_component_from_digikey_part(part):
             return OpAmp.from_digikey(part)
         elif "Microcontrollers" in subtype:
             return Microcontroller.from_digikey(part)
+        elif "Voltage Regulators" in subtype:
+            return VoltageRegulator.from_digikey(part)
 
     raise NotImplementedError("No component type to handle part type "
                               f"'{part.limited_taxonomy.value}' for part "
@@ -61,6 +63,8 @@ def create_component_from_dict(columns_and_values):
         return OpAmp(**columns_and_values)
     elif IPN.startswith("MCU_"):
         return Microcontroller(**columns_and_values)
+    elif IPN.startswith("VReg_"):
+        return VoltageRegulator(**columns_and_values)
     else:
         raise NotImplementedError(f"No component type to handle part '{IPN}'")
 
@@ -684,6 +688,82 @@ class Microcontroller(Component):
                 f"{package}")
         IPN = f"MCU_{data['manufacturer']}_{data['MPN']}"
         data["IPN"] = re.sub(r"\s+", "", IPN)
+
+        data["kicad_symbol"] = cls._get_sym_or_fp_from_user(
+                data["DPN1"], fp=False)
+        cls._determine_footprint(data, package)
+
+        return cls(**data)
+
+
+class VoltageRegulator(Component):
+    table = "voltage_regulator"
+
+    def __init__(self, voltage, current, **kwargs):
+        super().__init__(**kwargs)
+        self.columns["voltage"] = voltage
+        self.columns["current"] = current
+
+    @classmethod
+    def _determine_footprint(cls, data, package):
+        """
+        Choose a footprint based on the component's parameters, or ask the user
+        if there is no known-good footprint.
+
+        Args:
+            data:
+                dict of data pulled from digikey object. The function will
+                store `kicad_footprint` into this dict, and possibly read the
+                distributor part number (`DPN1`).
+            package:
+                string containing a short description of the package, such as
+                "TO-220-3". If this is not a known package type, the user will
+                be prompted to provide a footprint name.
+        """
+        kicad_footprint_map = {
+                "TO-220-3": "Package_TO_SOT_THT:TO-220-3_Vertical",
+                }
+        if package in kicad_footprint_map:
+            data["kicad_footprint"] = kicad_footprint_map[package]
+        else:
+            data["kicad_footprint"] = cls._get_sym_or_fp_from_user(
+                    data["DPN1"])
+
+    @classmethod
+    def from_digikey(cls, digikey_part):
+        data = cls.get_digikey_common_data(digikey_part)
+
+        for p in digikey_part.parameters:
+            if p.parameter == "Supplier Device Package":
+                package = p.value
+            elif p.parameter == "Voltage - Input (Max)":
+                vin_max = p.value
+            elif p.parameter == "Voltage - Output (Min/Fixed)":
+                vout_min = p.value
+            elif p.parameter == "Voltage - Output (Max)":
+                vout_max = p.value
+            elif p.parameter == "Current - Output":
+                data["current"] = p.value
+            elif p.parameter == "Output Type":
+                if p.value == "Fixed":
+                    output_type = "fixed"
+                else:
+                    output_type = "adjustable"
+
+        data["value"] = "${MPN}"
+        data["keywords"] = "voltage regulator vreg"
+        if output_type == "Fixed":
+            data["voltage"] = vout_max
+        else:
+            data["voltage"] = f"{vout_min} - {vout_max}"
+        data["description"] = (
+                f"{data['voltage']}, {data['current']} out, "
+                f"{vin_max} in, "
+                f"{output_type} voltage regulator, "
+                f"{package}")
+        IPN = f"VReg_{data['manufacturer']}_{data['MPN']}"
+        data["IPN"] = re.sub(r"\s+", "", IPN)
+        print(data["description"])
 
         data["kicad_symbol"] = cls._get_sym_or_fp_from_user(
                 data["DPN1"], fp=False)
