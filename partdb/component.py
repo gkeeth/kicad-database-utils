@@ -753,18 +753,17 @@ class VoltageRegulator(Component):
 
         data["value"] = "${MPN}"
         data["keywords"] = "voltage regulator vreg"
-        if output_type == "Fixed":
-            data["voltage"] = vout_max
+        if output_type == "fixed":
+            data["voltage"] = vout_min
         else:
             data["voltage"] = f"{vout_min} - {vout_max}"
         data["description"] = (
-                f"{data['voltage']}, {data['current']} out, "
+                f"{data['voltage']} @{data['current']} out, "
                 f"{vin_max} in, "
                 f"{output_type} voltage regulator, "
                 f"{package}")
         IPN = f"VReg_{data['manufacturer']}_{data['MPN']}"
         data["IPN"] = re.sub(r"\s+", "", IPN)
-        print(data["description"])
 
         data["kicad_symbol"] = cls._get_sym_or_fp_from_user(
                 data["DPN1"], fp=False)
