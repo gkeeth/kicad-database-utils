@@ -1,6 +1,7 @@
 import csv
 import io
 import re
+import readline  # noqa: F401
 from abc import ABC, abstractmethod
 from collections import OrderedDict
 
