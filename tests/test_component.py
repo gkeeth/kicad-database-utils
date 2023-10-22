@@ -256,23 +256,35 @@ class TestComponentFromDict(unittest.TestCase):
 
 
 class TestFromDigikeyPart(unittest.TestCase):
+    @staticmethod
+    def init_mock(category, datasheet, mfg, MPN, digikey_PN,
+                  subcategory="", family="", parameters={}):
+        mock_part = MagicMock()
+        mock_part.limited_taxonomy.value = category
+        mock_part.limited_taxonomy.children = [MagicMock(value=subcategory)]
+        mock_part.family.value = family
+        mock_part.primary_datasheet = datasheet
+        mock_part.manufacturer.value = mfg
+        mock_part.manufacturer_part_number = MPN
+        mock_part.digi_key_part_number = digikey_PN
+        mock_part.parameters = [MagicMock(parameter=k, value=parameters[k])
+                                for k in parameters]
+        return mock_part
 
     def test_resistor_from_digikey(self):
-        mock_part = MagicMock()
-        mock_part.limited_taxonomy.value = "Resistors"
-        mock_part.primary_datasheet = (
-                "https://www.yageo.com/upload/media/product/productsearch/"
-                "datasheet/rchip/PYu-RT_1-to-0.01_RoHS_L_15.pdf")
-        mock_part.manufacturer.value = "YAGEO"
-        mock_part.manufacturer_part_number = "RT0603FRE07100RL"
-        mock_part.digi_key_part_number = "YAG2320CT-ND"
-        mock_part.parameters = [
-                MagicMock(parameter="Resistance", value="100Ω"),
-                MagicMock(parameter="Tolerance", value="±1%"),
-                MagicMock(parameter="Power (Watts)", value="0.1W"),
-                MagicMock(parameter="Composition", value="Thin Film"),
-                MagicMock(parameter="Supplier Device Package", value="0603"),
-                ]
+        mock_part = self.init_mock(
+                category="Resistors", datasheet=(
+                    "https://www.yageo.com/upload/media/product/productsearch/"
+                    "datasheet/rchip/PYu-RT_1-to-0.01_RoHS_L_15.pdf"),
+                mfg="YAGEO", MPN="RT0603FRE07100RL", digikey_PN="YAG2320CT-ND",
+                parameters={
+                    "Resistance": "100Ω",
+                    "Tolerance": "±1%",
+                    "Power (Watts)": "0.1W",
+                    "Composition": "Thin Film",
+                    "Supplier Device Package": "0603",
+                    }
+                )
 
         actual = component.create_component_from_digikey_part(mock_part)
         expected = expected_component_from_csv(
@@ -280,23 +292,20 @@ class TestFromDigikeyPart(unittest.TestCase):
         self.assertEqual(expected.to_csv(), actual.to_csv())
 
     def test_ceramic_capacitor_from_digikey(self):
-        mock_part = MagicMock()
-        mock_part.limited_taxonomy.value = "Capacitors"
-        mock_part.primary_datasheet = (
-                "https://mm.digikey.com/Volume0/opasdata/d220001/medias/docus/"
-                "1068/CL21B334KBFNNNE_Spec.pdf")
-        mock_part.manufacturer.value = "Samsung Electro-Mechanics"
-        mock_part.manufacturer_part_number = "CL21B334KBFNNNE"
-        mock_part.digi_key_part_number = "1276-1123-1-ND"
-        mock_part.family.value = "Ceramic Capacitors"
-        mock_part.parameters = [
-                MagicMock(parameter="Capacitance", value="0.33 µF"),
-                MagicMock(parameter="Tolerance", value="±10%"),
-                MagicMock(parameter="Voltage - Rated", value="50V"),
-                MagicMock(parameter="Temperature Coefficient", value="X7R"),
-                MagicMock(
-                    parameter="Package / Case", value="0805 (2012 Metric)"),
-                ]
+        mock_part = self.init_mock(
+                category="Capacitors", family="Ceramic Capacitors", datasheet=(
+                    "https://mm.digikey.com/Volume0/opasdata/d220001/medias/"
+                    "docus/1068/CL21B334KBFNNNE_Spec.pdf"),
+                mfg="Samsung Electro-Mechanics", MPN="CL21B334KBFNNNE",
+                digikey_PN="1276-1123-1-ND",
+                parameters={
+                    "Capacitance": "0.33 µF",
+                    "Tolerance": "±10%",
+                    "Voltage - Rated": "50V",
+                    "Temperature Coefficient": "X7R",
+                    "Package / Case": "0805 (2012 Metric)",
+                    }
+                )
 
         actual = component.create_component_from_digikey_part(mock_part)
         expected = expected_component_from_csv(
@@ -306,27 +315,25 @@ class TestFromDigikeyPart(unittest.TestCase):
     @patch("partdb.component.input",
            return_value="Capacitor_THT:CP_Radial_D10.0mm_H17.5mm_P5.00mm")
     def test_electrolytic_capacitor_from_digikey(self, mock_input):
-        mock_part = MagicMock()
-        mock_part.limited_taxonomy.value = "Capacitors"
-        mock_part.primary_datasheet = (
-                "https://www.nichicon.co.jp/english/series_items/"
-                "catalog_pdf/e-ucy.pdf")
-        mock_part.manufacturer.value = "Nichicon"
-        mock_part.manufacturer_part_number = "UCY2G100MPD1TD"
-        mock_part.digi_key_part_number = "493-13313-1-ND"
-        mock_part.family.value = "Aluminum Electrolytic Capacitors"
-        mock_part.parameters = [
-                MagicMock(parameter="Capacitance", value="10 µF"),
-                MagicMock(parameter="Tolerance", value="±20%"),
-                MagicMock(parameter="Voltage - Rated", value="400V"),
-                MagicMock(parameter="Package / Case", value="Radial, Can"),
-                MagicMock(parameter="Polarization", value="Polar"),
-                MagicMock(parameter="Size / Dimension",
-                          value='0.394" Dia (10.00mm)'),
-                MagicMock(parameter="Height - Seated (Max)",
-                          value='0.689" (17.50mm)'),
-                MagicMock(parameter="Lead Spacing", value='0.197" (5.00mm)'),
-                ]
+        mock_part = self.init_mock(
+                category="Capacitors",
+                family="Aluminum Electrolytic Capacitors",
+                datasheet=(
+                    "https://www.nichicon.co.jp/english/series_items/"
+                    "catalog_pdf/e-ucy.pdf"),
+                mfg="Nichicon", MPN="UCY2G100MPD1TD",
+                digikey_PN="493-13313-1-ND",
+                parameters={
+                    "Capacitance": "10 µF",
+                    "Tolerance": "±20%",
+                    "Voltage - Rated": "400V",
+                    "Package / Case": "Radial, Can",
+                    "Polarization": "Polar",
+                    "Size / Dimension": '0.394" Dia (10.00mm)',
+                    "Height - Seated (Max)": '0.689" (17.50mm)',
+                    "Lead Spacing": '0.197" (5.00mm)',
+                    }
+                )
 
         actual = component.create_component_from_digikey_part(mock_part)
         expected = expected_component_from_csv(
@@ -337,27 +344,25 @@ class TestFromDigikeyPart(unittest.TestCase):
            return_value="Capacitor_THT:C_Radial_D6.30mm_H12.2mm_P5.00mm")
     def test_unpolarized_electrolytic_capacitor_from_digikey(
             self, mock_input):
-        mock_part = MagicMock()
-        mock_part.limited_taxonomy.value = "Capacitors"
-        mock_part.primary_datasheet = (
-           "https://industrial.panasonic.com/cdbs/www-data/pdf/"
-           "RDF0000/ABA0000C1053.pdf")
-        mock_part.manufacturer.value = "Panasonic Electronic Components"
-        mock_part.manufacturer_part_number = "ECE-A1HN100UB"
-        mock_part.digi_key_part_number = "10-ECE-A1HN100UBCT-ND"
-        mock_part.family.value = "Aluminum Electrolytic Capacitors"
-        mock_part.parameters = [
-                MagicMock(parameter="Capacitance", value="10 µF"),
-                MagicMock(parameter="Tolerance", value="±20%"),
-                MagicMock(parameter="Voltage - Rated", value="50V"),
-                MagicMock(parameter="Package / Case", value="Radial, Can"),
-                MagicMock(parameter="Polarization", value="Bi-Polar"),
-                MagicMock(parameter="Size / Dimension",
-                          value='0.248" Dia (6.30mm)'),
-                MagicMock(parameter="Height - Seated (Max)",
-                          value='0.480" (12.20mm)'),
-                MagicMock(parameter="Lead Spacing", value='0.197" (5.00mm)'),
-                ]
+        mock_part = self.init_mock(
+                category="Capacitors",
+                family="Aluminum Electrolytic Capacitors",
+                datasheet=(
+                    "https://industrial.panasonic.com/cdbs/www-data/pdf/"
+                    "RDF0000/ABA0000C1053.pdf"),
+                mfg="Panasonic Electronic Components",
+                MPN="ECE-A1HN100UB", digikey_PN="10-ECE-A1HN100UBCT-ND",
+                parameters={
+                    "Capacitance": "10 µF",
+                    "Tolerance": "±20%",
+                    "Voltage - Rated": "50V",
+                    "Package / Case": "Radial, Can",
+                    "Polarization": "Bi-Polar",
+                    "Size / Dimension": '0.248" Dia (6.30mm)',
+                    "Height - Seated (Max)": '0.480" (12.20mm)',
+                    "Lead Spacing": '0.197" (5.00mm)',
+                    }
+                )
 
         actual = component.create_component_from_digikey_part(mock_part)
         expected = expected_component_from_csv(
@@ -367,27 +372,23 @@ class TestFromDigikeyPart(unittest.TestCase):
     @patch("partdb.component.input",
            return_value="Amplifier_Operational:LM4562")
     def test_opamp_from_digikey(self, mock_input):
-        mock_part = MagicMock()
-        mock_part.limited_taxonomy.value = "Integrated Circuits (ICs)"
-        mock_part.limited_taxonomy.children = [
-                MagicMock(
-                    value=(
-                        "Linear - Amplifiers - Instrumentation, OP Amps, "
-                        "Buffer Amps - Amplifiers - Instrumentation, OP Amps, "
-                        "Buffer Amps"))]
-        mock_part.primary_datasheet = (
-                "https://www.ti.com/lit/ds/snas326k/snas326k.pdf")
-        mock_part.manufacturer.value = "Texas Instruments"
-        mock_part.manufacturer_part_number = "LM4562MAX/NOPB"
-        mock_part.digi_key_part_number = "296-35279-1-ND"
-        mock_part.parameters = [
-                MagicMock(parameter="Gain Bandwidth Product", value="55 MHz"),
-                MagicMock(parameter="Slew Rate", value="20V/µs"),
-                MagicMock(parameter="Package / Case",
-                          value='8-SOIC (0.154", 3.90mm Width)'),
-                MagicMock(parameter="Supplier Device Package", value="8-SOIC"),
-                MagicMock(parameter="Number of Circuits", value="2"),
-                ]
+        mock_part = self.init_mock(
+                category="Integrated Circuits (ICs)",
+                subcategory=(
+                    "Linear - Amplifiers - Instrumentation, OP Amps, "
+                    "Buffer Amps - Amplifiers - Instrumentation, OP Amps, "
+                    "Buffer Amps"),
+                datasheet="https://www.ti.com/lit/ds/snas326k/snas326k.pdf",
+                mfg="Texas Instruments", MPN="LM4562MAX/NOPB",
+                digikey_PN="296-35279-1-ND",
+                parameters={
+                    "Gain Bandwidth Product": "55 MHz",
+                    "Slew Rate": "20V/µs",
+                    "Package / Case": '8-SOIC (0.154", 3.90mm Width)',
+                    "Supplier Device Package": "8-SOIC",
+                    "Number of Circuits": "2",
+                    }
+                )
 
         actual = component.create_component_from_digikey_part(mock_part)
         expected = expected_component_from_csv(
@@ -397,23 +398,19 @@ class TestFromDigikeyPart(unittest.TestCase):
     @patch("partdb.component.input",
            return_value="MCU_ST_STM32F0:STM32F042K4Tx")
     def test_microcontroller_from_digikey(self, mock_input):
-        mock_part = MagicMock()
-        mock_part.limited_taxonomy.value = "Integrated Circuits (ICs)"
-        mock_part.limited_taxonomy.children = [
-                MagicMock(
-                    value="Embedded - Microcontrollers - Microcontrollers")]
-        mock_part.primary_datasheet = (
-                "https://www.st.com/resource/en/datasheet/stm32f042k4.pdf")
-        mock_part.manufacturer.value = "STMicroelectronics"
-        mock_part.manufacturer_part_number = "STM32F042K4T6TR"
-        mock_part.digi_key_part_number = "STM32F042K4T6TR-ND"
-        mock_part.parameters = [
-                MagicMock(parameter="Core Processor",
-                          value="ARM® Cortex®-M0"),
-                MagicMock(parameter="Supplier Device Package",
-                          value="32-LQFP (7x7)"),
-                MagicMock(parameter="Speed", value="48MHz"),
-                ]
+        mock_part = self.init_mock(
+                category="Integrated Circuits (ICs)",
+                subcategory=("Embedded - Microcontrollers - Microcontrollers"),
+                datasheet=("https://www.st.com/resource/en/datasheet/"
+                           "stm32f042k4.pdf"),
+                mfg="STMicroelectronics", MPN="STM32F042K4T6TR",
+                digikey_PN="STM32F042K4T6TR-ND",
+                parameters={
+                    "Core Processor": "ARM® Cortex®-M0",
+                    "Supplier Device Package": "32-LQFP (7x7)",
+                    "Speed": "48MHz",
+                    }
+                )
 
         actual = component.create_component_from_digikey_part(mock_part)
         expected = expected_component_from_csv(
