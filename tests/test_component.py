@@ -394,6 +394,32 @@ class TestFromDigikeyPart(unittest.TestCase):
                 "sample_parts_csv/296-35279-1-ND.csv")
         self.assertEqual(expected.to_csv(), actual.to_csv())
 
+    @patch("partdb.component.input",
+           return_value="MCU_ST_STM32F0:STM32F042K4Tx")
+    def test_microcontroller_from_digikey(self, mock_input):
+        mock_part = MagicMock()
+        mock_part.limited_taxonomy.value = "Integrated Circuits (ICs)"
+        mock_part.limited_taxonomy.children = [
+                MagicMock(
+                    value="Embedded - Microcontrollers - Microcontrollers")]
+        mock_part.primary_datasheet = (
+                "https://www.st.com/resource/en/datasheet/stm32f042k4.pdf")
+        mock_part.manufacturer.value = "STMicroelectronics"
+        mock_part.manufacturer_part_number = "STM32F042K4T6TR"
+        mock_part.digi_key_part_number = "STM32F042K4T6TR-ND"
+        mock_part.parameters = [
+                MagicMock(parameter="Core Processor",
+                          value="ARM® Cortex®-M0"),
+                MagicMock(parameter="Supplier Device Package",
+                          value="32-LQFP (7x7)"),
+                MagicMock(parameter="Speed", value="48MHz"),
+                ]
+
+        actual = component.create_component_from_digikey_part(mock_part)
+        expected = expected_component_from_csv(
+                "sample_parts_csv/STM32F042K4T6TR-ND.csv")
+        self.assertEqual(expected.to_csv(), actual.to_csv())
+
 
 if __name__ == "__main__":
     unittest.main()

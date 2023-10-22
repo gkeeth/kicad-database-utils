@@ -30,6 +30,8 @@ def create_component_from_digikey_part(part):
         subtype = part.limited_taxonomy.children[0].value
         if "OP Amps" in subtype:
             return OpAmp.from_digikey(part)
+        elif "Microcontrollers" in subtype:
+            return Microcontroller.from_digikey(part)
 
     raise NotImplementedError("No component type to handle part type "
                               f"'{part.limited_taxonomy.value}' for part "
@@ -57,6 +59,8 @@ def create_component_from_dict(columns_and_values):
         return Capacitor(**columns_and_values)
     elif IPN.startswith("OpAmp_"):
         return OpAmp(**columns_and_values)
+    elif IPN.startswith("MCU_"):
+        return Microcontroller(**columns_and_values)
     else:
         raise NotImplementedError(f"No component type to handle part '{IPN}'")
 
@@ -577,6 +581,77 @@ class OpAmp(Component):
         kicad_footprint_map = {
                 '8-SOIC (0.154", 3.90mm Width)':
                 "Package_SO:SOIC-8_3.9x4.9mm_P1.27mm",
+                }
+        if package in kicad_footprint_map:
+            data["kicad_footprint"] = kicad_footprint_map[package]
+        else:
+            data["kicad_footprint"] = cls._get_sym_or_fp_from_user(
+                    data["DPN1"])
+
+        return cls(**data)
+
+
+class Microcontroller(Component):
+    table = "microcontroller"
+
+    def __init__(self, speed, core, **kwargs):
+        super().__init__(**kwargs)
+        self.columns["speed"] = speed
+        self.columns["core"] = core
+
+    @classmethod
+    def from_digikey(cls, digikey_part):
+        data = cls.get_digikey_common_data(digikey_part)
+
+        for p in digikey_part.parameters:
+            if p.parameter == "Supplier Device Package":
+                package = p.value
+                pincount_match = re.match(r"^\d*", package)
+                pincount = pincount_match.group(0) if pincount_match else ""
+            elif p.parameter == "Core Processor":
+                data["core"] = re.sub(r"[^\d\w \-]", "", p.value)
+            elif p.parameter == "Speed":
+                data["speed"] = p.value
+
+        data["value"] = "${MPN}"
+        data["keywords"] = "mcu microcontroller uc"
+        data["description"] = (
+                f"{pincount} pin "
+                f"{data['core']} MCU, "
+                f"{data['speed']}, "
+                f"{package}")
+        IPN = f"MCU_{data['manufacturer']}_{data['MPN']}"
+        data["IPN"] = re.sub(r"\s+", "", IPN)
+
+        data["kicad_symbol"] = cls._get_sym_or_fp_from_user(
+                data["DPN1"], fp=False)
+
+        kicad_footprint_map = {
+                "8-SOIC": "Package_SO:SOIC-8_3.9x4.9mm_P1.27mm",
+                "14-TSSOP": "Package_SO:TSSOP-14_4.4x5mm_P0.65mm",
+                "20-TSSOP": "Package_SO:TSSOP-20_4.4x6.5mm_P0.65mm",
+
+                "32-LQFP (7x7)": "Package_QFP:LQFP-32_7x7mm_P0.8mm",
+                "48-LQFP (7x7)": "Package_QFP:LQFP-48_7x7mm_P0.5mm",
+                "64-LQFP (10x10)": "Package_QFP:LQFP-64_10x10mm_P0.5mm",
+                "80-LQFP (12x12)": "Package_QFP:LQFP-80_12x12mm_P0.5mm",
+                "80-LQFP (14x14)": "Package_QFP:LQFP-80_14x14mm_P0.65mm",
+                "100-LQFP (14x14)": "Package_QFP:LQFP-100_14x14mm_P0.5mm",
+                "128-LQFP (14x14)": "Package_QFP:LQFP-128_14x14mm_P0.4mm",
+                "144-LQFP (20x20)": "Package_QFP:LQFP-144_20x20mm_P0.5mm",
+                "176-LQFP (24x24)": "Package_QFP:LQFP-176_24x24mm_P0.5mm",
+                "208-LQFP (28x28)": "Package_QFP:LQFP-208_28x28mm_P0.5mm",
+
+                "20-UFQFPN (3x3)": "Package_DFN_QFN:ST_UFQFPN-20_3x3mm_P0.5mm",
+                "28-UFQFPN (4x4)": "Package_DFN_QFN:QFN-28_4x4mm_P0.5mm",
+                "32-UFQFPN (5x5)":
+                "Package_DFN_QFN:QFN-32-1EP_5x5mm_P0.5mm_EP3.45x3.45mm",
+                "36-VFQFPN (6x6)":
+                "Package_DFN_QFN:QFN-36-1EP_6x6mm_P0.5mm_EP4.1x4.1mm",
+                "48-UFQFPN (7x7)":
+                "Package_DFN_QFN:QFN-48-1EP_7x7mm_P0.5mm_EP5.6x5.6mm",
+                "68-VFQFPN (8x8)":
+                "Package_DFN_QFN:QFN-68-1EP_8x8mm_P0.4mm_EP6.4x6.4mm",
                 }
         if package in kicad_footprint_map:
             data["kicad_footprint"] = kicad_footprint_map[package]
