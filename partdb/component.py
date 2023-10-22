@@ -400,7 +400,8 @@ class Capacitor(Component):
     @classmethod
     def _determine_footprint(cls, data, polarization, dimensions):
         """
-        Choose a footprint based on the component's parameters.
+        Choose a footprint based on the component's parameters, or ask the user
+        if there is no known-good footprint.
 
         Args:
             data:
@@ -599,33 +600,35 @@ class Microcontroller(Component):
         self.columns["speed"] = speed
         self.columns["core"] = core
 
+    @staticmethod
+    def process_pincount(package):
+        """Extract pincount from a package name, e.g. "32" from "32-LQFP". """
+        pincount_match = re.match(r"^\d*", package)
+        return pincount_match.group(0) if pincount_match else ""
+
+    @staticmethod
+    def process_core(param):
+        """Return a sanitized core name, removing any characters that aren't
+        alphanumeric, underscores, dashes, or spaces (for example, ® or ™).
+        """
+        return re.sub(r"[^\d\w \-]", "", param)
+
     @classmethod
-    def from_digikey(cls, digikey_part):
-        data = cls.get_digikey_common_data(digikey_part)
+    def _determine_footprint(cls, data, package):
+        """
+        Choose a footprint based on the component's parameters, or ask the user
+        if there is no known-good footprint.
 
-        for p in digikey_part.parameters:
-            if p.parameter == "Supplier Device Package":
-                package = p.value
-                pincount_match = re.match(r"^\d*", package)
-                pincount = pincount_match.group(0) if pincount_match else ""
-            elif p.parameter == "Core Processor":
-                data["core"] = re.sub(r"[^\d\w \-]", "", p.value)
-            elif p.parameter == "Speed":
-                data["speed"] = p.value
-
-        data["value"] = "${MPN}"
-        data["keywords"] = "mcu microcontroller uc"
-        data["description"] = (
-                f"{pincount} pin "
-                f"{data['core']} MCU, "
-                f"{data['speed']}, "
-                f"{package}")
-        IPN = f"MCU_{data['manufacturer']}_{data['MPN']}"
-        data["IPN"] = re.sub(r"\s+", "", IPN)
-
-        data["kicad_symbol"] = cls._get_sym_or_fp_from_user(
-                data["DPN1"], fp=False)
-
+        Args:
+            data:
+                dict of data pulled from digikey object. The function will
+                store `kicad_footprint` into this dict, and possibly read the
+                distributor part number (`DPN1`).
+            package:
+                string containing a short description of the package, such as
+                "32-LQFP (7x7)". If this is not a known package type, the user
+                will be prompted to provide a footprint name.
+        """
         kicad_footprint_map = {
                 "8-SOIC": "Package_SO:SOIC-8_3.9x4.9mm_P1.27mm",
                 "14-TSSOP": "Package_SO:TSSOP-14_4.4x5mm_P0.65mm",
@@ -658,5 +661,32 @@ class Microcontroller(Component):
         else:
             data["kicad_footprint"] = cls._get_sym_or_fp_from_user(
                     data["DPN1"])
+
+    @classmethod
+    def from_digikey(cls, digikey_part):
+        data = cls.get_digikey_common_data(digikey_part)
+
+        for p in digikey_part.parameters:
+            if p.parameter == "Supplier Device Package":
+                package = p.value
+                pincount = cls.process_pincount(package)
+            elif p.parameter == "Core Processor":
+                data["core"] = cls.process_core(p.value)
+            elif p.parameter == "Speed":
+                data["speed"] = p.value
+
+        data["value"] = "${MPN}"
+        data["keywords"] = "mcu microcontroller uc"
+        data["description"] = (
+                f"{pincount} pin "
+                f"{data['core']} MCU, "
+                f"{data['speed']}, "
+                f"{package}")
+        IPN = f"MCU_{data['manufacturer']}_{data['MPN']}"
+        data["IPN"] = re.sub(r"\s+", "", IPN)
+
+        data["kicad_symbol"] = cls._get_sym_or_fp_from_user(
+                data["DPN1"], fp=False)
+        cls._determine_footprint(data, package)
 
         return cls(**data)

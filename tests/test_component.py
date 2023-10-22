@@ -5,7 +5,7 @@ import unittest
 from unittest.mock import patch, MagicMock
 
 from partdb import component
-from partdb.component import Component, Resistor, Capacitor
+from partdb.component import Component, Resistor, Capacitor, Microcontroller
 
 
 def expected_component_from_csv(csvpath):
@@ -209,6 +209,23 @@ class TestParameterUtils(unittest.TestCase):
         for expected, dim in testcases:
             with self.subTest(Dimension=dim):
                 self.assertEqual(expected, Capacitor.process_dimension(dim))
+
+    def test_process_pincount(self):
+        testcases = [
+                ("48", "48-LQFP")
+                ]
+        for expected, package in testcases:
+            with self.subTest(Package=package):
+                self.assertEqual(expected,
+                                 Microcontroller.process_pincount(package))
+
+    def test_process_core(self):
+        testcases = [
+                ("ARM Cortex-M0", "ARM® Cortex®-M0")
+                ]
+        for expected, core in testcases:
+            with self.subTest(Core=core):
+                self.assertEqual(expected, Microcontroller.process_core(core))
 
 
 class TestComponentFromDict(unittest.TestCase):
