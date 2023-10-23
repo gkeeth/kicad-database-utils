@@ -1,6 +1,7 @@
 #! /usr/bin/env python
 
 import os
+import re
 import sqlite3
 import unittest
 from unittest.mock import patch
@@ -12,46 +13,58 @@ from partdb import add_part
 
 @unittest.skip("external API call")
 class TestCreateFromDigikeyAPI(unittest.TestCase):
+    def check_component_from_digikey_pn_matches_csv(self, digikey_pn):
+        actual = add_part.create_component_from_digikey_pn(digikey_pn)
+        csv_name = re.sub(r"/", "_", f"{digikey_pn}.csv")
+        expected = expected_component_from_csv(f"sample_parts_csv/{csv_name}")
+        self.assertEqual(expected.to_csv(), actual.to_csv())
+
     def setUp(self):
         add_part.setup_digikey(add_part.load_config())
 
     def test_resistor_from_digikey_pn(self):
-        actual = add_part.create_component_from_digikey_pn("YAG2320CT-ND")
-        expected = expected_component_from_csv(
-                "sample_parts_csv/YAG2320CT-ND.csv")
-        self.assertEqual(expected.to_csv(), actual.to_csv())
+        self.check_component_from_digikey_pn_matches_csv("YAG2320CT-ND")
 
     def test_ceramic_capacitor_from_digikey_pn(self):
-        actual = add_part.create_component_from_digikey_pn("1276-1123-1-ND")
-        expected = expected_component_from_csv(
-                "sample_parts_csv/1276-1123-1-ND.csv")
-        self.assertEqual(expected.to_csv(), actual.to_csv())
+        self.check_component_from_digikey_pn_matches_csv("1276-1123-1-ND")
 
     @patch("partdb.component.input",
            return_value="Capacitor_THT:CP_Radial_D10.0mm_H17.5mm_P5.00mm")
     def test_electrolytic_capacitor_from_digikey_pn(self, mock_input):
-        actual = add_part.create_component_from_digikey_pn("493-13313-1-ND")
-        expected = expected_component_from_csv(
-                "sample_parts_csv/493-13313-1-ND.csv")
-        self.assertEqual(expected.to_csv(), actual.to_csv())
+        self.check_component_from_digikey_pn_matches_csv("493-13313-1-ND")
 
     @patch("partdb.component.input",
            return_value="Capacitor_THT:C_Radial_D6.30mm_H12.2mm_P5.00mm")
     def test_nonpolarized_electrolytic_capacitor_from_digikey_pn(
             self, mock_input):
-        actual = add_part.create_component_from_digikey_pn(
+        self.check_component_from_digikey_pn_matches_csv(
                 "10-ECE-A1HN100UBCT-ND")
-        expected = expected_component_from_csv(
-                "sample_parts_csv/10-ECE-A1HN100UBCT-ND.csv")
-        self.assertEqual(expected.to_csv(), actual.to_csv())
 
     @patch("partdb.component.input",
            return_value="Amplifier_Operational:LM4562")
     def test_opamp_from_digikey_pn(self, mock_input):
-        actual = add_part.create_component_from_digikey_pn("296-35279-1-ND")
-        expected = expected_component_from_csv(
-                "sample_parts_csv/296-35279-1-ND.csv")
-        self.assertEqual(expected.to_csv(), actual.to_csv())
+        self.check_component_from_digikey_pn_matches_csv("296-35279-1-ND")
+
+    @patch("partdb.component.input",
+           return_value="MCU_ST_STM32F0:STM32F042K4Tx")
+    def test_microcontroller_from_digikey_pn(self, mock_input):
+        self.check_component_from_digikey_pn_matches_csv("STM32F042K4T6TR-ND")
+
+    @patch("partdb.component.input",
+           return_value="Regulator_Linear:LM317_TO-220")
+    def test_vreg_pos_adj_from_digikey_pn(self, mock_input):
+        self.check_component_from_digikey_pn_matches_csv("LM317HVT/NOPB-ND")
+
+    @patch("partdb.component.input",
+           return_value="Regulator_Linear:LM7912_TO-220")
+    def test_neg_fixed_from_digikey_pn(self, mock_input):
+        self.check_component_from_digikey_pn_matches_csv("LM7912CT/NOPB-ND")
+
+    def test_diode_from_digikey_pn(self):
+        self.check_component_from_digikey_pn_matches_csv("1N4148FSCT-ND")
+
+    def test_diode_schottky_from_digikey_pn(self):
+        self.check_component_from_digikey_pn_matches_csv("BAT54WS-FDICT-ND")
 
 
 class TestDatabaseFunctions(unittest.TestCase):
