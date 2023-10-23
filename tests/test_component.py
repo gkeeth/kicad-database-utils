@@ -273,13 +273,17 @@ class TestComponentFromDict(unittest.TestCase):
 
 
 class TestFromDigikeyPart(unittest.TestCase):
+    """Base class for testing Component.from_digikey() methods."""
     @staticmethod
     def init_mock(category, datasheet, mfg, MPN, digikey_PN,
-                  subcategory="", family="", parameters={}):
+                  subcategory=None, family=None, parameters={}):
         mock_part = MagicMock()
         mock_part.limited_taxonomy.value = category
-        mock_part.limited_taxonomy.children = [MagicMock(value=subcategory)]
-        mock_part.family.value = family
+        if subcategory:
+            mock_part.limited_taxonomy.children = [
+                    MagicMock(value=subcategory)]
+        if family:
+            mock_part.family.value = family
         mock_part.primary_datasheet = datasheet
         mock_part.manufacturer.value = mfg
         mock_part.manufacturer_part_number = MPN
@@ -288,40 +292,83 @@ class TestFromDigikeyPart(unittest.TestCase):
                                 for k in parameters]
         return mock_part
 
+
+class TestResistorFromDigikeyPart(TestFromDigikeyPart):
+    @staticmethod
+    def init_resistor_mock(resistance, tolerance, power, composition, package,
+                           **kwargs):
+        parameters = {
+                "Resistance": resistance,
+                "Tolerance": tolerance,
+                "Power (Watts)": power,
+                "Composition": composition,
+                "Supplier Device Package": package,
+                }
+        s = super(TestResistorFromDigikeyPart, TestResistorFromDigikeyPart)
+        return s.init_mock(
+                category="Resistors", parameters=parameters, **kwargs)
+
     def test_resistor_from_digikey(self):
-        mock_part = self.init_mock(
-                category="Resistors", datasheet=(
+        mock_part = self.init_resistor_mock(
+                resistance="100Ω",
+                tolerance="±1%",
+                power="0.1W",
+                composition="Thin Film",
+                package="0603",
+                datasheet=(
                     "https://www.yageo.com/upload/media/product/productsearch/"
                     "datasheet/rchip/PYu-RT_1-to-0.01_RoHS_L_15.pdf"),
-                mfg="YAGEO", MPN="RT0603FRE07100RL", digikey_PN="YAG2320CT-ND",
-                parameters={
-                    "Resistance": "100Ω",
-                    "Tolerance": "±1%",
-                    "Power (Watts)": "0.1W",
-                    "Composition": "Thin Film",
-                    "Supplier Device Package": "0603",
-                    }
-                )
+                mfg="YAGEO",
+                MPN="RT0603FRE07100RL",
+                digikey_PN="YAG2320CT-ND")
 
         actual = component.create_component_from_digikey_part(mock_part)
         expected = expected_component_from_csv(
                 "sample_parts_csv/YAG2320CT-ND.csv")
         self.assertEqual(expected.to_csv(), actual.to_csv())
 
+
+class TestCapacitorFromDigikeyPart(TestFromDigikeyPart):
+    @staticmethod
+    def init_capacitor_mock(capacitance, tolerance, voltage, package, family,
+                            tempco=None, polarization=None, package_size=None,
+                            height=None, lead_spacing=None, **kwargs):
+        parameters = {
+                "Capacitance": capacitance,
+                "Tolerance": tolerance,
+                "Voltage - Rated": voltage,
+                "Package / Case": package,
+                }
+        if tempco:
+            parameters["Temperature Coefficient"] = tempco
+        if polarization:
+            parameters["Polarization"] = polarization
+        if package_size:
+            parameters["Size / Dimension"] = package_size
+        if height:
+            parameters["Height - Seated (Max)"] = height
+        if lead_spacing:
+            parameters["Lead Spacing"] = lead_spacing
+
+        s = super(TestCapacitorFromDigikeyPart, TestCapacitorFromDigikeyPart)
+        return s.init_mock(
+            category="Capacitors", family=family,
+            parameters=parameters, **kwargs)
+
     def test_ceramic_capacitor_from_digikey(self):
-        mock_part = self.init_mock(
-                category="Capacitors", family="Ceramic Capacitors", datasheet=(
+        mock_part = self.init_capacitor_mock(
+                family="Ceramic Capacitors",
+                datasheet=(
                     "https://mm.digikey.com/Volume0/opasdata/d220001/medias/"
                     "docus/1068/CL21B334KBFNNNE_Spec.pdf"),
-                mfg="Samsung Electro-Mechanics", MPN="CL21B334KBFNNNE",
+                mfg="Samsung Electro-Mechanics",
+                MPN="CL21B334KBFNNNE",
                 digikey_PN="1276-1123-1-ND",
-                parameters={
-                    "Capacitance": "0.33 µF",
-                    "Tolerance": "±10%",
-                    "Voltage - Rated": "50V",
-                    "Temperature Coefficient": "X7R",
-                    "Package / Case": "0805 (2012 Metric)",
-                    }
+                capacitance="0.33 µF",
+                tolerance="±10%",
+                voltage="50V",
+                tempco="X7R",
+                package="0805 (2012 Metric)",
                 )
 
         actual = component.create_component_from_digikey_part(mock_part)
@@ -332,24 +379,22 @@ class TestFromDigikeyPart(unittest.TestCase):
     @patch("partdb.component.input",
            return_value="Capacitor_THT:CP_Radial_D10.0mm_H17.5mm_P5.00mm")
     def test_electrolytic_capacitor_from_digikey(self, mock_input):
-        mock_part = self.init_mock(
-                category="Capacitors",
+        mock_part = self.init_capacitor_mock(
                 family="Aluminum Electrolytic Capacitors",
                 datasheet=(
                     "https://www.nichicon.co.jp/english/series_items/"
                     "catalog_pdf/e-ucy.pdf"),
-                mfg="Nichicon", MPN="UCY2G100MPD1TD",
+                mfg="Nichicon",
+                MPN="UCY2G100MPD1TD",
                 digikey_PN="493-13313-1-ND",
-                parameters={
-                    "Capacitance": "10 µF",
-                    "Tolerance": "±20%",
-                    "Voltage - Rated": "400V",
-                    "Package / Case": "Radial, Can",
-                    "Polarization": "Polar",
-                    "Size / Dimension": '0.394" Dia (10.00mm)',
-                    "Height - Seated (Max)": '0.689" (17.50mm)',
-                    "Lead Spacing": '0.197" (5.00mm)',
-                    }
+                capacitance="10 µF",
+                tolerance="±20%",
+                voltage="400V",
+                package="Radial, Can",
+                polarization="Polar",
+                package_size='0.394" Dia (10.00mm)',
+                height='0.689" (17.50mm)',
+                lead_spacing='0.197" (5.00mm)',
                 )
 
         actual = component.create_component_from_digikey_part(mock_part)
@@ -361,24 +406,22 @@ class TestFromDigikeyPart(unittest.TestCase):
            return_value="Capacitor_THT:C_Radial_D6.30mm_H12.2mm_P5.00mm")
     def test_unpolarized_electrolytic_capacitor_from_digikey(
             self, mock_input):
-        mock_part = self.init_mock(
-                category="Capacitors",
+        mock_part = self.init_capacitor_mock(
                 family="Aluminum Electrolytic Capacitors",
                 datasheet=(
                     "https://industrial.panasonic.com/cdbs/www-data/pdf/"
                     "RDF0000/ABA0000C1053.pdf"),
                 mfg="Panasonic Electronic Components",
-                MPN="ECE-A1HN100UB", digikey_PN="10-ECE-A1HN100UBCT-ND",
-                parameters={
-                    "Capacitance": "10 µF",
-                    "Tolerance": "±20%",
-                    "Voltage - Rated": "50V",
-                    "Package / Case": "Radial, Can",
-                    "Polarization": "Bi-Polar",
-                    "Size / Dimension": '0.248" Dia (6.30mm)',
-                    "Height - Seated (Max)": '0.480" (12.20mm)',
-                    "Lead Spacing": '0.197" (5.00mm)',
-                    }
+                MPN="ECE-A1HN100UB",
+                digikey_PN="10-ECE-A1HN100UBCT-ND",
+                capacitance="10 µF",
+                tolerance="±20%",
+                voltage="50V",
+                package="Radial, Can",
+                polarization="Bi-Polar",
+                package_size='0.248" Dia (6.30mm)',
+                height='0.480" (12.20mm)',
+                lead_spacing='0.197" (5.00mm)',
                 )
 
         actual = component.create_component_from_digikey_part(mock_part)
@@ -386,25 +429,38 @@ class TestFromDigikeyPart(unittest.TestCase):
                 "sample_parts_csv/10-ECE-A1HN100UBCT-ND.csv")
         self.assertEqual(expected.to_csv(), actual.to_csv())
 
+
+class TestOpAmpFromDigikeyPart(TestFromDigikeyPart):
+    @staticmethod
+    def init_opamp_mock(bandwidth, slewrate, package, short_package, num_units,
+                        **kwargs):
+        parameters = {
+                "Gain Bandwidth Product": bandwidth,
+                "Slew Rate": slewrate,
+                "Package / Case": package,
+                "Supplier Device Package": short_package,
+                "Number of Circuits": num_units,
+                }
+
+        s = super(TestOpAmpFromDigikeyPart, TestOpAmpFromDigikeyPart)
+        return s.init_mock(
+            category="Integrated Circuits (ICs)", subcategory=(
+                "Linear - Amplifiers - Instrumentation, OP Amps, Buffer Amps "
+                "- Amplifiers - Instrumentation, OP Amps, Buffer Amps"),
+            parameters=parameters, **kwargs)
+
     @patch("partdb.component.input",
            return_value="Amplifier_Operational:LM4562")
     def test_opamp_from_digikey(self, mock_input):
-        mock_part = self.init_mock(
-                category="Integrated Circuits (ICs)",
-                subcategory=(
-                    "Linear - Amplifiers - Instrumentation, OP Amps, "
-                    "Buffer Amps - Amplifiers - Instrumentation, OP Amps, "
-                    "Buffer Amps"),
+        mock_part = self.init_opamp_mock(
                 datasheet="https://www.ti.com/lit/ds/snas326k/snas326k.pdf",
                 mfg="Texas Instruments", MPN="LM4562MAX/NOPB",
                 digikey_PN="296-35279-1-ND",
-                parameters={
-                    "Gain Bandwidth Product": "55 MHz",
-                    "Slew Rate": "20V/µs",
-                    "Package / Case": '8-SOIC (0.154", 3.90mm Width)',
-                    "Supplier Device Package": "8-SOIC",
-                    "Number of Circuits": "2",
-                    }
+                bandwidth="55 MHz",
+                slewrate="20V/µs",
+                package='8-SOIC (0.154", 3.90mm Width)',
+                short_package="8-SOIC",
+                num_units="2",
                 )
 
         actual = component.create_component_from_digikey_part(mock_part)
@@ -412,21 +468,34 @@ class TestFromDigikeyPart(unittest.TestCase):
                 "sample_parts_csv/296-35279-1-ND.csv")
         self.assertEqual(expected.to_csv(), actual.to_csv())
 
+
+class TestMicrocontrollerFromDigikeyPart(TestFromDigikeyPart):
+    @staticmethod
+    def init_microcontroller_mock(core, speed, package, **kwargs):
+        parameters = {
+                "Core Processor": core,
+                "Speed": speed,
+                "Supplier Device Package": package,
+                }
+
+        s = super(TestMicrocontrollerFromDigikeyPart,
+                  TestMicrocontrollerFromDigikeyPart)
+        return s.init_mock(
+            category="Integrated Circuits (ICs)",
+            subcategory="Embedded - Microcontrollers - Microcontrollers",
+            parameters=parameters, **kwargs)
+
     @patch("partdb.component.input",
            return_value="MCU_ST_STM32F0:STM32F042K4Tx")
     def test_microcontroller_from_digikey(self, mock_input):
-        mock_part = self.init_mock(
-                category="Integrated Circuits (ICs)",
-                subcategory=("Embedded - Microcontrollers - Microcontrollers"),
+        mock_part = self.init_microcontroller_mock(
                 datasheet=("https://www.st.com/resource/en/datasheet/"
                            "stm32f042k4.pdf"),
                 mfg="STMicroelectronics", MPN="STM32F042K4T6TR",
                 digikey_PN="STM32F042K4T6TR-ND",
-                parameters={
-                    "Core Processor": "ARM® Cortex®-M0",
-                    "Supplier Device Package": "32-LQFP (7x7)",
-                    "Speed": "48MHz",
-                    }
+                core="ARM® Cortex®-M0",
+                package="32-LQFP (7x7)",
+                speed="48MHz",
                 )
 
         actual = component.create_component_from_digikey_part(mock_part)
@@ -434,29 +503,45 @@ class TestFromDigikeyPart(unittest.TestCase):
                 "sample_parts_csv/STM32F042K4T6TR-ND.csv")
         self.assertEqual(expected.to_csv(), actual.to_csv())
 
+
+class TestVRegFromDigikeyPart(TestFromDigikeyPart):
+    @staticmethod
+    def init_vreg_mock(vout_min, vout_max, vin_max, iout, output_type, package,
+                       **kwargs):
+        parameters = {
+                "Supplier Device Package": package,
+                "Voltage - Output (Min/Fixed)": vout_min,
+                "Voltage - Output (Max)": vout_max,
+                "Voltage - Input (Max)": vin_max,
+                "Current - Output": iout,
+                "Output Type": output_type,
+                }
+
+        s = super(TestVRegFromDigikeyPart, TestVRegFromDigikeyPart)
+        return s.init_mock(
+            category="Integrated Circuits (ICs)",
+            subcategory=(
+                "Power Management (PMIC) - Voltage Regulators - Linear, "
+                "Low Drop Out (LDO) Regulators - Voltage Regulators - "
+                "Linear, Low Drop Out (LDO) Regulators"),
+            parameters=parameters, **kwargs)
+
     @patch("partdb.component.input",
            return_value="Regulator_Linear:LM317_TO-220")
     def test_vreg_positive_adj_from_digikey(self, mock_input):
-        mock_part = self.init_mock(
-                category="Integrated Circuits (ICs)",
-                subcategory=(
-                    "Power Management (PMIC) - Voltage Regulators - Linear, "
-                    "Low Drop Out (LDO) Regulators - Voltage Regulators - "
-                    "Linear, Low Drop Out (LDO) Regulators"),
+        mock_part = self.init_vreg_mock(
                 datasheet=(
                     "https://www.ti.com/general/docs/suppproductinfo.tsp?"
                     "distId=10&gotoUrl=https%3A%2F%2Fwww.ti.com%2Flit%2Fgpn"
                     "%2Flm117hv"),
                 mfg="Texas Instruments", MPN="LM317HVT/NOPB",
                 digikey_PN="LM317HVT/NOPB-ND",
-                parameters={
-                    "Supplier Device Package": "TO-220-3",
-                    "Voltage - Output (Min/Fixed)": "1.25V",
-                    "Voltage - Output (Max)": "57V",
-                    "Voltage - Input (Max)": "60V",
-                    "Current - Output": "1.5A",
-                    "Output Type": "Adjustable",
-                    }
+                    package="TO-220-3",
+                    vout_min="1.25V",
+                    vout_max="57V",
+                    vin_max="60V",
+                    iout="1.5A",
+                    output_type="Adjustable",
                 )
 
         actual = component.create_component_from_digikey_part(mock_part)
@@ -467,26 +552,19 @@ class TestFromDigikeyPart(unittest.TestCase):
     @patch("partdb.component.input",
            return_value="Regulator_Linear:LM7912_TO-220")
     def test_vreg_neg_fixed_from_digikey(self, mock_input):
-        mock_part = self.init_mock(
-                category="Integrated Circuits (ICs)",
-                subcategory=(
-                    "Power Management (PMIC) - Voltage Regulators - Linear, "
-                    "Low Drop Out (LDO) Regulators - Voltage Regulators - "
-                    "Linear, Low Drop Out (LDO) Regulators"),
+        mock_part = self.init_vreg_mock(
                 datasheet=(
                     "https://www.ti.com/general/docs/suppproductinfo.tsp?"
                     "distId=10&gotoUrl=https%3A%2F%2Fwww.ti.com"
                     "%2Flit%2Fgpn%2Flm79"),
                 mfg="Texas Instruments", MPN="LM7912CT/NOPB",
                 digikey_PN="LM7912CT/NOPB-ND",
-                parameters={
-                    "Supplier Device Package": "TO-220-3",
-                    "Voltage - Output (Min/Fixed)": "-12V",
-                    "Voltage - Output (Max)": "-",
-                    "Voltage - Input (Max)": "-35V",
-                    "Current - Output": "1.5A",
-                    "Output Type": "Fixed",
-                    }
+                package="TO-220-3",
+                vout_min="-12V",
+                vout_max="-",
+                vin_max="-35V",
+                iout="1.5A",
+                output_type="Fixed",
                 )
 
         actual = component.create_component_from_digikey_part(mock_part)
