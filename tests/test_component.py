@@ -1,6 +1,7 @@
 #! /usr/bin/env python
 
 import csv
+import re
 import unittest
 from unittest.mock import patch, MagicMock
 
@@ -292,6 +293,16 @@ class TestFromDigikeyPart(unittest.TestCase):
                                 for k in parameters]
         return mock_part
 
+    def check_component_matches_csv(self, mock_part):
+        """Check that the component created from the mock digikey API response
+        object matches the golden CSV corresponding to the mock's digikey PN.
+        """
+        actual = component.create_component_from_digikey_part(mock_part)
+        digikey_pn = mock_part.digi_key_part_number
+        csv_name = re.sub(r"/", "_", f"{digikey_pn}.csv")
+        expected = expected_component_from_csv(f"sample_parts_csv/{csv_name}")
+        self.assertEqual(expected.to_csv(), actual.to_csv())
+
 
 class TestResistorFromDigikeyPart(TestFromDigikeyPart):
     @staticmethod
@@ -321,11 +332,7 @@ class TestResistorFromDigikeyPart(TestFromDigikeyPart):
                 mfg="YAGEO",
                 MPN="RT0603FRE07100RL",
                 digikey_PN="YAG2320CT-ND")
-
-        actual = component.create_component_from_digikey_part(mock_part)
-        expected = expected_component_from_csv(
-                "sample_parts_csv/YAG2320CT-ND.csv")
-        self.assertEqual(expected.to_csv(), actual.to_csv())
+        self.check_component_matches_csv(mock_part)
 
 
 class TestCapacitorFromDigikeyPart(TestFromDigikeyPart):
@@ -370,11 +377,7 @@ class TestCapacitorFromDigikeyPart(TestFromDigikeyPart):
                 tempco="X7R",
                 package="0805 (2012 Metric)",
                 )
-
-        actual = component.create_component_from_digikey_part(mock_part)
-        expected = expected_component_from_csv(
-                "sample_parts_csv/1276-1123-1-ND.csv")
-        self.assertEqual(expected.to_csv(), actual.to_csv())
+        self.check_component_matches_csv(mock_part)
 
     @patch("partdb.component.input",
            return_value="Capacitor_THT:CP_Radial_D10.0mm_H17.5mm_P5.00mm")
@@ -396,11 +399,7 @@ class TestCapacitorFromDigikeyPart(TestFromDigikeyPart):
                 height='0.689" (17.50mm)',
                 lead_spacing='0.197" (5.00mm)',
                 )
-
-        actual = component.create_component_from_digikey_part(mock_part)
-        expected = expected_component_from_csv(
-                "sample_parts_csv/493-13313-1-ND.csv")
-        self.assertEqual(expected.to_csv(), actual.to_csv())
+        self.check_component_matches_csv(mock_part)
 
     @patch("partdb.component.input",
            return_value="Capacitor_THT:C_Radial_D6.30mm_H12.2mm_P5.00mm")
@@ -423,11 +422,7 @@ class TestCapacitorFromDigikeyPart(TestFromDigikeyPart):
                 height='0.480" (12.20mm)',
                 lead_spacing='0.197" (5.00mm)',
                 )
-
-        actual = component.create_component_from_digikey_part(mock_part)
-        expected = expected_component_from_csv(
-                "sample_parts_csv/10-ECE-A1HN100UBCT-ND.csv")
-        self.assertEqual(expected.to_csv(), actual.to_csv())
+        self.check_component_matches_csv(mock_part)
 
 
 class TestOpAmpFromDigikeyPart(TestFromDigikeyPart):
@@ -462,11 +457,7 @@ class TestOpAmpFromDigikeyPart(TestFromDigikeyPart):
                 short_package="8-SOIC",
                 num_units="2",
                 )
-
-        actual = component.create_component_from_digikey_part(mock_part)
-        expected = expected_component_from_csv(
-                "sample_parts_csv/296-35279-1-ND.csv")
-        self.assertEqual(expected.to_csv(), actual.to_csv())
+        self.check_component_matches_csv(mock_part)
 
 
 class TestMicrocontrollerFromDigikeyPart(TestFromDigikeyPart):
@@ -497,11 +488,7 @@ class TestMicrocontrollerFromDigikeyPart(TestFromDigikeyPart):
                 package="32-LQFP (7x7)",
                 speed="48MHz",
                 )
-
-        actual = component.create_component_from_digikey_part(mock_part)
-        expected = expected_component_from_csv(
-                "sample_parts_csv/STM32F042K4T6TR-ND.csv")
-        self.assertEqual(expected.to_csv(), actual.to_csv())
+        self.check_component_matches_csv(mock_part)
 
 
 class TestVRegFromDigikeyPart(TestFromDigikeyPart):
@@ -543,11 +530,7 @@ class TestVRegFromDigikeyPart(TestFromDigikeyPart):
                     iout="1.5A",
                     output_type="Adjustable",
                 )
-
-        actual = component.create_component_from_digikey_part(mock_part)
-        expected = expected_component_from_csv(
-                "sample_parts_csv/LM317HVT_NOPB-ND.csv")
-        self.assertEqual(expected.to_csv(), actual.to_csv())
+        self.check_component_matches_csv(mock_part)
 
     @patch("partdb.component.input",
            return_value="Regulator_Linear:LM7912_TO-220")
@@ -566,11 +549,7 @@ class TestVRegFromDigikeyPart(TestFromDigikeyPart):
                 iout="1.5A",
                 output_type="Fixed",
                 )
-
-        actual = component.create_component_from_digikey_part(mock_part)
-        expected = expected_component_from_csv(
-                "sample_parts_csv/LM7912CT_NOPB-ND.csv")
-        self.assertEqual(expected.to_csv(), actual.to_csv())
+        self.check_component_matches_csv(mock_part)
 
 
 class TestDiodeFromDigikeyPart(TestFromDigikeyPart):
@@ -604,11 +583,7 @@ class TestDiodeFromDigikeyPart(TestFromDigikeyPart):
                 current="200mA",
                 diode_type="Standard",
                 )
-
-        actual = component.create_component_from_digikey_part(mock_part)
-        expected = expected_component_from_csv(
-                "sample_parts_csv/1N4148FSCT-ND.csv")
-        self.assertEqual(expected.to_csv(), actual.to_csv())
+        self.check_component_matches_csv(mock_part)
 
     def test_schottky_diode_from_digikey(self):
         mock_part = self.init_diode_mock(
@@ -621,11 +596,7 @@ class TestDiodeFromDigikeyPart(TestFromDigikeyPart):
                 current="100mA",
                 diode_type="Schottky",
                 )
-
-        actual = component.create_component_from_digikey_part(mock_part)
-        expected = expected_component_from_csv(
-                "sample_parts_csv/BAT54WS-FDICT-ND.csv")
-        self.assertEqual(expected.to_csv(), actual.to_csv())
+        self.check_component_matches_csv(mock_part)
 
 
 if __name__ == "__main__":
