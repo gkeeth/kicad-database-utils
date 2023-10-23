@@ -528,7 +528,7 @@ class TestVRegFromDigikeyPart(TestFromDigikeyPart):
 
     @patch("partdb.component.input",
            return_value="Regulator_Linear:LM317_TO-220")
-    def test_vreg_positive_adj_from_digikey(self, mock_input):
+    def test_vreg_pos_adj_from_digikey(self, mock_input):
         mock_part = self.init_vreg_mock(
                 datasheet=(
                     "https://www.ti.com/general/docs/suppproductinfo.tsp?"
@@ -570,6 +570,61 @@ class TestVRegFromDigikeyPart(TestFromDigikeyPart):
         actual = component.create_component_from_digikey_part(mock_part)
         expected = expected_component_from_csv(
                 "sample_parts_csv/LM7912CT_NOPB-ND.csv")
+        self.assertEqual(expected.to_csv(), actual.to_csv())
+
+
+class TestDiodeFromDigikeyPart(TestFromDigikeyPart):
+    @staticmethod
+    def init_diode_mock(diode_type, reverse_voltage, current, package,
+                        **kwargs):
+        parameters = {
+                "Supplier Device Package": package,
+                "Technology": diode_type,
+                "Voltage - DC Reverse (Vr) (Max)": reverse_voltage,
+                "Current - Average Rectified (Io)": current,
+                }
+
+        s = super(TestDiodeFromDigikeyPart, TestDiodeFromDigikeyPart)
+        return s.init_mock(
+            category="Discrete Semiconductor Products",
+            subcategory=(
+                "Diodes - Rectifiers - Single Diodes - Rectifiers - "
+                "Single Diodes"),
+            parameters=parameters, **kwargs)
+
+    def test_diode_from_digikey(self):
+        mock_part = self.init_diode_mock(
+                datasheet=(
+                    "https://www.onsemi.com/download/data-sheet/pdf/"
+                    "1n914-d.pdf"),
+                mfg="onsemi", MPN="1N4148TR",
+                digikey_PN="1N4148FSCT-ND",
+                package="DO-35",
+                reverse_voltage="100 V",
+                current="200mA",
+                diode_type="Standard",
+                )
+
+        actual = component.create_component_from_digikey_part(mock_part)
+        expected = expected_component_from_csv(
+                "sample_parts_csv/1N4148FSCT-ND.csv")
+        self.assertEqual(expected.to_csv(), actual.to_csv())
+
+    def test_schottky_diode_from_digikey(self):
+        mock_part = self.init_diode_mock(
+                datasheet=(
+                    "https://www.diodes.com/assets/Datasheets/ds30098.pdf"),
+                mfg="Diodes Incorporated", MPN="BAT54WS-7-F",
+                digikey_PN="BAT54WS-FDICT-ND",
+                package="SOD-323",
+                reverse_voltage="30 V",
+                current="100mA",
+                diode_type="Schottky",
+                )
+
+        actual = component.create_component_from_digikey_part(mock_part)
+        expected = expected_component_from_csv(
+                "sample_parts_csv/BAT54WS-FDICT-ND.csv")
         self.assertEqual(expected.to_csv(), actual.to_csv())
 
 

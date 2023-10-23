@@ -35,6 +35,10 @@ def create_component_from_digikey_part(part):
             return Microcontroller.from_digikey(part)
         elif "Voltage Regulators" in subtype:
             return VoltageRegulator.from_digikey(part)
+    elif part_type == "Discrete Semiconductor Products":
+        subtype = part.limited_taxonomy.children[0].value
+        if "Diodes - Rectifiers" in subtype:
+            return Diode.from_digikey(part)
 
     raise NotImplementedError("No component type to handle part type "
                               f"'{part.limited_taxonomy.value}' for part "
@@ -66,6 +70,8 @@ def create_component_from_dict(columns_and_values):
         return Microcontroller(**columns_and_values)
     elif IPN.startswith("VReg_"):
         return VoltageRegulator(**columns_and_values)
+    elif IPN.startswith("D_"):
+        return Diode(**columns_and_values)
     else:
         raise NotImplementedError(f"No component type to handle part '{IPN}'")
 
@@ -767,6 +773,81 @@ class VoltageRegulator(Component):
 
         data["kicad_symbol"] = cls._get_sym_or_fp_from_user(
                 data["DPN1"], fp=False)
+        cls._determine_footprint(data, package)
+
+        return cls(**data)
+
+
+class Diode(Component):
+    table = "diode"
+
+    def __init__(self, diode_type, reverse_voltage, current, **kwargs):
+        super().__init__(**kwargs)
+        self.columns["diode_type"] = diode_type
+        self.columns["reverse_voltage"] = reverse_voltage
+        self.columns["current"] = current
+
+    @classmethod
+    def _determine_footprint(cls, data, package):
+        """
+        Choose a footprint based on the component's parameters, or ask the user
+        if there is no known-good footprint.
+
+        Args:
+            data:
+                dict of data pulled from digikey object. The function will
+                store `kicad_footprint` into this dict, and possibly read the
+                distributor part number (`DPN1`).
+            package:
+                string containing a short description of the package, such as
+                "DO-35". If this is not a known package type, the user will be
+                prompted to provide a footprint name.
+        """
+        # TODO: make the footprint map a class property, then this method can
+        # be pushed into parent class
+        kicad_footprint_map = {
+                "DO-35": "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal",
+                "SOD-323": "Diode_SMD:D_SOD-323",
+                }
+        if package in kicad_footprint_map:
+            data["kicad_footprint"] = kicad_footprint_map[package]
+        else:
+            data["kicad_footprint"] = cls._get_sym_or_fp_from_user(
+                    data["DPN1"])
+
+    @classmethod
+    def from_digikey(cls, digikey_part):
+        data = cls.get_digikey_common_data(digikey_part)
+
+        # TODO: need to handle multi-unit diodes?
+        # TODO: figure out how to handle zeners; maybe a different table
+
+        for p in digikey_part.parameters:
+            if p.parameter == "Supplier Device Package":
+                package = p.value
+            elif p.parameter == "Technology":
+                data["diode_type"] = p.value.lower()
+            elif p.parameter == "Voltage - DC Reverse (Vr) (Max)":
+                data["reverse_voltage"] = re.sub(r"\s+", "", p.value)
+            elif p.parameter == "Current - Average Rectified (Io)":
+                data["current"] = p.value
+
+        data["value"] = "${MPN}"
+        data["keywords"] = "diode"
+        data["description"] = (
+                f"{data['reverse_voltage']} {data['current']} "
+                f"{data['diode_type']} diode, "
+                f"{package}")
+        IPN = f"D_{data['manufacturer']}_{data['MPN']}"
+        data["IPN"] = re.sub(r"\s+", "", IPN)
+
+        if data["diode_type"] == "standard":
+            data["kicad_symbol"] = "Device:D"
+        elif data["diode_type"] == "schottky":
+            data["kicad_symbol"] = "Device:D_Schottky"
+        else:
+            data["kicad_symbol"] = cls._get_sym_or_fp_from_user(
+                    data["DPN1"], fp=False)
         cls._determine_footprint(data, package)
 
         return cls(**data)
