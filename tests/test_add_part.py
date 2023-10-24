@@ -66,6 +66,9 @@ class TestCreateFromDigikeyAPI(unittest.TestCase):
     def test_diode_schottky_from_digikey_pn(self):
         self.check_component_from_digikey_pn_matches_csv("BAT54WS-FDICT-ND")
 
+    def test_diode_zener_from_digikey_pn(self):
+        self.check_component_from_digikey_pn_matches_csv("MMSZ5231B-FDICT-ND")
+
 
 class TestDatabaseFunctions(unittest.TestCase):
     db_path = "unittests.db"

@@ -37,7 +37,7 @@ def create_component_from_digikey_part(part):
             return VoltageRegulator.from_digikey(part)
     elif part_type == "Discrete Semiconductor Products":
         subtype = part.limited_taxonomy.children[0].value
-        if "Diodes - Rectifiers" in subtype:
+        if "Diodes - Rectifiers" or "Diodes - Zener" in subtype:
             return Diode.from_digikey(part)
 
     raise NotImplementedError("No component type to handle part type "
@@ -781,11 +781,12 @@ class VoltageRegulator(Component):
 class Diode(Component):
     table = "diode"
 
-    def __init__(self, diode_type, reverse_voltage, current, **kwargs):
+    def __init__(self, diode_type, reverse_voltage, current_or_power,
+                 **kwargs):
         super().__init__(**kwargs)
         self.columns["diode_type"] = diode_type
         self.columns["reverse_voltage"] = reverse_voltage
-        self.columns["current"] = current
+        self.columns["current_or_power"] = current_or_power
 
     @classmethod
     def _determine_footprint(cls, data, package):
@@ -807,6 +808,7 @@ class Diode(Component):
         # be pushed into parent class
         kicad_footprint_map = {
                 "DO-35": "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal",
+                "SOD-123": "Diode_SMD:D_SOD-123",
                 "SOD-323": "Diode_SMD:D_SOD-323",
                 }
         if package in kicad_footprint_map:
@@ -815,36 +817,47 @@ class Diode(Component):
             data["kicad_footprint"] = cls._get_sym_or_fp_from_user(
                     data["DPN1"])
 
+    @staticmethod
+    def process_value_with_unit(value):
+        """Remove spaces from string (e.g. between value and unit)."""
+        return re.sub(r"\s+", "", value)
+
     @classmethod
     def from_digikey(cls, digikey_part):
         data = cls.get_digikey_common_data(digikey_part)
 
         # TODO: need to handle multi-unit diodes?
-        # TODO: figure out how to handle zeners; maybe a different table
-
         for p in digikey_part.parameters:
             if p.parameter == "Supplier Device Package":
                 package = p.value
             elif p.parameter == "Technology":
                 data["diode_type"] = p.value.lower()
             elif p.parameter == "Voltage - DC Reverse (Vr) (Max)":
-                data["reverse_voltage"] = re.sub(r"\s+", "", p.value)
+                data["reverse_voltage"] = cls.process_value_with_unit(p.value)
             elif p.parameter == "Current - Average Rectified (Io)":
-                data["current"] = p.value
+                data["current_or_power"] = cls.process_value_with_unit(p.value)
+            elif p.parameter == "Voltage - Zener (Nom) (Vz)":
+                data["reverse_voltage"] = cls.process_value_with_unit(p.value)
+                data["diode_type"] = "zener"
+            elif p.parameter == "Power - Max":
+                data["current_or_power"] = cls.process_value_with_unit(p.value)
 
         data["value"] = "${MPN}"
         data["keywords"] = "diode"
         data["description"] = (
-                f"{data['reverse_voltage']} {data['current']} "
+                f"{data['reverse_voltage']} {data['current_or_power']} "
                 f"{data['diode_type']} diode, "
                 f"{package}")
         IPN = f"D_{data['manufacturer']}_{data['MPN']}"
         data["IPN"] = re.sub(r"\s+", "", IPN)
 
-        if data["diode_type"] == "standard":
-            data["kicad_symbol"] = "Device:D"
-        elif data["diode_type"] == "schottky":
-            data["kicad_symbol"] = "Device:D_Schottky"
+        kicad_symbol_map = {
+                "standard": "Device:D",
+                "schottky": "Device:D_Schottky",
+                "zener": "Device:D_Zener",
+                }
+        if data["diode_type"] in kicad_symbol_map:
+            data["kicad_symbol"] = kicad_symbol_map[data["diode_type"]]
         else:
             data["kicad_symbol"] = cls._get_sym_or_fp_from_user(
                     data["DPN1"], fp=False)

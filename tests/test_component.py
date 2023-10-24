@@ -554,21 +554,27 @@ class TestVRegFromDigikeyPart(TestFromDigikeyPart):
 
 class TestDiodeFromDigikeyPart(TestFromDigikeyPart):
     @staticmethod
-    def init_diode_mock(diode_type, reverse_voltage, current, package,
-                        **kwargs):
-        parameters = {
-                "Supplier Device Package": package,
-                "Technology": diode_type,
-                "Voltage - DC Reverse (Vr) (Max)": reverse_voltage,
-                "Current - Average Rectified (Io)": current,
-                }
+    def init_diode_mock(reverse_voltage, package, current_or_power,
+                        diode_type=None, **kwargs):
+        parameters = {"Supplier Device Package": package}
+        if diode_type in ("Standard", "Schottky"):
+            parameters["Voltage - DC Reverse (Vr) (Max)"] = reverse_voltage
+            parameters["Current - Average Rectified (Io)"] = current_or_power
+            parameters["Technology"] = diode_type
+            subcategory = (
+                "Diodes - Rectifiers - Single Diodes - Rectifiers - "
+                "Single Diodes")
+        else:
+            parameters["Voltage - Zener (Nom) (Vz)"] = reverse_voltage
+            parameters["Power - Max"] = current_or_power
+            subcategory = (
+                    "Diodes - Zener - Single Zener Diodes - Zener - "
+                    "Single Zener Diodes")
 
         s = super(TestDiodeFromDigikeyPart, TestDiodeFromDigikeyPart)
         return s.init_mock(
             category="Discrete Semiconductor Products",
-            subcategory=(
-                "Diodes - Rectifiers - Single Diodes - Rectifiers - "
-                "Single Diodes"),
+            subcategory=subcategory,
             parameters=parameters, **kwargs)
 
     def test_diode_from_digikey(self):
@@ -580,7 +586,7 @@ class TestDiodeFromDigikeyPart(TestFromDigikeyPart):
                 digikey_PN="1N4148FSCT-ND",
                 package="DO-35",
                 reverse_voltage="100 V",
-                current="200mA",
+                current_or_power="200mA",
                 diode_type="Standard",
                 )
         self.check_component_matches_csv(mock_part)
@@ -593,8 +599,20 @@ class TestDiodeFromDigikeyPart(TestFromDigikeyPart):
                 digikey_PN="BAT54WS-FDICT-ND",
                 package="SOD-323",
                 reverse_voltage="30 V",
-                current="100mA",
+                current_or_power="100mA",
                 diode_type="Schottky",
+                )
+        self.check_component_matches_csv(mock_part)
+
+    def test_zener_diode_from_digikey(self):
+        mock_part = self.init_diode_mock(
+                datasheet=(
+                    "https://www.diodes.com/assets/Datasheets/ds18010.pdf"),
+                mfg="Diodes Incorporated", MPN="MMSZ5231B-7-F",
+                digikey_PN="MMSZ5231B-FDICT-ND",
+                package="SOD-123",
+                reverse_voltage="5.1 V",
+                current_or_power="500mW",
                 )
         self.check_component_matches_csv(mock_part)
 
