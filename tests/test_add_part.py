@@ -69,6 +69,11 @@ class TestCreateFromDigikeyAPI(unittest.TestCase):
     def test_diode_zener_from_digikey_pn(self):
         self.check_component_from_digikey_pn_matches_csv("MMSZ5231B-FDICT-ND")
 
+    @patch("partdb.component.input",
+           return_value="Device:D_Dual_Series_ACK")
+    def test_diode_array_from_digikey_pn(self, mock_input):
+        self.check_component_from_digikey_pn_matches_csv("BAV99TPMSCT-ND")
+
 
 class TestDatabaseFunctions(unittest.TestCase):
     db_path = "unittests.db"

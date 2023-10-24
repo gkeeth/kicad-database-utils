@@ -754,14 +754,16 @@ class Diode(Component):
             "DO-35": "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal",
             "SOD-123": "Diode_SMD:D_SOD-123",
             "SOD-323": "Diode_SMD:D_SOD-323",
+            "SOT-23": "Package_TO_SOT_SMD:SOT-23"
             }
 
     def __init__(self, diode_type, reverse_voltage, current_or_power,
-                 **kwargs):
+                 diode_configuration, **kwargs):
         super().__init__(**kwargs)
         self.columns["diode_type"] = diode_type
         self.columns["reverse_voltage"] = reverse_voltage
         self.columns["current_or_power"] = current_or_power
+        self.columns["diode_configuration"] = diode_configuration
 
     @staticmethod
     def process_value_with_unit(value):
@@ -772,7 +774,6 @@ class Diode(Component):
     def from_digikey(cls, digikey_part):
         data = cls.get_digikey_common_data(digikey_part)
 
-        # TODO: need to handle multi-unit diodes?
         for p in digikey_part.parameters:
             if p.parameter == "Supplier Device Package":
                 package = p.value
@@ -780,20 +781,26 @@ class Diode(Component):
                 data["diode_type"] = p.value.lower()
             elif p.parameter == "Voltage - DC Reverse (Vr) (Max)":
                 data["reverse_voltage"] = cls.process_value_with_unit(p.value)
-            elif p.parameter == "Current - Average Rectified (Io)":
+            elif p.parameter in (
+                    "Current - Average Rectified (Io)",
+                    "Power - Max",
+                    "Current - Average Rectified (Io) (per Diode)",):
                 data["current_or_power"] = cls.process_value_with_unit(p.value)
             elif p.parameter == "Voltage - Zener (Nom) (Vz)":
                 data["reverse_voltage"] = cls.process_value_with_unit(p.value)
                 data["diode_type"] = "zener"
-            elif p.parameter == "Power - Max":
-                data["current_or_power"] = cls.process_value_with_unit(p.value)
+            elif p.parameter == "Diode Configuration":
+                data["diode_configuration"] = p.value.lower()
 
         data["value"] = "${MPN}"
         data["keywords"] = "diode"
         data["description"] = (
                 f"{data['reverse_voltage']} {data['current_or_power']} "
-                f"{data['diode_type']} diode, "
-                f"{package}")
+                f"{data['diode_type']} diode, ")
+        if "diode_configuration" in data:
+            data["description"] += f"{data['diode_configuration']}, "
+            data["keywords"] += " array"
+        data["description"] += f"{package}"
         IPN = f"D_{data['manufacturer']}_{data['MPN']}"
         data["IPN"] = re.sub(r"\s+", "", IPN)
 
@@ -802,11 +809,15 @@ class Diode(Component):
                 "schottky": "Device:D_Schottky",
                 "zener": "Device:D_Zener",
                 }
-        if data["diode_type"] in kicad_symbol_map:
+        if ("diode_configuration" not in data
+                and data["diode_type"] in kicad_symbol_map):
             data["kicad_symbol"] = kicad_symbol_map[data["diode_type"]]
         else:
             data["kicad_symbol"] = cls._get_sym_or_fp_from_user(
                     data["DPN1"], fp=False)
         cls._determine_footprint(data, package)
+
+        if "diode_configuration" not in data:
+            data["diode_configuration"] = ""
 
         return cls(**data)

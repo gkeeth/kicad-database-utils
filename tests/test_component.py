@@ -555,8 +555,12 @@ class TestVRegFromDigikeyPart(TestFromDigikeyPart):
 class TestDiodeFromDigikeyPart(TestFromDigikeyPart):
     @staticmethod
     def init_diode_mock(reverse_voltage, package, current_or_power,
-                        diode_type=None, **kwargs):
-        parameters = {"Supplier Device Package": package}
+                        diode_type=None, diode_configuration="", **kwargs):
+        parameters = {
+                "Supplier Device Package": package,
+                }
+        if diode_configuration:
+            parameters["Diode Configuration"] = diode_configuration
         if diode_type in ("Standard", "Schottky"):
             parameters["Voltage - DC Reverse (Vr) (Max)"] = reverse_voltage
             parameters["Current - Average Rectified (Io)"] = current_or_power
@@ -613,6 +617,22 @@ class TestDiodeFromDigikeyPart(TestFromDigikeyPart):
                 package="SOD-123",
                 reverse_voltage="5.1 V",
                 current_or_power="500mW",
+                )
+        self.check_component_matches_csv(mock_part)
+
+    @patch("partdb.component.input",
+           return_value="Device:D_Dual_Series_ACK")
+    def test_diode_array_from_digikey(self, mock_input):
+        mock_part = self.init_diode_mock(
+                datasheet=(
+                    "https://www.mccsemi.com/pdf/Products/BAV99(SOT-23).pdf"),
+                mfg="Micro Commercial Co", MPN="BAV99-TP",
+                digikey_PN="BAV99TPMSCT-ND",
+                package="SOT-23",
+                reverse_voltage="70 V",
+                current_or_power="200mA",
+                diode_type="Standard",
+                diode_configuration="1 Pair Series Connection",
                 )
         self.check_component_matches_csv(mock_part)
 

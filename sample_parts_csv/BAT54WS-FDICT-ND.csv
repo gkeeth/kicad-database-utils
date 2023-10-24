@@ -1,2 +1,2 @@
-IPN,datasheet,description,keywords,value,exclude_from_bom,exclude_from_board,kicad_symbol,kicad_footprint,manufacturer,MPN,distributor1,DPN1,distributor2,DPN2,diode_type,reverse_voltage,current_or_power
-D_DiodesIncorporated_BAT54WS-7-F,https://www.diodes.com/assets/Datasheets/ds30098.pdf,"30V 100mA schottky diode, SOD-323",diode,${MPN},0,0,Device:D_Schottky,Diode_SMD:D_SOD-323,Diodes Incorporated,BAT54WS-7-F,Digikey,BAT54WS-FDICT-ND,,,schottky,30V,100mA
+IPN,datasheet,description,keywords,value,exclude_from_bom,exclude_from_board,kicad_symbol,kicad_footprint,manufacturer,MPN,distributor1,DPN1,distributor2,DPN2,diode_type,reverse_voltage,current_or_power,diode_configuration
+D_DiodesIncorporated_BAT54WS-7-F,https://www.diodes.com/assets/Datasheets/ds30098.pdf,"30V 100mA schottky diode, SOD-323",diode,${MPN},0,0,Device:D_Schottky,Diode_SMD:D_SOD-323,Diodes Incorporated,BAT54WS-7-F,Digikey,BAT54WS-FDICT-ND,,,schottky,30V,100mA,

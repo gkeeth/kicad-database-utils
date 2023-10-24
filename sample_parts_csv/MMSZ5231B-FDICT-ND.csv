@@ -1,2 +1,2 @@
-IPN,datasheet,description,keywords,value,exclude_from_bom,exclude_from_board,kicad_symbol,kicad_footprint,manufacturer,MPN,distributor1,DPN1,distributor2,DPN2,diode_type,reverse_voltage,current_or_power
-D_DiodesIncorporated_MMSZ5231B-7-F,https://www.diodes.com/assets/Datasheets/ds18010.pdf,"5.1V 500mW zener diode, SOD-123",diode,${MPN},0,0,Device:D_Zener,Diode_SMD:D_SOD-123,Diodes Incorporated,MMSZ5231B-7-F,Digikey,MMSZ5231B-FDICT-ND,,,zener,5.1V,500mW
+IPN,datasheet,description,keywords,value,exclude_from_bom,exclude_from_board,kicad_symbol,kicad_footprint,manufacturer,MPN,distributor1,DPN1,distributor2,DPN2,diode_type,reverse_voltage,current_or_power,diode_configuration
+D_DiodesIncorporated_MMSZ5231B-7-F,https://www.diodes.com/assets/Datasheets/ds18010.pdf,"5.1V 500mW zener diode, SOD-123",diode,${MPN},0,0,Device:D_Zener,Diode_SMD:D_SOD-123,Diodes Incorporated,MMSZ5231B-7-F,Digikey,MMSZ5231B-FDICT-ND,,,zener,5.1V,500mW,
