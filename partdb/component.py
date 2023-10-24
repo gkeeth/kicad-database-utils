@@ -102,6 +102,29 @@ class Component(ABC):
         self.columns["distributor2"] = distributor2
         self.columns["DPN2"] = DPN2
 
+    @classmethod
+    def _determine_footprint(cls, data, package):
+        """
+        Choose a footprint based on the component's parameters, or ask the user
+        if there is no known-good footprint.
+
+        Args:
+            data:
+                dict of data pulled from digikey object. The function will
+                store `kicad_footprint` into this dict, and possibly read the
+                distributor part number (`DPN1`).
+            package:
+                string containing a short description of the package, such as
+                "32-LQFP (7x7)". This should be a key in the component class's
+                kicad_footprint_map dict. If this is not a known package type,
+                the user will be prompted to provide a footprint name.
+        """
+        if package in cls.kicad_footprint_map:
+            data["kicad_footprint"] = cls.kicad_footprint_map[package]
+        else:
+            data["kicad_footprint"] = cls._get_sym_or_fp_from_user(
+                    data["DPN1"])
+
     @staticmethod
     def process_tolerance(param):
         """Return a processed tolerance string, e.g. 5%, 1.0%, or -."""
@@ -212,6 +235,14 @@ class Component(ABC):
 
 class Resistor(Component):
     table = "resistor"
+    kicad_footprint_map = {
+            "0201": "Resistor_SMD:R_0201_0603Metric",
+            "0402": "Resistor_SMD:R_0402_1005Metric",
+            "0603": "Resistor_SMD:R_0603_1608Metric",
+            "0805": "Resistor_SMD:R_0805_2012Metric",
+            "1206": "Resistor_SMD:R_1206_3216Metric",
+            "1210": "Resistor_SMD:R_1210_3225Metric",
+            }
 
     def __init__(self, resistance, tolerance, power, composition, package,
                  **kwargs):
@@ -293,26 +324,21 @@ class Resistor(Component):
 
         data["kicad_symbol"] = "Device:R"
 
-        kicad_footprint_map = {
-                "0201": "Resistor_SMD:R_0201_0603Metric",
-                "0402": "Resistor_SMD:R_0402_1005Metric",
-                "0603": "Resistor_SMD:R_0603_1608Metric",
-                "0805": "Resistor_SMD:R_0805_2012Metric",
-                "1206": "Resistor_SMD:R_1206_3216Metric",
-                "1210": "Resistor_SMD:R_1210_3225Metric",
-                }
-
-        if data["package"] in kicad_footprint_map:
-            data["kicad_footprint"] = kicad_footprint_map[data["package"]]
-        else:
-            data["kicad_footprint"] = cls._get_sym_or_fp_from_user(
-                    data["DPN1"])
+        cls._determine_footprint(data, data["package"])
 
         return cls(**data)
 
 
 class Capacitor(Component):
     table = "capacitor"
+    kicad_footprint_map = {
+            "0201": "Capacitor_SMD:C_0201_0603Metric",
+            "0402": "Capacitor_SMD:C_0402_1005Metric",
+            "0603": "Capacitor_SMD:C_0603_1608Metric",
+            "0805": "Capacitor_SMD:C_0805_2012Metric",
+            "1206": "Capacitor_SMD:C_1206_3216Metric",
+            "1210": "Capacitor_SMD:C_1210_3225Metric",
+            }
 
     def __init__(self, capacitance, tolerance, voltage, dielectric, package,
                  **kwargs):
@@ -429,17 +455,9 @@ class Capacitor(Component):
             tuple of package_short (e.g. "0805" or "Radial") and package_dims
             (e.g. "" or "D5.00mm_H10.0mm_P2.00mm")
         """
-        kicad_footprint_map = {
-                "0201": "Capacitor_SMD:C_0201_0603Metric",
-                "0402": "Capacitor_SMD:C_0402_1005Metric",
-                "0603": "Capacitor_SMD:C_0603_1608Metric",
-                "0805": "Capacitor_SMD:C_0805_2012Metric",
-                "1206": "Capacitor_SMD:C_1206_3216Metric",
-                "1210": "Capacitor_SMD:C_1210_3225Metric",
-                }
 
-        if data["package"] in kicad_footprint_map:
-            data["kicad_footprint"] = kicad_footprint_map[data["package"]]
+        if data["package"] in cls.kicad_footprint_map:
+            data["kicad_footprint"] = cls.kicad_footprint_map[data["package"]]
             package_short = data["package"]
             package_dims = ""
         elif data["package"] == "Radial, Can":
@@ -555,6 +573,10 @@ class Capacitor(Component):
 
 class OpAmp(Component):
     table = "opamp"
+    kicad_footprint_map = {
+            '8-SOIC (0.154", 3.90mm Width)':
+            "Package_SO:SOIC-8_3.9x4.9mm_P1.27mm",
+            }
 
     def __init__(self, bandwidth, num_units, **kwargs):
         super().__init__(**kwargs)
@@ -590,21 +612,40 @@ class OpAmp(Component):
         data["kicad_symbol"] = cls._get_sym_or_fp_from_user(
                 data["DPN1"], fp=False)
 
-        kicad_footprint_map = {
-                '8-SOIC (0.154", 3.90mm Width)':
-                "Package_SO:SOIC-8_3.9x4.9mm_P1.27mm",
-                }
-        if package in kicad_footprint_map:
-            data["kicad_footprint"] = kicad_footprint_map[package]
-        else:
-            data["kicad_footprint"] = cls._get_sym_or_fp_from_user(
-                    data["DPN1"])
+        cls._determine_footprint(data, package)
 
         return cls(**data)
 
 
 class Microcontroller(Component):
     table = "microcontroller"
+    kicad_footprint_map = {
+            "8-SOIC": "Package_SO:SOIC-8_3.9x4.9mm_P1.27mm",
+            "14-TSSOP": "Package_SO:TSSOP-14_4.4x5mm_P0.65mm",
+            "20-TSSOP": "Package_SO:TSSOP-20_4.4x6.5mm_P0.65mm",
+
+            "32-LQFP (7x7)": "Package_QFP:LQFP-32_7x7mm_P0.8mm",
+            "48-LQFP (7x7)": "Package_QFP:LQFP-48_7x7mm_P0.5mm",
+            "64-LQFP (10x10)": "Package_QFP:LQFP-64_10x10mm_P0.5mm",
+            "80-LQFP (12x12)": "Package_QFP:LQFP-80_12x12mm_P0.5mm",
+            "80-LQFP (14x14)": "Package_QFP:LQFP-80_14x14mm_P0.65mm",
+            "100-LQFP (14x14)": "Package_QFP:LQFP-100_14x14mm_P0.5mm",
+            "128-LQFP (14x14)": "Package_QFP:LQFP-128_14x14mm_P0.4mm",
+            "144-LQFP (20x20)": "Package_QFP:LQFP-144_20x20mm_P0.5mm",
+            "176-LQFP (24x24)": "Package_QFP:LQFP-176_24x24mm_P0.5mm",
+            "208-LQFP (28x28)": "Package_QFP:LQFP-208_28x28mm_P0.5mm",
+
+            "20-UFQFPN (3x3)": "Package_DFN_QFN:ST_UFQFPN-20_3x3mm_P0.5mm",
+            "28-UFQFPN (4x4)": "Package_DFN_QFN:QFN-28_4x4mm_P0.5mm",
+            "32-UFQFPN (5x5)":
+            "Package_DFN_QFN:QFN-32-1EP_5x5mm_P0.5mm_EP3.45x3.45mm",
+            "36-VFQFPN (6x6)":
+            "Package_DFN_QFN:QFN-36-1EP_6x6mm_P0.5mm_EP4.1x4.1mm",
+            "48-UFQFPN (7x7)":
+            "Package_DFN_QFN:QFN-48-1EP_7x7mm_P0.5mm_EP5.6x5.6mm",
+            "68-VFQFPN (8x8)":
+            "Package_DFN_QFN:QFN-68-1EP_8x8mm_P0.4mm_EP6.4x6.4mm",
+            }
 
     def __init__(self, speed, core, **kwargs):
         super().__init__(**kwargs)
@@ -623,55 +664,6 @@ class Microcontroller(Component):
         alphanumeric, underscores, dashes, or spaces (for example, ® or ™).
         """
         return re.sub(r"[^\d\w \-]", "", param)
-
-    @classmethod
-    def _determine_footprint(cls, data, package):
-        """
-        Choose a footprint based on the component's parameters, or ask the user
-        if there is no known-good footprint.
-
-        Args:
-            data:
-                dict of data pulled from digikey object. The function will
-                store `kicad_footprint` into this dict, and possibly read the
-                distributor part number (`DPN1`).
-            package:
-                string containing a short description of the package, such as
-                "32-LQFP (7x7)". If this is not a known package type, the user
-                will be prompted to provide a footprint name.
-        """
-        kicad_footprint_map = {
-                "8-SOIC": "Package_SO:SOIC-8_3.9x4.9mm_P1.27mm",
-                "14-TSSOP": "Package_SO:TSSOP-14_4.4x5mm_P0.65mm",
-                "20-TSSOP": "Package_SO:TSSOP-20_4.4x6.5mm_P0.65mm",
-
-                "32-LQFP (7x7)": "Package_QFP:LQFP-32_7x7mm_P0.8mm",
-                "48-LQFP (7x7)": "Package_QFP:LQFP-48_7x7mm_P0.5mm",
-                "64-LQFP (10x10)": "Package_QFP:LQFP-64_10x10mm_P0.5mm",
-                "80-LQFP (12x12)": "Package_QFP:LQFP-80_12x12mm_P0.5mm",
-                "80-LQFP (14x14)": "Package_QFP:LQFP-80_14x14mm_P0.65mm",
-                "100-LQFP (14x14)": "Package_QFP:LQFP-100_14x14mm_P0.5mm",
-                "128-LQFP (14x14)": "Package_QFP:LQFP-128_14x14mm_P0.4mm",
-                "144-LQFP (20x20)": "Package_QFP:LQFP-144_20x20mm_P0.5mm",
-                "176-LQFP (24x24)": "Package_QFP:LQFP-176_24x24mm_P0.5mm",
-                "208-LQFP (28x28)": "Package_QFP:LQFP-208_28x28mm_P0.5mm",
-
-                "20-UFQFPN (3x3)": "Package_DFN_QFN:ST_UFQFPN-20_3x3mm_P0.5mm",
-                "28-UFQFPN (4x4)": "Package_DFN_QFN:QFN-28_4x4mm_P0.5mm",
-                "32-UFQFPN (5x5)":
-                "Package_DFN_QFN:QFN-32-1EP_5x5mm_P0.5mm_EP3.45x3.45mm",
-                "36-VFQFPN (6x6)":
-                "Package_DFN_QFN:QFN-36-1EP_6x6mm_P0.5mm_EP4.1x4.1mm",
-                "48-UFQFPN (7x7)":
-                "Package_DFN_QFN:QFN-48-1EP_7x7mm_P0.5mm_EP5.6x5.6mm",
-                "68-VFQFPN (8x8)":
-                "Package_DFN_QFN:QFN-68-1EP_8x8mm_P0.4mm_EP6.4x6.4mm",
-                }
-        if package in kicad_footprint_map:
-            data["kicad_footprint"] = kicad_footprint_map[package]
-        else:
-            data["kicad_footprint"] = cls._get_sym_or_fp_from_user(
-                    data["DPN1"])
 
     @classmethod
     def from_digikey(cls, digikey_part):
@@ -705,36 +697,14 @@ class Microcontroller(Component):
 
 class VoltageRegulator(Component):
     table = "voltage_regulator"
+    kicad_footprint_map = {
+            "TO-220-3": "Package_TO_SOT_THT:TO-220-3_Vertical",
+            }
 
     def __init__(self, voltage, current, **kwargs):
         super().__init__(**kwargs)
         self.columns["voltage"] = voltage
         self.columns["current"] = current
-
-    @classmethod
-    def _determine_footprint(cls, data, package):
-        """
-        Choose a footprint based on the component's parameters, or ask the user
-        if there is no known-good footprint.
-
-        Args:
-            data:
-                dict of data pulled from digikey object. The function will
-                store `kicad_footprint` into this dict, and possibly read the
-                distributor part number (`DPN1`).
-            package:
-                string containing a short description of the package, such as
-                "TO-220-3". If this is not a known package type, the user will
-                be prompted to provide a footprint name.
-        """
-        kicad_footprint_map = {
-                "TO-220-3": "Package_TO_SOT_THT:TO-220-3_Vertical",
-                }
-        if package in kicad_footprint_map:
-            data["kicad_footprint"] = kicad_footprint_map[package]
-        else:
-            data["kicad_footprint"] = cls._get_sym_or_fp_from_user(
-                    data["DPN1"])
 
     @classmethod
     def from_digikey(cls, digikey_part):
@@ -780,6 +750,11 @@ class VoltageRegulator(Component):
 
 class Diode(Component):
     table = "diode"
+    kicad_footprint_map = {
+            "DO-35": "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal",
+            "SOD-123": "Diode_SMD:D_SOD-123",
+            "SOD-323": "Diode_SMD:D_SOD-323",
+            }
 
     def __init__(self, diode_type, reverse_voltage, current_or_power,
                  **kwargs):
@@ -787,35 +762,6 @@ class Diode(Component):
         self.columns["diode_type"] = diode_type
         self.columns["reverse_voltage"] = reverse_voltage
         self.columns["current_or_power"] = current_or_power
-
-    @classmethod
-    def _determine_footprint(cls, data, package):
-        """
-        Choose a footprint based on the component's parameters, or ask the user
-        if there is no known-good footprint.
-
-        Args:
-            data:
-                dict of data pulled from digikey object. The function will
-                store `kicad_footprint` into this dict, and possibly read the
-                distributor part number (`DPN1`).
-            package:
-                string containing a short description of the package, such as
-                "DO-35". If this is not a known package type, the user will be
-                prompted to provide a footprint name.
-        """
-        # TODO: make the footprint map a class property, then this method can
-        # be pushed into parent class
-        kicad_footprint_map = {
-                "DO-35": "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal",
-                "SOD-123": "Diode_SMD:D_SOD-123",
-                "SOD-323": "Diode_SMD:D_SOD-323",
-                }
-        if package in kicad_footprint_map:
-            data["kicad_footprint"] = kicad_footprint_map[package]
-        else:
-            data["kicad_footprint"] = cls._get_sym_or_fp_from_user(
-                    data["DPN1"])
 
     @staticmethod
     def process_value_with_unit(value):
