@@ -1,5 +1,6 @@
 env/
 __pycache__
+src/partdb.egg-info/
 *.kicad_dbl
 *.db
 *.sqlite
