@@ -1,0 +1,10 @@
+[project]
+name = "partdb"
+version = "0.0.0"
+description = ""
+readme = "README.md"
+license = {file = "LICENSE"}
+authors = [{name = "Graham Keeth", email = "graham.keeth@gmail.com"}]
+
+[project.urls]
+repository = "https://github.com/gkeeth/kicad-database-utils"
