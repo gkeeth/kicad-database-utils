@@ -874,6 +874,22 @@ class LED(Component):
         short_color = re.sub(r"[, ]+", "", short_color)
         return short_color
 
+    @staticmethod
+    def process_led_dimension(param):
+        """Return a dimension string in mm, with 1 digit after each decimal
+        point, e.g. "5.0x5.0mm" from "5.00mm L x 5.00mm W".
+        """
+        dim_string = r"(\d+\.?\d*)"
+        match = re.search(fr"{dim_string}[\smLW]*x"
+                          fr"\s*{dim_string}\s*mm",
+                          param)
+        try:
+            dim1 = float(match.group(1))
+            dim2 = float(match.group(2))
+            return f"{dim1:.1f}x{dim2:.1f}mm"
+        except AttributeError:
+            return "-"
+
     @classmethod
     def _determine_footprint(cls, data, package):
         """Determine footprint based on package name and other component data.
@@ -893,37 +909,49 @@ class LED(Component):
     def from_digikey(cls, digikey_part):
         data = cls.get_digikey_common_data(digikey_part)
 
+        addressable = False
         for p in digikey_part.parameters:
             if p.parameter == "Package / Case":
                 data["package"] = cls.process_led_package(p.value)
             if p.parameter == "Supplier Device Package":
                 supplier_device_package = cls.process_led_package(p.value)
+            if p.parameter == "Size / Dimension":
+                size_dimension = p.value
             elif p.parameter == "Color":
                 data["color"] = p.value
             elif p.parameter == "Voltage - Forward (Vf) (Typ)":
                 data["forward_voltage"] = p.value
+            elif p.parameter == "Interface":
+                addressable = True
             elif p.parameter == "Configuration":
-                if p.value == "Standard":
+                if p.value == "Standard" or p.value == "Discrete":
                     data["diode_configuration"] = ""
                 else:
                     data["diode_configuration"] = p.value
 
+        if "package" not in data:
+            data["package"] = cls.process_led_dimension(size_dimension)
+        if "forward_voltage" not in data:
+            data["forward_voltage"] = ""
         if data["package"] == "Radial - 4 Leads":
             data["package"] = supplier_device_package
 
+        short_color = cls.process_led_color(data["color"])
         data["value"] = "${Color}"
         data["keywords"] = "led"
-        data["description"] = f"{data['color']} LED, "
+        data["IPN"] = f"LED_{short_color}_"
+        data["description"] = f"{data['color']} "
+        if addressable:
+            data["description"] += "addressable "
+            data["IPN"] += "Addressable_"
+        data["description"] += "LED, "
         if data["diode_configuration"]:
             data["description"] += f"{data['diode_configuration']}, "
         data["description"] += f"{data['package']}"
-        short_color = cls.process_led_color(data["color"])
-        IPN = (f"LED_{short_color}_"
-               f"{data['package']}_"
-               f"{data['manufacturer']}_{data['MPN']}")
-        data["IPN"] = re.sub(r"[\.,\s]", "", IPN)
+        mfg = re.sub(r"[\.,\s]", "", data["manufacturer"])
+        data["IPN"] += f"{data['package']}_{mfg}_{data['MPN']}"
 
-        if data["diode_configuration"] == "":
+        if data["diode_configuration"] == "" and not addressable:
             data["kicad_symbol"] = "Device:LED"
         else:
             data["kicad_symbol"] = cls._get_sym_or_fp_from_user(

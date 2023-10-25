@@ -46,8 +46,8 @@ tables:
     inductor:             value, inductance, tolerance, package
     ferrite_bead:         impedance_at_freq, current, resistance, package
     connector:            series, circuit_configuration, gender, orientation
-    led:                  color, package
-    diode:                type, voltage, package
+    x led:                  color, package
+    x diode:                type, voltage, package
     transistor_bjt:       type, package
     transistor_mosfet:    type, package
     transistor_jfet:      type, package

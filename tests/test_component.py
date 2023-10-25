@@ -205,7 +205,7 @@ class TestParameterUtils(unittest.TestCase):
                 self.assertEqual(
                         expected, Component.process_smd_package(package))
 
-    def test_process_dimension(self):
+    def test_capacitor_process_dimension(self):
         testcases = [
                 ("5.00mm", "12.7in (5.00mm)"),
                 ("10.0mm", "25.4in (10.00 mm)"),
@@ -252,6 +252,18 @@ class TestParameterUtils(unittest.TestCase):
         for expected, color in testcases:
             with self.subTest(Color=color):
                 self.assertEqual(expected, LED.process_led_color(color))
+
+    def test_process_led_dimension(self):
+        testcases = [
+                ("5.0x5.0mm", "5.00x5.00mm"),
+                ("12.7x12.7mm", "12.70 x 12.70 mm"),
+                ("5.0x5.0mm", "5.00mm L x 5.00mm W"),
+                ("-", "wasdf"),
+                ]
+        for expected, dimension in testcases:
+            with self.subTest(Dimension=dimension):
+                self.assertEqual(expected,
+                                 LED.process_led_dimension(dimension))
 
 
 class TestComponentFromDict(unittest.TestCase):
@@ -664,20 +676,23 @@ class TestDiodeFromDigikeyPart(TestFromDigikeyPart):
 
 class TestLEDFromDigikeyPart(TestFromDigikeyPart):
     @staticmethod
-    def init_led_mock(color, forward_voltage, diode_configuration, package,
-                      supplier_device_package="", **kwargs):
+    def init_led_mock(color, diode_configuration, forward_voltage="",
+                      interface="", supplier_device_package="", package="",
+                      size_dimension="", **kwargs):
         parameters = {
                 "Color": color,
-                "Voltage - Forward (Vf) (Typ)": forward_voltage,
-                "Package / Case": package,
+                "Configuration": diode_configuration,
                 }
-        if diode_configuration == "Standard":
-            parameters["Configuration"] = ""
-        else:
-            parameters["Configuration"] = diode_configuration
-
+        if forward_voltage:
+            parameters["Voltage - Forward (Vf) (Typ)"] = forward_voltage
+        if interface:
+            parameters["Interface"] = interface
+        if package:
+            parameters["Package / Case"] = package
         if supplier_device_package:
             parameters["Supplier Device Package"] = supplier_device_package
+        if size_dimension:
+            parameters["Size / Dimension"] = size_dimension
 
         s = super(TestDiodeFromDigikeyPart, TestDiodeFromDigikeyPart)
         return s.init_mock(category="Optoelectronics",
@@ -711,6 +726,24 @@ class TestLEDFromDigikeyPart(TestFromDigikeyPart):
                 diode_configuration="Common Cathode",
                 package="Radial - 4 Leads",
                 supplier_device_package="T-1 3/4",
+                )
+        self.check_component_matches_csv(mock_part)
+
+    @patch("partdb.component.input",
+           side_effect=[
+               "LED:Inolux_IN-PI554FCH",
+               "LED_SMD:LED_Inolux_IN-PI554FCH_PLCC4_5.0x5.0mm_P3.2mm"])
+    def test_led_adressable_from_digikey(self, mock_input):
+        mock_part = self.init_led_mock(
+                datasheet=(
+                    "https://www.inolux-corp.com/datasheet/SMDLED/"
+                    "Addressable%20LED/IN-PI554FCH.pdf"),
+                mfg="Inolux", MPN="IN-PI554FCH",
+                digikey_PN="1830-1106-1-ND",
+                color="Red, Green, Blue (RGB)",
+                diode_configuration="Discrete",
+                interface="PWM",
+                size_dimension="5.00mm L x 5.00mm W"
                 )
         self.check_component_matches_csv(mock_part)
 

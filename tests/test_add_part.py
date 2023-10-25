@@ -82,6 +82,13 @@ class TestCreateFromDigikeyAPI(unittest.TestCase):
     def test_led_rgb_tht_from_digikey_pn(self, mock_input):
         self.check_component_from_digikey_pn_matches_csv("754-1615-ND")
 
+    @patch("partdb.component.input",
+           side_effect=[
+               "LED:Inolux_IN-PI554FCH",
+               "LED_SMD:LED_Inolux_IN-PI554FCH_PLCC4_5.0x5.0mm_P3.2mm"])
+    def test_led_adressable_from_digikey_pn(self, mock_input):
+        self.check_component_from_digikey_pn_matches_csv("1830-1106-1-ND")
+
 
 class TestDatabaseFunctions(unittest.TestCase):
     db_path = "unittests.db"
