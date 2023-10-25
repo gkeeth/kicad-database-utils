@@ -39,6 +39,8 @@ def create_component_from_digikey_part(part):
         subtype = part.limited_taxonomy.children[0].value
         if "Diodes - Rectifiers" or "Diodes - Zener" in subtype:
             return Diode.from_digikey(part)
+    elif part_type == "Optoelectronics":
+        return LED.from_digikey(part)
 
     raise NotImplementedError("No component type to handle part type "
                               f"'{part.limited_taxonomy.value}' for part "
@@ -72,6 +74,8 @@ def create_component_from_dict(columns_and_values):
         return VoltageRegulator(**columns_and_values)
     elif IPN.startswith("D_"):
         return Diode(**columns_and_values)
+    elif IPN.startswith("LED_"):
+        return LED(**columns_and_values)
     else:
         raise NotImplementedError(f"No component type to handle part '{IPN}'")
 
@@ -134,6 +138,17 @@ class Component(ABC):
         else:
             # e.g. jumpers have no meaningful tolerance
             return "-"
+
+    @staticmethod
+    def process_smd_package(param):
+        """If param contains an SMD package name at the beginning, like 0805,
+        return that substring. Otherwise return the original string.
+        """
+        match = re.match(r"\d\d\d\d", param)
+        if match:
+            return match.group(0)
+        else:
+            return param
 
     @staticmethod
     def _get_sym_or_fp_from_user(PN, fp=True, prompt=True):
@@ -397,17 +412,6 @@ class Capacitor(Component):
             raise ValueError(f"Unknown capacitor polarization '{param}'.")
 
     @staticmethod
-    def process_package(param):
-        """If param contains an SMD package name, like 0805, return that
-        substring. Otherwise return the original string.
-        """
-        match = re.search(r"\d\d\d\d", param)
-        if match:
-            return match.group(0)
-        else:
-            return param
-
-    @staticmethod
     def process_dimension(param):
         """Return a dimension string in mm, with 3 digits, e.g. 5.00mm or
         12.7mm.
@@ -537,7 +541,7 @@ class Capacitor(Component):
             elif p.parameter == "Temperature Coefficient":
                 data["dielectric"] = p.value
             elif p.parameter == "Package / Case":
-                data["package"] = cls.process_package(p.value)
+                data["package"] = cls.process_smd_package(p.value)
             elif p.parameter == "Polarization":
                 polarization = cls.process_polarization(p.value)
             elif p.parameter == "Lead Spacing":
@@ -819,5 +823,111 @@ class Diode(Component):
 
         if "diode_configuration" not in data:
             data["diode_configuration"] = ""
+
+        return cls(**data)
+
+
+class LED(Component):
+    table = "led"
+    kicad_footprint_map = {
+            "0603": "LED_SMD:LED_0603_1608Metric",
+            "5mm": "LED_THT:LED_D5.0mm"
+            }
+
+    def __init__(self, color, forward_voltage, diode_configuration, package,
+                 **kwargs):
+        super().__init__(**kwargs)
+        self.columns["color"] = color
+        self.columns["forward_voltage"] = forward_voltage
+        self.columns["diode_configuration"] = diode_configuration
+        self.columns["package"] = package
+
+    @staticmethod
+    def process_led_package(param):
+        """Return a sanitized LED package name.
+
+        Long SMD package names are transformed to their short form (e.g.
+        "0603 (1608 Metric)" becomes "0603"), and some other common package
+        names are made friendlier (e.g. "T-1 3/4" becomes "5mm"). If no
+        transformation is applicable, the original package name is returned.
+
+        This relies partially on a lookup table of known package name
+        transformations.
+        """
+        package_map = {
+                "T-1 3/4": "5mm",
+                }
+        mod_package = super(LED, LED).process_smd_package(param)
+        if mod_package != param:
+            return mod_package
+        elif param in package_map:
+            return package_map[param]
+        else:
+            return param
+
+    @staticmethod
+    def process_led_color(param):
+        """Return a sanitized LED color."""
+        # remove "(RGB)", if present
+        short_color = re.sub(r" \(.*\)", "", param)
+        # remove commas and spaces
+        short_color = re.sub(r"[, ]+", "", short_color)
+        return short_color
+
+    @classmethod
+    def _determine_footprint(cls, data, package):
+        """Determine footprint based on package name and other component data.
+
+        If package cannot be determined, prompt the user. For LEDs
+        specifically, only attempt to auto-determine footprints for
+        single-color LEDs.
+        """
+
+        if data["diode_configuration"] == "":
+            super()._determine_footprint(data, package)
+        else:
+            data["kicad_footprint"] = cls._get_sym_or_fp_from_user(
+                    data["DPN1"])
+
+    @classmethod
+    def from_digikey(cls, digikey_part):
+        data = cls.get_digikey_common_data(digikey_part)
+
+        for p in digikey_part.parameters:
+            if p.parameter == "Package / Case":
+                data["package"] = cls.process_led_package(p.value)
+            if p.parameter == "Supplier Device Package":
+                supplier_device_package = cls.process_led_package(p.value)
+            elif p.parameter == "Color":
+                data["color"] = p.value
+            elif p.parameter == "Voltage - Forward (Vf) (Typ)":
+                data["forward_voltage"] = p.value
+            elif p.parameter == "Configuration":
+                if p.value == "Standard":
+                    data["diode_configuration"] = ""
+                else:
+                    data["diode_configuration"] = p.value
+
+        if data["package"] == "Radial - 4 Leads":
+            data["package"] = supplier_device_package
+
+        data["value"] = "${Color}"
+        data["keywords"] = "led"
+        data["description"] = f"{data['color']} LED, "
+        if data["diode_configuration"]:
+            data["description"] += f"{data['diode_configuration']}, "
+        data["description"] += f"{data['package']}"
+        short_color = cls.process_led_color(data["color"])
+        IPN = (f"LED_{short_color}_"
+               f"{data['package']}_"
+               f"{data['manufacturer']}_{data['MPN']}")
+        data["IPN"] = re.sub(r"[\.,\s]", "", IPN)
+
+        if data["diode_configuration"] == "":
+            data["kicad_symbol"] = "Device:LED"
+        else:
+            data["kicad_symbol"] = cls._get_sym_or_fp_from_user(
+                    data["DPN1"], fp=False)
+        cls._determine_footprint(data, data["package"])
 
         return cls(**data)

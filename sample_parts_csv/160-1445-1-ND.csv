@@ -1,0 +1,2 @@
+IPN,datasheet,description,keywords,value,exclude_from_bom,exclude_from_board,kicad_symbol,kicad_footprint,manufacturer,MPN,distributor1,DPN1,distributor2,DPN2,color,forward_voltage,diode_configuration,package
+LED_Orange_0603_Lite-OnInc_LTST-C191KFKT,https://optoelectronics.liteon.com/upload/download/DS22-2000-222/LTST-C191KFKT.pdf,"Orange LED, 0603",led,${Color},0,0,Device:LED,LED_SMD:LED_0603_1608Metric,Lite-On Inc.,LTST-C191KFKT,Digikey,160-1445-1-ND,,,Orange,2V,,0603

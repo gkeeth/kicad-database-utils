@@ -74,6 +74,14 @@ class TestCreateFromDigikeyAPI(unittest.TestCase):
     def test_diode_array_from_digikey_pn(self, mock_input):
         self.check_component_from_digikey_pn_matches_csv("BAV99TPMSCT-ND")
 
+    def test_led_from_digikey_pn(self):
+        self.check_component_from_digikey_pn_matches_csv("160-1445-1-ND")
+
+    @patch("partdb.component.input",
+           side_effect=["Device:LED_RKBG", "LED_THT:LED_D5.0mm-4_RGB"])
+    def test_led_rgb_tht_from_digikey_pn(self, mock_input):
+        self.check_component_from_digikey_pn_matches_csv("754-1615-ND")
+
 
 class TestDatabaseFunctions(unittest.TestCase):
     db_path = "unittests.db"

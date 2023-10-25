@@ -6,7 +6,8 @@ import unittest
 from unittest.mock import patch, MagicMock
 
 from partdb import component
-from partdb.component import Component, Resistor, Capacitor, Microcontroller
+from partdb.component import (Component, Resistor, Capacitor, Microcontroller,
+                              LED)
 
 
 def expected_component_from_csv(csvpath):
@@ -196,10 +197,13 @@ class TestParameterUtils(unittest.TestCase):
         testcases = [
                 ("0805", "0805 (2012 Metric)"),
                 ("Radial, Can", "Radial, Can"),
+                ("2-LCC", "2-LCC"),
+                ("A1234", "A1234"),
                 ]
         for expected, package in testcases:
             with self.subTest(Package=package):
-                self.assertEqual(expected, Capacitor.process_package(package))
+                self.assertEqual(
+                        expected, Component.process_smd_package(package))
 
     def test_process_dimension(self):
         testcases = [
@@ -227,6 +231,27 @@ class TestParameterUtils(unittest.TestCase):
         for expected, core in testcases:
             with self.subTest(Core=core):
                 self.assertEqual(expected, Microcontroller.process_core(core))
+
+    def test_process_led_package(self):
+        testcases = [
+                ("0603", "0603 (1608 Metric)"),
+                ("5mm", "T-1 3/4"),
+                ("2-LCC", "2-LCC"),
+                ("A1234", "A1234"),
+                ]
+        for expected, package in testcases:
+            with self.subTest(Package=package):
+                self.assertEqual(expected, LED.process_led_package(package))
+
+    def test_process_led_color(self):
+        testcases = [
+                ("Orange", "Orange"),
+                ("RedGreenBlue", "Red, Green, Blue (RGB)"),
+                ("YellowYellow-Green", "Yellow, Yellow-Green"),
+                ]
+        for expected, color in testcases:
+            with self.subTest(Color=color):
+                self.assertEqual(expected, LED.process_led_color(color))
 
 
 class TestComponentFromDict(unittest.TestCase):
@@ -633,6 +658,59 @@ class TestDiodeFromDigikeyPart(TestFromDigikeyPart):
                 current_or_power="200mA",
                 diode_type="Standard",
                 diode_configuration="1 Pair Series Connection",
+                )
+        self.check_component_matches_csv(mock_part)
+
+
+class TestLEDFromDigikeyPart(TestFromDigikeyPart):
+    @staticmethod
+    def init_led_mock(color, forward_voltage, diode_configuration, package,
+                      supplier_device_package="", **kwargs):
+        parameters = {
+                "Color": color,
+                "Voltage - Forward (Vf) (Typ)": forward_voltage,
+                "Package / Case": package,
+                }
+        if diode_configuration == "Standard":
+            parameters["Configuration"] = ""
+        else:
+            parameters["Configuration"] = diode_configuration
+
+        if supplier_device_package:
+            parameters["Supplier Device Package"] = supplier_device_package
+
+        s = super(TestDiodeFromDigikeyPart, TestDiodeFromDigikeyPart)
+        return s.init_mock(category="Optoelectronics",
+                           parameters=parameters, **kwargs)
+
+    def test_led_from_digikey(self):
+        mock_part = self.init_led_mock(
+                datasheet=(
+                    "https://optoelectronics.liteon.com/upload/download/"
+                    "DS22-2000-222/LTST-C191KFKT.pdf"),
+                mfg="Lite-On Inc.", MPN="LTST-C191KFKT",
+                digikey_PN="160-1445-1-ND",
+                color="Orange",
+                forward_voltage="2V",
+                diode_configuration="Standard",
+                package="0603 (1608 Metric)",
+                )
+        self.check_component_matches_csv(mock_part)
+
+    @patch("partdb.component.input",
+           side_effect=["Device:LED_RKBG", "LED_THT:LED_D5.0mm-4_RGB"])
+    def test_led_rgb_from_digikey(self, mock_input):
+        mock_part = self.init_led_mock(
+                datasheet=(
+                    "https://www.KingbrightUSA.com/images/catalog/SPEC/"
+                    "WP154A4SUREQBFZGC.pdf"),
+                mfg="Kingbright", MPN="WP154A4SUREQBFZGC",
+                digikey_PN="754-1615-ND",
+                color="Red, Green, Blue (RGB)",
+                forward_voltage="1.9V Red, 3.3V Green, 3.3V Blue",
+                diode_configuration="Common Cathode",
+                package="Radial - 4 Leads",
+                supplier_device_package="T-1 3/4",
                 )
         self.check_component_matches_csv(mock_part)
 
