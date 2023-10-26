@@ -37,7 +37,7 @@ def create_component_from_digikey_part(part):
             return VoltageRegulator.from_digikey(part)
     elif part_type == "Discrete Semiconductor Products":
         subtype = part.limited_taxonomy.children[0].value
-        if "Diodes - Rectifiers" or "Diodes - Zener" in subtype:
+        if "Diodes - Rectifiers" in subtype or "Diodes - Zener" in subtype:
             return Diode.from_digikey(part)
     elif part_type == "Optoelectronics":
         return LED.from_digikey(part)
