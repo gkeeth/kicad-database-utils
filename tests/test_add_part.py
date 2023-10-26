@@ -89,6 +89,13 @@ class TestCreateFromDigikeyAPI(unittest.TestCase):
     def test_led_adressable_from_digikey_pn(self, mock_input):
         self.check_component_from_digikey_pn_matches_csv("1830-1106-1-ND")
 
+    @patch("partdb.component.input",
+           side_effect=[
+               "Device:Q_NPN_EBC",
+               "Package_TO_SOT_THT:TO-92_Inline"])
+    def test_bjt_from_digikey_pn(self, mock_input):
+        self.check_component_from_digikey_pn_matches_csv("2N3904FS-ND")
+
 
 class TestDatabaseFunctions(unittest.TestCase):
     db_path = "unittests.db"

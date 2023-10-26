@@ -39,6 +39,8 @@ def create_component_from_digikey_part(part):
         subtype = part.limited_taxonomy.children[0].value
         if "Diodes - Rectifiers" in subtype or "Diodes - Zener" in subtype:
             return Diode.from_digikey(part)
+        elif "Bipolar (BJT)" in subtype:
+            return BJT.from_digikey(part)
     elif part_type == "Optoelectronics":
         return LED.from_digikey(part)
 
@@ -76,6 +78,8 @@ def create_component_from_dict(columns_and_values):
         return Diode(**columns_and_values)
     elif IPN.startswith("LED_"):
         return LED(**columns_and_values)
+    elif IPN.startswith("BJT_"):
+        return BJT(**columns_and_values)
     else:
         raise NotImplementedError(f"No component type to handle part '{IPN}'")
 
@@ -132,6 +136,11 @@ class Component(ABC):
         else:
             data["kicad_footprint"] = cls._get_sym_or_fp_from_user(
                     data["DPN1"])
+
+    @staticmethod
+    def process_value_with_unit(value):
+        """Remove spaces from string (e.g. between value and unit)."""
+        return re.sub(r"\s+", "", value)
 
     @staticmethod
     def process_tolerance(param):
@@ -773,11 +782,6 @@ class Diode(Component):
         self.columns["current_or_power"] = current_or_power
         self.columns["diode_configuration"] = diode_configuration
 
-    @staticmethod
-    def process_value_with_unit(value):
-        """Remove spaces from string (e.g. between value and unit)."""
-        return re.sub(r"\s+", "", value)
-
     @classmethod
     def from_digikey(cls, digikey_part):
         data = cls.get_digikey_common_data(digikey_part)
@@ -961,5 +965,57 @@ class LED(Component):
             data["kicad_symbol"] = cls._get_sym_or_fp_from_user(
                     data["DPN1"], fp=False)
         cls._determine_footprint(data, data["package"])
+
+        return cls(**data)
+
+
+class BJT(Component):
+    table = "transistor_bjt"
+    kicad_footprint_map = {
+            "TO-92-3": "Package_TO_SOT_THT:TO-92_Inline",
+            }
+
+    def __init__(self, bjt_type, vce_max, ic_max, power_max, ft, package,
+                 **kwargs):
+        super().__init__(**kwargs)
+        self.columns["bjt_type"] = bjt_type
+        self.columns["vce_max"] = vce_max
+        self.columns["ic_max"] = ic_max
+        self.columns["power_max"] = power_max
+        self.columns["ft"] = ft
+        self.columns["package"] = package
+
+    @classmethod
+    def from_digikey(cls, digikey_part):
+        data = cls.get_digikey_common_data(digikey_part)
+
+        for p in digikey_part.parameters:
+            if p.parameter == "Transistor Type":
+                data["bjt_type"] = p.value
+            elif p.parameter == "Voltage - Collector Emitter Breakdown (Max)":
+                data["vce_max"] = cls.process_value_with_unit(p.value)
+            elif p.parameter == "Current - Collector (Ic) (Max)":
+                data["ic_max"] = cls.process_value_with_unit(p.value)
+            elif p.parameter == "Power - Max":
+                data["power_max"] = cls.process_value_with_unit(p.value)
+            elif p.parameter == "Frequency - Transition":
+                data["ft"] = cls.process_value_with_unit(p.value)
+            elif p.parameter == "Supplier Device Package":
+                data["package"] = p.value
+
+        data["value"] = "${MPN}"
+        data["keywords"] = f"bjt transistor {data['bjt_type'].lower()}"
+        mfg = re.sub(r"[\.,\s]", "", data["manufacturer"])
+        data["IPN"] = f"BJT_{data['bjt_type']}_{mfg}_{data['MPN']}"
+        data["description"] = (
+                f"{data['ic_max']} Ic, "
+                f"{data['vce_max']} Vce, "
+                f"{data['power_max']}, "
+                f"{data['ft']} "
+                f"{data['bjt_type']} BJT, "
+                f"{data['package']}")
+        data["kicad_symbol"] = cls._get_sym_or_fp_from_user(
+                data["DPN1"], fp=False)
+        data["kicad_footprint"] = cls._get_sym_or_fp_from_user(data["DPN1"])
 
         return cls(**data)

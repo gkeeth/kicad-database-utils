@@ -748,5 +748,45 @@ class TestLEDFromDigikeyPart(TestFromDigikeyPart):
         self.check_component_matches_csv(mock_part)
 
 
+class TestBJTFromDigikeyPart(TestFromDigikeyPart):
+    @staticmethod
+    def init_bjt_mock(transistor_type, vce_max, ic_max, power_max, ft, package,
+                      **kwargs):
+        parameters = {
+                "Transistor Type": transistor_type,
+                "Voltage - Collector Emitter Breakdown (Max)": vce_max,
+                "Current - Collector (Ic) (Max)": ic_max,
+                "Power - Max": power_max,
+                "Frequency - Transition": ft,
+                "Supplier Device Package": package,
+                }
+
+        s = super(TestBJTFromDigikeyPart, TestBJTFromDigikeyPart)
+        return s.init_mock(category="Discrete Semiconductor Products",
+                           subcategory=(
+                               "Transistors - Bipolar (BJT) - "
+                               "Single Bipolar Transistors - Bipolar (BJT) - "
+                               "Single Bipolar Transistors"),
+                           parameters=parameters, **kwargs)
+
+    @patch("partdb.component.input",
+           side_effect=[
+               "Device:Q_NPN_EBC",
+               "Package_TO_SOT_THT:TO-92_Inline"])
+    def test_bjt_from_digikey(self, mock_input):
+        mock_part = self.init_bjt_mock(
+                datasheet="https://www.onsemi.com/pdf/datasheet/pzt3904-d.pdf",
+                mfg="onsemi", MPN="2N3904BU",
+                digikey_PN="2N3904FS-ND",
+                transistor_type="NPN",
+                vce_max="40 V",
+                ic_max="200 mA",
+                power_max="625 mW",
+                ft="300MHz",
+                package="TO-92-3",
+                )
+        self.check_component_matches_csv(mock_part)
+
+
 if __name__ == "__main__":
     unittest.main()
