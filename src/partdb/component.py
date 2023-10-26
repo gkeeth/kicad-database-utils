@@ -106,6 +106,10 @@ class Component(ABC):
         self.columns["distributor2"] = distributor2
         self.columns["DPN2"] = DPN2
 
+    def __repr__(self):
+        args = [f"\n{k}='{self.columns[k]}'" for k in self.columns]
+        return f"{self.__class__.__name__}({','.join(args)})"
+
     @classmethod
     def _determine_footprint(cls, data, package):
         """
