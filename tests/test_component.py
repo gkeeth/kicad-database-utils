@@ -694,7 +694,7 @@ class TestLEDFromDigikeyPart(TestFromDigikeyPart):
         if size_dimension:
             parameters["Size / Dimension"] = size_dimension
 
-        s = super(TestDiodeFromDigikeyPart, TestDiodeFromDigikeyPart)
+        s = super(TestLEDFromDigikeyPart, TestLEDFromDigikeyPart)
         return s.init_mock(category="Optoelectronics",
                            parameters=parameters, **kwargs)
 
