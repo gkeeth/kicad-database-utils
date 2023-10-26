@@ -917,9 +917,9 @@ class LED(Component):
         for p in digikey_part.parameters:
             if p.parameter == "Package / Case":
                 data["package"] = cls.process_led_package(p.value)
-            if p.parameter == "Supplier Device Package":
+            elif p.parameter == "Supplier Device Package":
                 supplier_device_package = cls.process_led_package(p.value)
-            if p.parameter == "Size / Dimension":
+            elif p.parameter == "Size / Dimension":
                 size_dimension = p.value
             elif p.parameter == "Color":
                 data["color"] = p.value
