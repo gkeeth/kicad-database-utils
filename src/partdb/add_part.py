@@ -93,11 +93,12 @@ def setup_digikey(config_data):
         os.mkdir(digikey_cache_dir)
 
 
-def create_component_from_digikey_pn(digikey_pn):
+def create_component_from_digikey_pn(digikey_pn, dump_api_response=True):
     """Create a component from a Digikey part number.
 
     Args:
         digikey_pn: string containing a Digikey part number
+        dump_api_response: if True, print the API response object to stdout.
 
     Returns:
         component based on digikey_pn, or None if a component cannot be
@@ -107,10 +108,13 @@ def create_component_from_digikey_pn(digikey_pn):
     if not part:
         print_error(f"Could not get info for part {digikey_pn}")
         return None
+    if dump_api_response:
+        print(part)
     return create_component_from_digikey_part(part)
 
 
-def create_component_list_from_digikey_pns(digikey_pn_list):
+def create_component_list_from_digikey_pn_list(digikey_pn_list,
+                                               dump_api_response=False):
     """Create a list of components from a list of digikey part numbers.
 
     The Digikey API environment variables need to be set up before running
@@ -121,6 +125,7 @@ def create_component_list_from_digikey_pns(digikey_pn_list):
 
     Args:
         digikey_pn_list: list of digikey part number strings.
+        dump_api_response: if True, print the API response object to stdout.
 
     Returns:
         A list of Components corresponding to digikey part numbers.
@@ -128,7 +133,7 @@ def create_component_list_from_digikey_pns(digikey_pn_list):
 
     components = []
     for pn in digikey_pn_list:
-        comp = create_component_from_digikey_pn(pn)
+        comp = create_component_from_digikey_pn(pn, dump_api_response)
         if comp:
             components.append(comp)
         else:
@@ -333,6 +338,12 @@ def parse_args():
                               "Unless otherwise specified, parts are also "
                               "added to the database."))
 
+    parser.add_argument("--dump_api_response", action="store_true",
+                        help=("Write API response object data to stdout. This "
+                              "can be used as a reference for implementation. "
+                              "Unless otherwise specified, parts are also "
+                              "added to the database."))
+
     source_group = parser.add_mutually_exclusive_group()
     source_group.add_argument(
             "--digikey", "-d", metavar="DIGIKEY_PN",
@@ -368,7 +379,8 @@ def main():
         sys.exit()
     if args.digikey:
         digikey_pn_list = [pn.strip() for pn in args.digikey.split(",")]
-        components = create_component_list_from_digikey_pns(digikey_pn_list)
+        components = create_component_list_from_digikey_pn_list(
+                digikey_pn_list, args.dump_api_response)
     if args.mouser:
         raise NotImplementedError
     if args.csv:
@@ -384,3 +396,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
