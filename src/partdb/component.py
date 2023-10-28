@@ -985,13 +985,40 @@ class BJT(Component):
         self.columns["ft"] = ft
         self.columns["package"] = package
 
+    @staticmethod
+    def process_transistor_type(param):
+        """Process a Digikey part's "Transistor Type" parameter into a simpler
+        string, e.g. "NPN" for a transistor type of "NPN" or "4xNPN" for a quad
+        NPN array with transistor type "4 NPN (Quad)".
+
+        Also determines whether or not the "Transistor Type" represents a
+        transistor array.
+
+        Returns:
+            Tuple of transistor type string, transistor array bool
+
+        """
+        m = re.match(r"(\d+)?[,\s]*(NPN|PNP)[,\s]*(NPN|PNP)?", param)
+        s = ""
+        array = False
+        if m.group(2):  # NPN|PNP
+            if m.group(1):  # number of units
+                s += f"{m.group(1)}x"
+                array = True
+            s += m.group(2)
+        if m.group(3):  # second NPN|PNP
+            s += f"-{m.group(3)}"
+            array = True
+        return s, array
+
     @classmethod
     def from_digikey(cls, digikey_part):
         data = cls.get_digikey_common_data(digikey_part)
 
         for p in digikey_part.parameters:
             if p.parameter == "Transistor Type":
-                data["bjt_type"] = p.value
+                data["bjt_type"], array = cls.process_transistor_type(p.value)
+                npn_or_bjt = "npn" if "NPN" in p.value else "pnp"
             elif p.parameter == "Voltage - Collector Emitter Breakdown (Max)":
                 data["vce_max"] = cls.process_value_with_unit(p.value)
             elif p.parameter == "Current - Collector (Ic) (Max)":
@@ -1004,15 +1031,16 @@ class BJT(Component):
                 data["package"] = p.value
 
         data["value"] = "${MPN}"
-        data["keywords"] = f"bjt transistor {data['bjt_type'].lower()}"
+        data["keywords"] = f"bjt transistor {npn_or_bjt}"
         mfg = re.sub(r"[\.,\s]", "", data["manufacturer"])
         data["IPN"] = f"BJT_{data['bjt_type']}_{mfg}_{data['MPN']}"
+        array_string = " array" if array else ""
         data["description"] = (
                 f"{data['ic_max']} Ic, "
                 f"{data['vce_max']} Vce, "
                 f"{data['power_max']}, "
                 f"{data['ft']} "
-                f"{data['bjt_type']} BJT, "
+                f"{data['bjt_type']} BJT{array_string}, "
                 f"{data['package']}")
         data["kicad_symbol"] = cls._get_sym_or_fp_from_user(
                 data["DPN1"], fp=False)

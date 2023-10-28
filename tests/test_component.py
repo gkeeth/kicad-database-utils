@@ -7,7 +7,7 @@ from unittest.mock import patch, MagicMock
 
 from partdb import component
 from partdb.component import (Component, Resistor, Capacitor, Microcontroller,
-                              LED)
+                              LED, BJT)
 
 
 def expected_component_from_csv(csvpath):
@@ -264,6 +264,19 @@ class TestParameterUtils(unittest.TestCase):
             with self.subTest(Dimension=dimension):
                 self.assertEqual(expected,
                                  LED.process_led_dimension(dimension))
+
+    def test_process_transistor_type(self):
+        testcases = [
+                ("NPN", False, "NPN"),
+                ("PNP", False, "PNP"),
+                ("4xNPN", True, "4 NPN (Quad)"),
+                ("NPN-PNP", True, "NPN, PNP"),
+                ]
+        for expected_type, expected_array, transistor_type in testcases:
+            with self.subTest(TransistorType=transistor_type):
+                t, a = BJT.process_transistor_type(transistor_type)
+                self.assertEqual(expected_type, t)
+                self.assertEqual(expected_array, a)
 
 
 class TestComponentFromDict(unittest.TestCase):
@@ -784,6 +797,24 @@ class TestBJTFromDigikeyPart(TestFromDigikeyPart):
                 power_max="625 mW",
                 ft="300MHz",
                 package="TO-92-3",
+                )
+        self.check_component_matches_csv(mock_part)
+
+    @patch("partdb.component.input",
+           side_effect=[
+               "Device:Q_NPN_QUAD_FAKE",
+               "Package_SO:SOIC-16_3.9x9.9mm_P1.27mm"])
+    def test_bjt_array_from_digikey(self, mock_input):
+        mock_part = self.init_bjt_mock(
+                datasheet="https://www.onsemi.com/pdf/datasheet/ffb3904-d.pdf",
+                mfg="onsemi", MPN="MMPQ3904",
+                digikey_PN="MMPQ3904FSCT-ND",
+                transistor_type="4 NPN (Quad)",
+                vce_max="40V",
+                ic_max="200mA",
+                power_max="1W",
+                ft="250MHz",
+                package="16-SOIC",
                 )
         self.check_component_matches_csv(mock_part)
 

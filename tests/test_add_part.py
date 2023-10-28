@@ -96,6 +96,13 @@ class TestCreateFromDigikeyAPI(unittest.TestCase):
     def test_bjt_from_digikey_pn(self, mock_input):
         self.check_component_from_digikey_pn_matches_csv("2N3904FS-ND")
 
+    @patch("partdb.component.input",
+           side_effect=[
+               "Device:Q_NPN_QUAD_FAKE",
+               "Package_SO:SOIC-16_3.9x9.9mm_P1.27mm"])
+    def test_bjt_array_from_digikey_pn(self, mock_input):
+        self.check_component_from_digikey_pn_matches_csv("MMPQ3904FSCT-ND")
+
 
 class TestDatabaseFunctions(unittest.TestCase):
     db_path = "unittests.db"
