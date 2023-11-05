@@ -4,6 +4,7 @@ import argparse
 import csv
 import digikey
 import json
+
 # import mouser
 import os
 import sqlite3
@@ -12,8 +13,10 @@ import sys
 from partdb import print_utils
 from partdb.print_utils import print_message, print_error
 
-from partdb.component import (create_component_from_digikey_part,
-                              create_component_from_dict)
+from partdb.component import (
+    create_component_from_digikey_part,
+    create_component_from_dict,
+)
 
 CONFIG_FILENAME = os.path.expanduser("~/.dblib_add_part_config.json")
 
@@ -75,8 +78,7 @@ def setup_digikey(config_data):
     Args:
         config_data: dict of configuration data from config file.
     """
-    DIGIKEY_DEFAULT_CACHE_DIR = os.path.expanduser(
-            "~/.dblib_digikey_cache_dir")
+    DIGIKEY_DEFAULT_CACHE_DIR = os.path.expanduser("~/.dblib_digikey_cache_dir")
 
     dk_config = config_data["digikey"]
     os.environ["DIGIKEY_CLIENT_ID"] = dk_config["client_id"]
@@ -113,8 +115,9 @@ def create_component_from_digikey_pn(digikey_pn, dump_api_response=True):
     return create_component_from_digikey_part(part)
 
 
-def create_component_list_from_digikey_pn_list(digikey_pn_list,
-                                               dump_api_response=False):
+def create_component_list_from_digikey_pn_list(
+    digikey_pn_list, dump_api_response=False
+):
     """Create a list of components from a list of digikey part numbers.
 
     The Digikey API environment variables need to be set up before running
@@ -170,8 +173,7 @@ def initialize_database(db_path):
         db_path: absolute path to database.
     """
     if os.path.isfile(db_path):
-        sys.exit(f"Error: {db_path} already exists and cannot be "
-                 "re-initialized.")
+        sys.exit(f"Error: {db_path} already exists and cannot be " "re-initialized.")
     con = sqlite3.connect(f"file:{db_path}", uri=True)
     con.close()
 
@@ -219,8 +221,10 @@ def add_component_to_db(con, comp, update=False):
             if update:
                 # we're going to overwrite the existing part. This is handled
                 # for us because the sql command is INSERT OR REPLACE
-                print_message(f"Updating existing component '{test_ipn}' in "
-                              f"table '{comp.table}'")
+                print_message(
+                    f"Updating existing component '{test_ipn}' in "
+                    f"table '{comp.table}'"
+                )
             else:
                 # we need to try to create a unique IPN
                 for i in range(1, IPN_DUPLICATE_LIMIT):
@@ -230,8 +234,7 @@ def add_component_to_db(con, comp, update=False):
                         break
                 if test_ipn != values["IPN"]:
                     # we didn't find a unique IPN
-                    raise TooManyDuplicateIPNsInTableError(values["IPN"],
-                                                           comp.table)
+                    raise TooManyDuplicateIPNsInTableError(values["IPN"], comp.table)
 
         # add part to table, whether this is:
         # 1) The base IPN (no duplicates)
@@ -239,8 +242,7 @@ def add_component_to_db(con, comp, update=False):
         # 3) A modified IPN with a suffix to make it unique
         cur.execute(insert_string, values)
 
-        print_message(f"Added component '{values['IPN']}' to table "
-                      f"'{comp.table}'")
+        print_message(f"Added component '{values['IPN']}' to table " f"'{comp.table}'")
 
 
 def open_connection_and_add_component_to_db(db_path, comp, update=False):
@@ -273,8 +275,10 @@ def open_connection_and_add_component_to_db(db_path, comp, update=False):
     try:
         add_component_to_db(con, comp, update)
     except TooManyDuplicateIPNsInTableError as e:
-        print_error(f"Too many parts with IPN '{e.IPN}' already in table "
-                    f"'{e.table}'; skipped")
+        print_error(
+            f"Too many parts with IPN '{e.IPN}' already in table "
+            f"'{e.table}'; skipped"
+        )
     finally:
         con.close()
 
@@ -314,49 +318,90 @@ def parse_args():
     # TODO: default to skip adding part if distributor PN is already in table,
     # add option to create duplicate / add anyway
     parser = argparse.ArgumentParser(
-            description=("Add a part to the parts database, either manually "
-                         "or by distributor lookup."))
+        description=(
+            "Add a part to the parts database, either manually "
+            "or by distributor lookup."
+        )
+    )
 
-    parser.add_argument("--verbose", "-v", action="store_true",
-                        help="Print informational messages")
+    parser.add_argument(
+        "--verbose", "-v", action="store_true", help="Print informational messages"
+    )
 
-    parser.add_argument("--initializedb", action="store_true",
-                        help="Initialize new, empty database")
+    parser.add_argument(
+        "--initializedb", action="store_true", help="Initialize new, empty database"
+    )
 
-    parser.add_argument("--update-existing", "-u", action="store_true",
-                        help=("If specified part already exists in database, "
-                              "update the existing component instead of "
-                              "adding a new, unique part"))
+    parser.add_argument(
+        "--update-existing",
+        "-u",
+        action="store_true",
+        help=(
+            "If specified part already exists in database, "
+            "update the existing component instead of "
+            "adding a new, unique part"
+        ),
+    )
 
-    parser.add_argument("--no-db", action="store_true",
-                        help=("Don't add part to database. This may be useful "
-                              "in combination with another output format, "
-                              "such as CSV."))
+    parser.add_argument(
+        "--no-db",
+        action="store_true",
+        help=(
+            "Don't add part to database. This may be useful "
+            "in combination with another output format, "
+            "such as CSV."
+        ),
+    )
 
-    parser.add_argument("--csv_output", action="store_true",
-                        help=("Write part data to stdout, formatted as CSV. "
-                              "Unless otherwise specified, parts are also "
-                              "added to the database."))
+    parser.add_argument(
+        "--csv_output",
+        action="store_true",
+        help=(
+            "Write part data to stdout, formatted as CSV. "
+            "Unless otherwise specified, parts are also "
+            "added to the database."
+        ),
+    )
 
-    parser.add_argument("--dump_api_response", action="store_true",
-                        help=("Write API response object data to stdout. This "
-                              "can be used as a reference for implementation. "
-                              "Unless otherwise specified, parts are also "
-                              "added to the database."))
+    parser.add_argument(
+        "--dump_api_response",
+        action="store_true",
+        help=(
+            "Write API response object data to stdout. This "
+            "can be used as a reference for implementation. "
+            "Unless otherwise specified, parts are also "
+            "added to the database."
+        ),
+    )
 
     source_group = parser.add_mutually_exclusive_group()
     source_group.add_argument(
-            "--digikey", "-d", metavar="DIGIKEY_PN",
-            help=("Digikey part number, or comma-separated list of part "
-                  "numbers, for part(s) to add to database"))
+        "--digikey",
+        "-d",
+        metavar="DIGIKEY_PN",
+        help=(
+            "Digikey part number, or comma-separated list of part "
+            "numbers, for part(s) to add to database"
+        ),
+    )
     source_group.add_argument(
-            "--mouser", "-m", metavar="MOUSER_PN",
-            help=("Mouser part number, or comma-separated list of part "
-                  "numbers, for part(s) to add to database"))
+        "--mouser",
+        "-m",
+        metavar="MOUSER_PN",
+        help=(
+            "Mouser part number, or comma-separated list of part "
+            "numbers, for part(s) to add to database"
+        ),
+    )
     source_group.add_argument(
-            "--csv", "-p", metavar="CSVFILE",
-            help=("CSV filename containing columns for all required part "
-                  "parameters. Each row is a separate part"))
+        "--csv",
+        "-p",
+        metavar="CSVFILE",
+        help=(
+            "CSV filename containing columns for all required part "
+            "parameters. Each row is a separate part"
+        ),
+    )
 
     return parser.parse_args()
 
@@ -380,15 +425,15 @@ def main():
     if args.digikey:
         digikey_pn_list = [pn.strip() for pn in args.digikey.split(",")]
         components = create_component_list_from_digikey_pn_list(
-                digikey_pn_list, args.dump_api_response)
+            digikey_pn_list, args.dump_api_response
+        )
     if args.mouser:
         raise NotImplementedError
     if args.csv:
         components = create_component_list_from_csv(args.csv)
 
     if not args.no_db:
-        add_components_from_list_to_db(db_path, components,
-                                       update=args.update_existing)
+        add_components_from_list_to_db(db_path, components, update=args.update_existing)
 
     if args.csv_output:
         print_components_from_list_as_csv(components)
@@ -396,4 +441,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

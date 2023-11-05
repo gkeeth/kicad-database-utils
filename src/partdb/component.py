@@ -44,9 +44,11 @@ def create_component_from_digikey_part(part):
     elif part_type == "Optoelectronics":
         return LED.from_digikey(part)
 
-    raise NotImplementedError("No component type to handle part type "
-                              f"'{part.limited_taxonomy.value}' for part "
-                              f"{part.digi_key_part_number}")
+    raise NotImplementedError(
+        "No component type to handle part type "
+        f"'{part.limited_taxonomy.value}' for part "
+        f"{part.digi_key_part_number}"
+    )
 
 
 def create_component_from_dict(columns_and_values):
@@ -87,10 +89,24 @@ def create_component_from_dict(columns_and_values):
 class Component(ABC):
     primary_key = "IPN"
 
-    def __init__(self, IPN, datasheet, description, keywords, value,
-                 kicad_symbol, kicad_footprint, manufacturer, MPN,
-                 distributor1, DPN1, distributor2, DPN2,
-                 exclude_from_bom=0, exclude_from_board=0):
+    def __init__(
+        self,
+        IPN,
+        datasheet,
+        description,
+        keywords,
+        value,
+        kicad_symbol,
+        kicad_footprint,
+        manufacturer,
+        MPN,
+        distributor1,
+        DPN1,
+        distributor2,
+        DPN2,
+        exclude_from_bom=0,
+        exclude_from_board=0,
+    ):
         # columns that all types of components need. Many of these map onto
         # KiCad builtin fields or properties.
         self.columns = OrderedDict()
@@ -134,8 +150,7 @@ class Component(ABC):
         if package in cls.kicad_footprint_map:
             data["kicad_footprint"] = cls.kicad_footprint_map[package]
         else:
-            data["kicad_footprint"] = cls._get_sym_or_fp_from_user(
-                    data["DPN1"])
+            data["kicad_footprint"] = cls._get_sym_or_fp_from_user(data["DPN1"])
 
     @staticmethod
     def process_value_with_unit(value):
@@ -181,8 +196,9 @@ class Component(ABC):
 
         device = "footprint" if fp else "symbol"
         if prompt:
-            return input(f"Enter {device}_library:{device}_name for "
-                         f"component {PN}: ")
+            return input(
+                f"Enter {device}_library:{device}_name for " f"component {PN}: "
+            )
         else:
             return ""
 
@@ -201,21 +217,22 @@ class Component(ABC):
     def get_digikey_common_data(cls, digikey_part):
         """Return a dict of the common data from a digikey part object."""
         common_data = {
-                "datasheet":            digikey_part.primary_datasheet,
-                "manufacturer":         digikey_part.manufacturer.value,
-                "MPN":                  digikey_part.manufacturer_part_number,
-                "distributor1":         "Digikey",
-                "DPN1":                 digikey_part.digi_key_part_number,
-                "distributor2":         "",
-                "DPN2":                 "",
-                }
+            "datasheet": digikey_part.primary_datasheet,
+            "manufacturer": digikey_part.manufacturer.value,
+            "MPN": digikey_part.manufacturer_part_number,
+            "distributor1": "Digikey",
+            "DPN1": digikey_part.digi_key_part_number,
+            "distributor2": "",
+            "DPN2": "",
+        }
         return common_data
 
     def get_create_table_string(self):
         """Return a sqlite string to create a table for the component type."""
-        column_defs = [column + " PRIMARY KEY" if column == self.primary_key
-                       else column
-                       for column in self.columns.keys()]
+        column_defs = [
+            column + " PRIMARY KEY" if column == self.primary_key else column
+            for column in self.columns.keys()
+        ]
         column_defs = ", ".join(column_defs)
         return f"CREATE TABLE IF NOT EXISTS {self.table}({column_defs})"
 
@@ -253,8 +270,7 @@ class Component(ABC):
             a header row followed by a data row.
         """
         with io.StringIO() as csv_string:
-            csvwriter = csv.DictWriter(csv_string,
-                                       fieldnames=self.columns.keys())
+            csvwriter = csv.DictWriter(csv_string, fieldnames=self.columns.keys())
             if header:
                 csvwriter.writeheader()
             csvwriter.writerow(self.columns)
@@ -264,16 +280,15 @@ class Component(ABC):
 class Resistor(Component):
     table = "resistor"
     kicad_footprint_map = {
-            "0201": "Resistor_SMD:R_0201_0603Metric",
-            "0402": "Resistor_SMD:R_0402_1005Metric",
-            "0603": "Resistor_SMD:R_0603_1608Metric",
-            "0805": "Resistor_SMD:R_0805_2012Metric",
-            "1206": "Resistor_SMD:R_1206_3216Metric",
-            "1210": "Resistor_SMD:R_1210_3225Metric",
-            }
+        "0201": "Resistor_SMD:R_0201_0603Metric",
+        "0402": "Resistor_SMD:R_0402_1005Metric",
+        "0603": "Resistor_SMD:R_0603_1608Metric",
+        "0805": "Resistor_SMD:R_0805_2012Metric",
+        "1206": "Resistor_SMD:R_1206_3216Metric",
+        "1210": "Resistor_SMD:R_1210_3225Metric",
+    }
 
-    def __init__(self, resistance, tolerance, power, composition, package,
-                 **kwargs):
+    def __init__(self, resistance, tolerance, power, composition, package, **kwargs):
         super().__init__(**kwargs)
         self.columns["resistance"] = resistance
         self.columns["tolerance"] = tolerance
@@ -323,31 +338,33 @@ class Resistor(Component):
 
         if data["resistance"] == "0":
             data["IPN"] = (
-                    f"R_"
-                    f"{data['resistance']}_"
-                    f"Jumper_"
-                    f"{data['package']}_"
-                    f"{data['composition']}")
+                f"R_"
+                f"{data['resistance']}_"
+                f"Jumper_"
+                f"{data['package']}_"
+                f"{data['composition']}"
+            )
             data["description"] = (
-                    f"0Ω Jumper "
-                    f"{data['package']} "
-                    f"{raw_composition}")
+                f"0Ω Jumper " f"{data['package']} " f"{raw_composition}"
+            )
             data["keywords"] = "jumper"
         else:
             data["IPN"] = (
-                    f"R_"
-                    f"{data['resistance']}_"
-                    f"{data['package']}_"
-                    f"{data['tolerance']}_"
-                    f"{data['power']}_"
-                    f"{data['composition']}")
+                f"R_"
+                f"{data['resistance']}_"
+                f"{data['package']}_"
+                f"{data['tolerance']}_"
+                f"{data['power']}_"
+                f"{data['composition']}"
+            )
             data["description"] = (
-                    f"{data['resistance']}Ω "
-                    f"±{data['tolerance']} "
-                    f"{data['power']} "
-                    f"Resistor "
-                    f"{data['package']} "
-                    f"{raw_composition}")
+                f"{data['resistance']}Ω "
+                f"±{data['tolerance']} "
+                f"{data['power']} "
+                f"Resistor "
+                f"{data['package']} "
+                f"{raw_composition}"
+            )
             data["keywords"] = f"r res resistor {data['resistance']}"
 
         data["kicad_symbol"] = "Device:R"
@@ -360,16 +377,15 @@ class Resistor(Component):
 class Capacitor(Component):
     table = "capacitor"
     kicad_footprint_map = {
-            "0201": "Capacitor_SMD:C_0201_0603Metric",
-            "0402": "Capacitor_SMD:C_0402_1005Metric",
-            "0603": "Capacitor_SMD:C_0603_1608Metric",
-            "0805": "Capacitor_SMD:C_0805_2012Metric",
-            "1206": "Capacitor_SMD:C_1206_3216Metric",
-            "1210": "Capacitor_SMD:C_1210_3225Metric",
-            }
+        "0201": "Capacitor_SMD:C_0201_0603Metric",
+        "0402": "Capacitor_SMD:C_0402_1005Metric",
+        "0603": "Capacitor_SMD:C_0603_1608Metric",
+        "0805": "Capacitor_SMD:C_0805_2012Metric",
+        "1206": "Capacitor_SMD:C_1206_3216Metric",
+        "1210": "Capacitor_SMD:C_1210_3225Metric",
+    }
 
-    def __init__(self, capacitance, tolerance, voltage, dielectric, package,
-                 **kwargs):
+    def __init__(self, capacitance, tolerance, voltage, dielectric, package, **kwargs):
         super().__init__(**kwargs)
         self.columns["capacitance"] = capacitance
         self.columns["tolerance"] = tolerance
@@ -415,8 +431,7 @@ class Capacitor(Component):
 
     @staticmethod
     def process_polarization(param):
-        """Return a polarization string, either 'Polarized' or 'Unpolarized'.
-        """
+        """Return a polarization string, either 'Polarized' or 'Unpolarized'."""
         if param == "Bi-Polar":
             return "Unpolarized"
         elif param == "Polar":
@@ -478,8 +493,7 @@ class Capacitor(Component):
             package_short = data["package"]
             package_dims = ""
         elif data["package"] == "Radial, Can":
-            data["kicad_footprint"] = cls._get_sym_or_fp_from_user(
-                    data["DPN1"])
+            data["kicad_footprint"] = cls._get_sym_or_fp_from_user(data["DPN1"])
             pol = "P" if polarization == "Polarized" else ""
             try:
                 diameter = dimensions["diameter"]
@@ -492,8 +506,7 @@ class Capacitor(Component):
             package_dims = f"D{diameter}_H{height}_P{pitch}"
             data["package"] = f"C{pol}_{package_short}_{package_dims}"
         else:
-            data["kicad_footprint"] = cls._get_sym_or_fp_from_user(
-                    data["DPN1"])
+            data["kicad_footprint"] = cls._get_sym_or_fp_from_user(data["DPN1"])
 
         return package_short, package_dims
 
@@ -514,30 +527,34 @@ class Capacitor(Component):
                 "" or "D5.00mm_H10.0mm_P2.00mm".
         """
         data["IPN"] = (
-                f"C_"
-                f"{data['capacitance']}_"
-                f"{package_short}_"
-                f"{data['tolerance']}_"
-                f"{data['voltage']}_"
-                f"{data['dielectric'].replace(' ', '')}")
+            f"C_"
+            f"{data['capacitance']}_"
+            f"{package_short}_"
+            f"{data['tolerance']}_"
+            f"{data['voltage']}_"
+            f"{data['dielectric'].replace(' ', '')}"
+        )
         if package_dims:
             data["IPN"] += f"_{package_dims}"
         data["description"] = (
-                f"{data['capacitance']} "
-                f"±{data['tolerance']} "
-                f"{data['voltage']} "
-                f"{data['dielectric']} "
-                f"Capacitor "
-                f"{package_short}")
+            f"{data['capacitance']} "
+            f"±{data['tolerance']} "
+            f"{data['voltage']} "
+            f"{data['dielectric']} "
+            f"Capacitor "
+            f"{package_short}"
+        )
         if package_dims:
-            dims = (package_dims
-                    .replace("D", "diameter ")
-                    .replace("H", "height ")
-                    .replace("P", "pitch ")
-                    .replace("_", " "))
+            dims = (
+                package_dims.replace("D", "diameter ")
+                .replace("H", "height ")
+                .replace("P", "pitch ")
+                .replace("_", " ")
+            )
             data["description"] += f" {dims}"
-        data["keywords"] = (f"c cap capacitor "
-                            f"{polarization.lower()} {data['capacitance']}")
+        data["keywords"] = (
+            f"c cap capacitor " f"{polarization.lower()} {data['capacitance']}"
+        )
 
     @classmethod
     def from_digikey(cls, digikey_part):
@@ -582,8 +599,7 @@ class Capacitor(Component):
         else:
             return None
 
-        cls._determine_metadata(
-                data, polarization, package_short, package_dims)
+        cls._determine_metadata(data, polarization, package_short, package_dims)
 
         return cls(**data)
 
@@ -591,9 +607,8 @@ class Capacitor(Component):
 class OpAmp(Component):
     table = "opamp"
     kicad_footprint_map = {
-            '8-SOIC (0.154", 3.90mm Width)':
-            "Package_SO:SOIC-8_3.9x4.9mm_P1.27mm",
-            }
+        '8-SOIC (0.154", 3.90mm Width)': "Package_SO:SOIC-8_3.9x4.9mm_P1.27mm",
+    }
 
     def __init__(self, bandwidth, num_units, **kwargs):
         super().__init__(**kwargs)
@@ -621,13 +636,13 @@ class OpAmp(Component):
 
         num_unit_map = {"1": "Single", "2": "Dual", "4": "Quad"}
         data["description"] = (
-                f"{num_unit_map[data['num_units']]} "
-                f"{data['bandwidth']}, {slewrate} Op Amp, {short_package}")
+            f"{num_unit_map[data['num_units']]} "
+            f"{data['bandwidth']}, {slewrate} Op Amp, {short_package}"
+        )
         IPN = f"OpAmp_{data['manufacturer']}_{data['MPN']}"
         data["IPN"] = re.sub(r"\s+", "", IPN)
 
-        data["kicad_symbol"] = cls._get_sym_or_fp_from_user(
-                data["DPN1"], fp=False)
+        data["kicad_symbol"] = cls._get_sym_or_fp_from_user(data["DPN1"], fp=False)
 
         cls._determine_footprint(data, package)
 
@@ -637,32 +652,26 @@ class OpAmp(Component):
 class Microcontroller(Component):
     table = "microcontroller"
     kicad_footprint_map = {
-            "8-SOIC": "Package_SO:SOIC-8_3.9x4.9mm_P1.27mm",
-            "14-TSSOP": "Package_SO:TSSOP-14_4.4x5mm_P0.65mm",
-            "20-TSSOP": "Package_SO:TSSOP-20_4.4x6.5mm_P0.65mm",
-
-            "32-LQFP (7x7)": "Package_QFP:LQFP-32_7x7mm_P0.8mm",
-            "48-LQFP (7x7)": "Package_QFP:LQFP-48_7x7mm_P0.5mm",
-            "64-LQFP (10x10)": "Package_QFP:LQFP-64_10x10mm_P0.5mm",
-            "80-LQFP (12x12)": "Package_QFP:LQFP-80_12x12mm_P0.5mm",
-            "80-LQFP (14x14)": "Package_QFP:LQFP-80_14x14mm_P0.65mm",
-            "100-LQFP (14x14)": "Package_QFP:LQFP-100_14x14mm_P0.5mm",
-            "128-LQFP (14x14)": "Package_QFP:LQFP-128_14x14mm_P0.4mm",
-            "144-LQFP (20x20)": "Package_QFP:LQFP-144_20x20mm_P0.5mm",
-            "176-LQFP (24x24)": "Package_QFP:LQFP-176_24x24mm_P0.5mm",
-            "208-LQFP (28x28)": "Package_QFP:LQFP-208_28x28mm_P0.5mm",
-
-            "20-UFQFPN (3x3)": "Package_DFN_QFN:ST_UFQFPN-20_3x3mm_P0.5mm",
-            "28-UFQFPN (4x4)": "Package_DFN_QFN:QFN-28_4x4mm_P0.5mm",
-            "32-UFQFPN (5x5)":
-            "Package_DFN_QFN:QFN-32-1EP_5x5mm_P0.5mm_EP3.45x3.45mm",
-            "36-VFQFPN (6x6)":
-            "Package_DFN_QFN:QFN-36-1EP_6x6mm_P0.5mm_EP4.1x4.1mm",
-            "48-UFQFPN (7x7)":
-            "Package_DFN_QFN:QFN-48-1EP_7x7mm_P0.5mm_EP5.6x5.6mm",
-            "68-VFQFPN (8x8)":
-            "Package_DFN_QFN:QFN-68-1EP_8x8mm_P0.4mm_EP6.4x6.4mm",
-            }
+        "8-SOIC": "Package_SO:SOIC-8_3.9x4.9mm_P1.27mm",
+        "14-TSSOP": "Package_SO:TSSOP-14_4.4x5mm_P0.65mm",
+        "20-TSSOP": "Package_SO:TSSOP-20_4.4x6.5mm_P0.65mm",
+        "32-LQFP (7x7)": "Package_QFP:LQFP-32_7x7mm_P0.8mm",
+        "48-LQFP (7x7)": "Package_QFP:LQFP-48_7x7mm_P0.5mm",
+        "64-LQFP (10x10)": "Package_QFP:LQFP-64_10x10mm_P0.5mm",
+        "80-LQFP (12x12)": "Package_QFP:LQFP-80_12x12mm_P0.5mm",
+        "80-LQFP (14x14)": "Package_QFP:LQFP-80_14x14mm_P0.65mm",
+        "100-LQFP (14x14)": "Package_QFP:LQFP-100_14x14mm_P0.5mm",
+        "128-LQFP (14x14)": "Package_QFP:LQFP-128_14x14mm_P0.4mm",
+        "144-LQFP (20x20)": "Package_QFP:LQFP-144_20x20mm_P0.5mm",
+        "176-LQFP (24x24)": "Package_QFP:LQFP-176_24x24mm_P0.5mm",
+        "208-LQFP (28x28)": "Package_QFP:LQFP-208_28x28mm_P0.5mm",
+        "20-UFQFPN (3x3)": "Package_DFN_QFN:ST_UFQFPN-20_3x3mm_P0.5mm",
+        "28-UFQFPN (4x4)": "Package_DFN_QFN:QFN-28_4x4mm_P0.5mm",
+        "32-UFQFPN (5x5)": "Package_DFN_QFN:QFN-32-1EP_5x5mm_P0.5mm_EP3.45x3.45mm",
+        "36-VFQFPN (6x6)": "Package_DFN_QFN:QFN-36-1EP_6x6mm_P0.5mm_EP4.1x4.1mm",
+        "48-UFQFPN (7x7)": "Package_DFN_QFN:QFN-48-1EP_7x7mm_P0.5mm_EP5.6x5.6mm",
+        "68-VFQFPN (8x8)": "Package_DFN_QFN:QFN-68-1EP_8x8mm_P0.4mm_EP6.4x6.4mm",
+    }
 
     def __init__(self, speed, core, **kwargs):
         super().__init__(**kwargs)
@@ -671,7 +680,7 @@ class Microcontroller(Component):
 
     @staticmethod
     def process_pincount(package):
-        """Extract pincount from a package name, e.g. "32" from "32-LQFP". """
+        """Extract pincount from a package name, e.g. "32" from "32-LQFP"."""
         pincount_match = re.match(r"^\d*", package)
         return pincount_match.group(0) if pincount_match else ""
 
@@ -698,15 +707,12 @@ class Microcontroller(Component):
         data["value"] = "${MPN}"
         data["keywords"] = "mcu microcontroller uc"
         data["description"] = (
-                f"{pincount} pin "
-                f"{data['core']} MCU, "
-                f"{data['speed']}, "
-                f"{package}")
+            f"{pincount} pin " f"{data['core']} MCU, " f"{data['speed']}, " f"{package}"
+        )
         IPN = f"MCU_{data['manufacturer']}_{data['MPN']}"
         data["IPN"] = re.sub(r"\s+", "", IPN)
 
-        data["kicad_symbol"] = cls._get_sym_or_fp_from_user(
-                data["DPN1"], fp=False)
+        data["kicad_symbol"] = cls._get_sym_or_fp_from_user(data["DPN1"], fp=False)
         cls._determine_footprint(data, package)
 
         return cls(**data)
@@ -715,8 +721,8 @@ class Microcontroller(Component):
 class VoltageRegulator(Component):
     table = "voltage_regulator"
     kicad_footprint_map = {
-            "TO-220-3": "Package_TO_SOT_THT:TO-220-3_Vertical",
-            }
+        "TO-220-3": "Package_TO_SOT_THT:TO-220-3_Vertical",
+    }
 
     def __init__(self, voltage, current, **kwargs):
         super().__init__(**kwargs)
@@ -751,15 +757,15 @@ class VoltageRegulator(Component):
         else:
             data["voltage"] = f"{vout_min} - {vout_max}"
         data["description"] = (
-                f"{data['voltage']} @{data['current']} out, "
-                f"{vin_max} in, "
-                f"{output_type} voltage regulator, "
-                f"{package}")
+            f"{data['voltage']} @{data['current']} out, "
+            f"{vin_max} in, "
+            f"{output_type} voltage regulator, "
+            f"{package}"
+        )
         IPN = f"VReg_{data['manufacturer']}_{data['MPN']}"
         data["IPN"] = re.sub(r"\s+", "", IPN)
 
-        data["kicad_symbol"] = cls._get_sym_or_fp_from_user(
-                data["DPN1"], fp=False)
+        data["kicad_symbol"] = cls._get_sym_or_fp_from_user(data["DPN1"], fp=False)
         cls._determine_footprint(data, package)
 
         return cls(**data)
@@ -768,14 +774,20 @@ class VoltageRegulator(Component):
 class Diode(Component):
     table = "diode"
     kicad_footprint_map = {
-            "DO-35": "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal",
-            "SOD-123": "Diode_SMD:D_SOD-123",
-            "SOD-323": "Diode_SMD:D_SOD-323",
-            "SOT-23": "Package_TO_SOT_SMD:SOT-23"
-            }
+        "DO-35": "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal",
+        "SOD-123": "Diode_SMD:D_SOD-123",
+        "SOD-323": "Diode_SMD:D_SOD-323",
+        "SOT-23": "Package_TO_SOT_SMD:SOT-23",
+    }
 
-    def __init__(self, diode_type, reverse_voltage, current_or_power,
-                 diode_configuration, **kwargs):
+    def __init__(
+        self,
+        diode_type,
+        reverse_voltage,
+        current_or_power,
+        diode_configuration,
+        **kwargs,
+    ):
         super().__init__(**kwargs)
         self.columns["diode_type"] = diode_type
         self.columns["reverse_voltage"] = reverse_voltage
@@ -794,9 +806,10 @@ class Diode(Component):
             elif p.parameter == "Voltage - DC Reverse (Vr) (Max)":
                 data["reverse_voltage"] = cls.process_value_with_unit(p.value)
             elif p.parameter in (
-                    "Current - Average Rectified (Io)",
-                    "Power - Max",
-                    "Current - Average Rectified (Io) (per Diode)",):
+                "Current - Average Rectified (Io)",
+                "Power - Max",
+                "Current - Average Rectified (Io) (per Diode)",
+            ):
                 data["current_or_power"] = cls.process_value_with_unit(p.value)
             elif p.parameter == "Voltage - Zener (Nom) (Vz)":
                 data["reverse_voltage"] = cls.process_value_with_unit(p.value)
@@ -807,8 +820,9 @@ class Diode(Component):
         data["value"] = "${MPN}"
         data["keywords"] = "diode"
         data["description"] = (
-                f"{data['reverse_voltage']} {data['current_or_power']} "
-                f"{data['diode_type']} diode, ")
+            f"{data['reverse_voltage']} {data['current_or_power']} "
+            f"{data['diode_type']} diode, "
+        )
         if "diode_configuration" in data:
             data["description"] += f"{data['diode_configuration']}, "
             data["keywords"] += " array"
@@ -817,16 +831,14 @@ class Diode(Component):
         data["IPN"] = re.sub(r"\s+", "", IPN)
 
         kicad_symbol_map = {
-                "standard": "Device:D",
-                "schottky": "Device:D_Schottky",
-                "zener": "Device:D_Zener",
-                }
-        if ("diode_configuration" not in data
-                and data["diode_type"] in kicad_symbol_map):
+            "standard": "Device:D",
+            "schottky": "Device:D_Schottky",
+            "zener": "Device:D_Zener",
+        }
+        if "diode_configuration" not in data and data["diode_type"] in kicad_symbol_map:
             data["kicad_symbol"] = kicad_symbol_map[data["diode_type"]]
         else:
-            data["kicad_symbol"] = cls._get_sym_or_fp_from_user(
-                    data["DPN1"], fp=False)
+            data["kicad_symbol"] = cls._get_sym_or_fp_from_user(data["DPN1"], fp=False)
         cls._determine_footprint(data, package)
 
         if "diode_configuration" not in data:
@@ -838,12 +850,11 @@ class Diode(Component):
 class LED(Component):
     table = "led"
     kicad_footprint_map = {
-            "0603": "LED_SMD:LED_0603_1608Metric",
-            "5mm": "LED_THT:LED_D5.0mm"
-            }
+        "0603": "LED_SMD:LED_0603_1608Metric",
+        "5mm": "LED_THT:LED_D5.0mm",
+    }
 
-    def __init__(self, color, forward_voltage, diode_configuration, package,
-                 **kwargs):
+    def __init__(self, color, forward_voltage, diode_configuration, package, **kwargs):
         super().__init__(**kwargs)
         self.columns["color"] = color
         self.columns["forward_voltage"] = forward_voltage
@@ -863,8 +874,8 @@ class LED(Component):
         transformations.
         """
         package_map = {
-                "T-1 3/4": "5mm",
-                }
+            "T-1 3/4": "5mm",
+        }
         mod_package = super(LED, LED).process_smd_package(param)
         if mod_package != param:
             return mod_package
@@ -888,9 +899,7 @@ class LED(Component):
         point, e.g. "5.0x5.0mm" from "5.00mm L x 5.00mm W".
         """
         dim_string = r"(\d+\.?\d*)"
-        match = re.search(fr"{dim_string}[\smLW]*x"
-                          fr"\s*{dim_string}\s*mm",
-                          param)
+        match = re.search(rf"{dim_string}[\smLW]*x" rf"\s*{dim_string}\s*mm", param)
         try:
             dim1 = float(match.group(1))
             dim2 = float(match.group(2))
@@ -910,8 +919,7 @@ class LED(Component):
         if data["diode_configuration"] == "":
             super()._determine_footprint(data, package)
         else:
-            data["kicad_footprint"] = cls._get_sym_or_fp_from_user(
-                    data["DPN1"])
+            data["kicad_footprint"] = cls._get_sym_or_fp_from_user(data["DPN1"])
 
     @classmethod
     def from_digikey(cls, digikey_part):
@@ -962,8 +970,7 @@ class LED(Component):
         if data["diode_configuration"] == "" and not addressable:
             data["kicad_symbol"] = "Device:LED"
         else:
-            data["kicad_symbol"] = cls._get_sym_or_fp_from_user(
-                    data["DPN1"], fp=False)
+            data["kicad_symbol"] = cls._get_sym_or_fp_from_user(data["DPN1"], fp=False)
         cls._determine_footprint(data, data["package"])
 
         return cls(**data)
@@ -972,11 +979,10 @@ class LED(Component):
 class BJT(Component):
     table = "transistor_bjt"
     kicad_footprint_map = {
-            "TO-92-3": "Package_TO_SOT_THT:TO-92_Inline",
-            }
+        "TO-92-3": "Package_TO_SOT_THT:TO-92_Inline",
+    }
 
-    def __init__(self, bjt_type, vce_max, ic_max, power_max, ft, package,
-                 **kwargs):
+    def __init__(self, bjt_type, vce_max, ic_max, power_max, ft, package, **kwargs):
         super().__init__(**kwargs)
         self.columns["bjt_type"] = bjt_type
         self.columns["vce_max"] = vce_max
@@ -1039,14 +1045,14 @@ class BJT(Component):
         data["IPN"] = f"BJT_{data['bjt_type']}_{mfg}_{data['MPN']}"
         array_string = " array" if array else ""
         data["description"] = (
-                f"{data['ic_max']} Ic, "
-                f"{data['vce_max']} Vce, "
-                f"{data['power_max']}, "
-                f"{data['ft']} "
-                f"{data['bjt_type']} BJT{array_string}, "
-                f"{data['package']}")
-        data["kicad_symbol"] = cls._get_sym_or_fp_from_user(
-                data["DPN1"], fp=False)
+            f"{data['ic_max']} Ic, "
+            f"{data['vce_max']} Vce, "
+            f"{data['power_max']}, "
+            f"{data['ft']} "
+            f"{data['bjt_type']} BJT{array_string}, "
+            f"{data['package']}"
+        )
+        data["kicad_symbol"] = cls._get_sym_or_fp_from_user(data["DPN1"], fp=False)
         data["kicad_footprint"] = cls._get_sym_or_fp_from_user(data["DPN1"])
 
         return cls(**data)

@@ -2,8 +2,7 @@ VERBOSE = False
 
 
 def set_verbose(verbose=True):
-    """Set module global variable VERBOSE to value of verbose (True or False).
-    """
+    """Set module global variable VERBOSE to value of verbose (True or False)."""
     global VERBOSE
     VERBOSE = verbose
 

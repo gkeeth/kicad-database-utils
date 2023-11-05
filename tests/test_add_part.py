@@ -28,35 +28,33 @@ class TestCreateFromDigikeyAPI(unittest.TestCase):
     def test_ceramic_capacitor_from_digikey_pn(self):
         self.check_component_from_digikey_pn_matches_csv("1276-1123-1-ND")
 
-    @patch("partdb.component.input",
-           return_value="Capacitor_THT:CP_Radial_D10.0mm_H17.5mm_P5.00mm")
+    @patch(
+        "partdb.component.input",
+        return_value="Capacitor_THT:CP_Radial_D10.0mm_H17.5mm_P5.00mm",
+    )
     def test_electrolytic_capacitor_from_digikey_pn(self, mock_input):
         self.check_component_from_digikey_pn_matches_csv("493-13313-1-ND")
 
-    @patch("partdb.component.input",
-           return_value="Capacitor_THT:C_Radial_D6.30mm_H12.2mm_P5.00mm")
-    def test_nonpolarized_electrolytic_capacitor_from_digikey_pn(
-            self, mock_input):
-        self.check_component_from_digikey_pn_matches_csv(
-                "10-ECE-A1HN100UBCT-ND")
+    @patch(
+        "partdb.component.input",
+        return_value="Capacitor_THT:C_Radial_D6.30mm_H12.2mm_P5.00mm",
+    )
+    def test_nonpolarized_electrolytic_capacitor_from_digikey_pn(self, mock_input):
+        self.check_component_from_digikey_pn_matches_csv("10-ECE-A1HN100UBCT-ND")
 
-    @patch("partdb.component.input",
-           return_value="Amplifier_Operational:LM4562")
+    @patch("partdb.component.input", return_value="Amplifier_Operational:LM4562")
     def test_opamp_from_digikey_pn(self, mock_input):
         self.check_component_from_digikey_pn_matches_csv("296-35279-1-ND")
 
-    @patch("partdb.component.input",
-           return_value="MCU_ST_STM32F0:STM32F042K4Tx")
+    @patch("partdb.component.input", return_value="MCU_ST_STM32F0:STM32F042K4Tx")
     def test_microcontroller_from_digikey_pn(self, mock_input):
         self.check_component_from_digikey_pn_matches_csv("STM32F042K4T6TR-ND")
 
-    @patch("partdb.component.input",
-           return_value="Regulator_Linear:LM317_TO-220")
+    @patch("partdb.component.input", return_value="Regulator_Linear:LM317_TO-220")
     def test_vreg_pos_adj_from_digikey_pn(self, mock_input):
         self.check_component_from_digikey_pn_matches_csv("LM317HVT/NOPB-ND")
 
-    @patch("partdb.component.input",
-           return_value="Regulator_Linear:LM7912_TO-220")
+    @patch("partdb.component.input", return_value="Regulator_Linear:LM7912_TO-220")
     def test_neg_fixed_from_digikey_pn(self, mock_input):
         self.check_component_from_digikey_pn_matches_csv("LM7912CT/NOPB-ND")
 
@@ -69,37 +67,41 @@ class TestCreateFromDigikeyAPI(unittest.TestCase):
     def test_diode_zener_from_digikey_pn(self):
         self.check_component_from_digikey_pn_matches_csv("MMSZ5231B-FDICT-ND")
 
-    @patch("partdb.component.input",
-           return_value="Device:D_Dual_Series_ACK")
+    @patch("partdb.component.input", return_value="Device:D_Dual_Series_ACK")
     def test_diode_array_from_digikey_pn(self, mock_input):
         self.check_component_from_digikey_pn_matches_csv("BAV99TPMSCT-ND")
 
     def test_led_from_digikey_pn(self):
         self.check_component_from_digikey_pn_matches_csv("160-1445-1-ND")
 
-    @patch("partdb.component.input",
-           side_effect=["Device:LED_RKBG", "LED_THT:LED_D5.0mm-4_RGB"])
+    @patch(
+        "partdb.component.input",
+        side_effect=["Device:LED_RKBG", "LED_THT:LED_D5.0mm-4_RGB"],
+    )
     def test_led_rgb_tht_from_digikey_pn(self, mock_input):
         self.check_component_from_digikey_pn_matches_csv("754-1615-ND")
 
-    @patch("partdb.component.input",
-           side_effect=[
-               "LED:Inolux_IN-PI554FCH",
-               "LED_SMD:LED_Inolux_IN-PI554FCH_PLCC4_5.0x5.0mm_P3.2mm"])
+    @patch(
+        "partdb.component.input",
+        side_effect=[
+            "LED:Inolux_IN-PI554FCH",
+            "LED_SMD:LED_Inolux_IN-PI554FCH_PLCC4_5.0x5.0mm_P3.2mm",
+        ],
+    )
     def test_led_adressable_from_digikey_pn(self, mock_input):
         self.check_component_from_digikey_pn_matches_csv("1830-1106-1-ND")
 
-    @patch("partdb.component.input",
-           side_effect=[
-               "Device:Q_NPN_EBC",
-               "Package_TO_SOT_THT:TO-92_Inline"])
+    @patch(
+        "partdb.component.input",
+        side_effect=["Device:Q_NPN_EBC", "Package_TO_SOT_THT:TO-92_Inline"],
+    )
     def test_bjt_from_digikey_pn(self, mock_input):
         self.check_component_from_digikey_pn_matches_csv("2N3904FS-ND")
 
-    @patch("partdb.component.input",
-           side_effect=[
-               "Device:Q_NPN_QUAD_FAKE",
-               "Package_SO:SOIC-16_3.9x9.9mm_P1.27mm"])
+    @patch(
+        "partdb.component.input",
+        side_effect=["Device:Q_NPN_QUAD_FAKE", "Package_SO:SOIC-16_3.9x9.9mm_P1.27mm"],
+    )
     def test_bjt_array_from_digikey_pn(self, mock_input):
         self.check_component_from_digikey_pn_matches_csv("MMPQ3904FSCT-ND")
 
@@ -110,27 +112,27 @@ class TestDatabaseFunctions(unittest.TestCase):
     def setUp(self):
         self.backup_IPN_DUPLICATE_LIMIT = add_part.IPN_DUPLICATE_LIMIT
         self.base_dict = {
-                "IPN": "R_test",
-                "datasheet": "ds",
-                "description": "desc",
-                "keywords": "kw",
-                "value": "val",
-                "exclude_from_bom": 0,
-                "exclude_from_board": 0,
-                "kicad_symbol": "sym",
-                "kicad_footprint": "fp",
-                "manufacturer": "mfg",
-                "MPN": "mpn",
-                "distributor1": "dist1",
-                "DPN1": "dpn1",
-                "distributor2": "dist2",
-                "DPN2": "dpn2",
-                "resistance": "10k",
-                "tolerance": "1%",
-                "power": "0.125W",
-                "composition": "ThinFilm",
-                "package": "0603",
-                }
+            "IPN": "R_test",
+            "datasheet": "ds",
+            "description": "desc",
+            "keywords": "kw",
+            "value": "val",
+            "exclude_from_bom": 0,
+            "exclude_from_board": 0,
+            "kicad_symbol": "sym",
+            "kicad_footprint": "fp",
+            "manufacturer": "mfg",
+            "MPN": "mpn",
+            "distributor1": "dist1",
+            "DPN1": "dpn1",
+            "distributor2": "dist2",
+            "DPN2": "dpn2",
+            "resistance": "10k",
+            "tolerance": "1%",
+            "power": "0.125W",
+            "composition": "ThinFilm",
+            "package": "0603",
+        }
         self.resistor = component.create_component_from_dict(self.base_dict)
 
         add_part.initialize_database(self.db_path)
@@ -140,8 +142,7 @@ class TestDatabaseFunctions(unittest.TestCase):
         os.remove(self.db_path)
 
     def test_table_automatically_created(self):
-        add_part.open_connection_and_add_component_to_db(
-                self.db_path, self.resistor)
+        add_part.open_connection_and_add_component_to_db(self.db_path, self.resistor)
 
         con = sqlite3.connect(f"file:{self.db_path}?mode=ro", uri=True)
         cur = con.cursor()
@@ -150,11 +151,9 @@ class TestDatabaseFunctions(unittest.TestCase):
         self.assertIn(("resistor",), res)
 
     def test_unique_parts_in_table(self):
-        add_part.open_connection_and_add_component_to_db(
-                self.db_path, self.resistor)
+        add_part.open_connection_and_add_component_to_db(self.db_path, self.resistor)
         self.resistor.columns["IPN"] = "R_test2"
-        add_part.open_connection_and_add_component_to_db(
-                self.db_path, self.resistor)
+        add_part.open_connection_and_add_component_to_db(self.db_path, self.resistor)
 
         con = sqlite3.connect(f"file:{self.db_path}?mode=ro", uri=True)
         cur = con.cursor()
@@ -164,11 +163,11 @@ class TestDatabaseFunctions(unittest.TestCase):
         self.assertIn(("R_test2",), res)
 
     def test_update_existing_component(self):
-        add_part.open_connection_and_add_component_to_db(
-                self.db_path, self.resistor)
+        add_part.open_connection_and_add_component_to_db(self.db_path, self.resistor)
         self.resistor.columns["value"] = "val2"
         add_part.open_connection_and_add_component_to_db(
-                self.db_path, self.resistor, update=True)
+            self.db_path, self.resistor, update=True
+        )
 
         con = sqlite3.connect(f"file:{self.db_path}?mode=ro", uri=True)
         cur = con.cursor()
@@ -200,8 +199,7 @@ class TestDatabaseFunctions(unittest.TestCase):
             r = component.create_component_from_dict(self.base_dict)
             add_part.add_component_to_db(con, r)
 
-        with self.assertRaises(
-                add_part.TooManyDuplicateIPNsInTableError) as cm:
+        with self.assertRaises(add_part.TooManyDuplicateIPNsInTableError) as cm:
             r = component.create_component_from_dict(self.base_dict)
             add_part.add_component_to_db(con, r)
         e = cm.exception
