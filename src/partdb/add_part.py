@@ -319,17 +319,17 @@ def parse_args():
     # add option to create duplicate / add anyway
     parser = argparse.ArgumentParser(
         description=(
-            "Add a part to the parts database, either manually "
-            "or by distributor lookup."
+            "Add a part to the parts database, either manually or by "
+            "distributor lookup."
         )
     )
 
     parser.add_argument(
-        "--verbose", "-v", action="store_true", help="Print informational messages"
+        "--verbose", "-v", action="store_true", help="Print informational messages."
     )
 
     parser.add_argument(
-        "--initializedb", action="store_true", help="Initialize new, empty database"
+        "--initializedb", action="store_true", help="Initialize new, empty database."
     )
 
     parser.add_argument(
@@ -337,9 +337,8 @@ def parse_args():
         "-u",
         action="store_true",
         help=(
-            "If specified part already exists in database, "
-            "update the existing component instead of "
-            "adding a new, unique part"
+            "If specified part already exists in database, update the existing "
+            "component instead of adding a new, unique part."
         ),
     )
 
@@ -347,9 +346,8 @@ def parse_args():
         "--no-db",
         action="store_true",
         help=(
-            "Don't add part to database. This may be useful "
-            "in combination with another output format, "
-            "such as CSV."
+            "Don't add part to database. This may be useful in combination "
+            "with another output format, such as CSV."
         ),
     )
 
@@ -357,9 +355,8 @@ def parse_args():
         "--csv_output",
         action="store_true",
         help=(
-            "Write part data to stdout, formatted as CSV. "
-            "Unless otherwise specified, parts are also "
-            "added to the database."
+            "Write part data to stdout, formatted as CSV. Unless otherwise "
+            "specified, parts are also added to the database."
         ),
     )
 
@@ -367,10 +364,9 @@ def parse_args():
         "--dump_api_response",
         action="store_true",
         help=(
-            "Write API response object data to stdout. This "
-            "can be used as a reference for implementation. "
-            "Unless otherwise specified, parts are also "
-            "added to the database."
+            "Write API response object data to stdout. This can be used as a "
+            "reference for implementation. Unless otherwise specified, parts "
+            "are also added to the database."
         ),
     )
 
@@ -380,8 +376,8 @@ def parse_args():
         "-d",
         metavar="DIGIKEY_PN",
         help=(
-            "Digikey part number, or comma-separated list of part "
-            "numbers, for part(s) to add to database"
+            "Digikey part number, or comma-separated list of part numbers, for "
+            "part(s) to add to database."
         ),
     )
     source_group.add_argument(
@@ -389,8 +385,8 @@ def parse_args():
         "-m",
         metavar="MOUSER_PN",
         help=(
-            "Mouser part number, or comma-separated list of part "
-            "numbers, for part(s) to add to database"
+            "Mouser part number, or comma-separated list of part numbers, for "
+            "part(s) to add to database."
         ),
     )
     source_group.add_argument(
@@ -398,8 +394,8 @@ def parse_args():
         "-p",
         metavar="CSVFILE",
         help=(
-            "CSV filename containing columns for all required part "
-            "parameters. Each row is a separate part"
+            "CSV filename containing columns for all required part parameters. "
+            "Each row is a separate part."
         ),
     )
 
