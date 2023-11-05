@@ -178,7 +178,7 @@ def initialize_database(db_path):
     con.close()
 
 
-def add_component_to_db(con, comp, update=False):
+def add_component_to_db(con, comp, update=False, increment=False):
     """Add the given component object to a database.
 
     Uses the existing connection `con`. The appropriate table is selected
@@ -187,14 +187,20 @@ def add_component_to_db(con, comp, update=False):
     Args:
         con: database connection to database.
         comp: Component object to add to database.
-        update: when True, an existing component in the database with the
+        update: When True, an existing component in the database with the
             same IPN as the new component will be updated (REPLACE'd) by the
-            new component. When False, the IPN of the new component will have a
-            numeric suffix ('_1') added to avoid overwriting the existing
-            component. If the modified IPN is still not unique, the suffix will
-            be incremented (up to a maximum defined by IPN_DUPLICATE_LIMIT) in
-            an attempt to create a unique IPN. After IPN_DUPLICATE_LIMIT
-            unsuccessful attempts, the component will be skipped.
+            new component. When False, duplicate IPNs will not be added; the
+            behavior in the case of duplicates depends on the value of
+            `increment`.
+        increment: When True, if a duplicate component (keyed by IPN) is added,
+            the IPN of the new component will have a numeric suffix ('_1')
+            added to avoid overwriting the existing component. If the modified
+            IPN is still not unique, the suffix will be incremented (up to a
+            maximum defined by IPN_DUPLICATE_LIMIT) in an attempt to create a
+            unique IPN. After IPN_DUPLICATE_LIMIT unsuccessful attempts, the
+            component will be skipped. When False, the IPN will not be
+            incremented and any duplicate IPNs will be skipped. This argument
+            is ignored when `update` is True.
     """
     insert_string, values = comp.to_sql(update)
 
@@ -225,7 +231,7 @@ def add_component_to_db(con, comp, update=False):
                     f"Updating existing component '{test_ipn}' in "
                     f"table '{comp.table}'"
                 )
-            else:
+            elif increment:
                 # we need to try to create a unique IPN
                 for i in range(1, IPN_DUPLICATE_LIMIT):
                     test_ipn = f"{values['IPN']}_{i}"
@@ -235,6 +241,8 @@ def add_component_to_db(con, comp, update=False):
                 if test_ipn != values["IPN"]:
                     # we didn't find a unique IPN
                     raise TooManyDuplicateIPNsInTableError(values["IPN"], comp.table)
+            else:
+                raise TooManyDuplicateIPNsInTableError(values["IPN"], comp.table)
 
         # add part to table, whether this is:
         # 1) The base IPN (no duplicates)
@@ -245,7 +253,9 @@ def add_component_to_db(con, comp, update=False):
         print_message(f"Added component '{values['IPN']}' to table " f"'{comp.table}'")
 
 
-def open_connection_and_add_component_to_db(db_path, comp, update=False):
+def open_connection_and_add_component_to_db(
+    db_path, comp, update=False, increment=False
+):
     """Open a database connection and add the given component object to the
     database.
 
@@ -257,23 +267,28 @@ def open_connection_and_add_component_to_db(db_path, comp, update=False):
         comp: Component object to add to database.
         update: when True, an existing component in the database with the
             same IPN as the new component will be updated (REPLACE'd) by the
-            new component. When False, the IPN of the new component will have a
-            numeric suffix ('_1') added to avoid overwriting the existing
-            component. If the modified IPN is still not unique, the suffix will
-            be incremented (up to a maximum defined by IPN_DUPLICATE_LIMIT) in
-            an attempt to create a unique IPN. After IPN_DUPLICATE_LIMIT
-            unsuccessful attempts, the component will be skipped.
+            new component. The value of `increment` is ignored when `update` is
+            True. When False, duplicate IPNs will not be added; the behavior in
+            the case of duplicates depends on the value of `increment`.
+        increment: When True, if a duplicate component (keyed by IPN) is added,
+            the IPN of the new component will have a numeric suffix ('_1')
+            added to avoid overwriting the existing component. If the modified
+            IPN is still not unique, the suffix will be incremented (up to a
+            maximum defined by IPN_DUPLICATE_LIMIT) in an attempt to create a
+            unique IPN. After IPN_DUPLICATE_LIMIT unsuccessful attempts, the
+            component will be skipped. When False, the IPN will not be
+            incremented and any duplicate IPNs will be skipped. This argument
+            is ignored when `update` is True.
     """
 
     try:
         con = sqlite3.connect(f"file:{db_path}?mode=rw", uri=True)
-        # con = sqlite3.connect(":memory:")
     except sqlite3.OperationalError:
         print_error(f"could not connect to database at path: {db_path}")
         return
 
     try:
-        add_component_to_db(con, comp, update)
+        add_component_to_db(con, comp, update, increment)
     except TooManyDuplicateIPNsInTableError as e:
         print_error(
             f"Too many parts with IPN '{e.IPN}' already in table "
@@ -283,7 +298,7 @@ def open_connection_and_add_component_to_db(db_path, comp, update=False):
         con.close()
 
 
-def add_components_from_list_to_db(db_path, components, update=False):
+def add_components_from_list_to_db(db_path, components, update=False, increment=False):
     """Add all components in a list to the database.
 
     Args:
@@ -292,9 +307,12 @@ def add_components_from_list_to_db(db_path, components, update=False):
         update: if True, when duplicate components are encountered, update
             existing components instead of attempting to create a unique
             component.
+        increment: if True, when duplicate components are encountered (and if
+            `update` is False), append a numeric suffix to IPN to create a
+            unique IPN.
     """
     for comp in components:
-        open_connection_and_add_component_to_db(db_path, comp, update)
+        open_connection_and_add_component_to_db(db_path, comp, update, increment)
 
 
 def print_components_from_list_as_csv(components):
@@ -315,8 +333,6 @@ def parse_args():
     """Set up CLI args and return the parsed arguments."""
     # TODO: add args for --dry-run (don't actually update database, but execute
     # everything up to db commit). Consider using a rolled-back transaction.
-    # TODO: default to skip adding part if distributor PN is already in table,
-    # add option to create duplicate / add anyway
     parser = argparse.ArgumentParser(
         description=(
             "Add a part to the parts database, either manually or by "
@@ -332,7 +348,17 @@ def parse_args():
         "--initializedb", action="store_true", help="Initialize new, empty database."
     )
 
-    parser.add_argument(
+    duplicates_group = parser.add_mutually_exclusive_group()
+    duplicates_group.add_argument(
+        "--increment-duplicates",
+        "-i",
+        action="store_true",
+        help=(
+            "If specified part already exists in database, add a new part with "
+            "an incremented internal part number."
+        ),
+    )
+    duplicates_group.add_argument(
         "--update-existing",
         "-u",
         action="store_true",
@@ -441,7 +467,12 @@ def main():
         components = create_component_list_from_csv(args.csv)
 
     if not args.no_db:
-        add_components_from_list_to_db(db_path, components, update=args.update_existing)
+        add_components_from_list_to_db(
+            db_path,
+            components,
+            update=args.update_existing,
+            increment=args.increment_duplicates,
+        )
 
     if args.csv_output:
         print_components_from_list_as_csv(components)
