@@ -271,6 +271,8 @@ class TestParameterUtils(unittest.TestCase):
                 ("PNP", False, "PNP"),
                 ("4xNPN", True, "4 NPN (Quad)"),
                 ("NPN-PNP", True, "NPN, PNP"),
+                ("2xNPN", True, "2 NPN Darlington (Dual)"),
+                ("4xNPN-1xPNP", True, "4 NPN, 1 PNP Darlington"),
                 ]
         for expected_type, expected_array, transistor_type in testcases:
             with self.subTest(TransistorType=transistor_type):

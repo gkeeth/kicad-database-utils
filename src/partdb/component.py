@@ -998,17 +998,20 @@ class BJT(Component):
             Tuple of transistor type string, transistor array bool
 
         """
-        m = re.match(r"(\d+)?[,\s]*(NPN|PNP)[,\s]*(NPN|PNP)?", param)
+        m = re.match(r"(\d*)\s*(NPN|PNP)[,\s]*(\d*)\s*(NPN|PNP)?", param)
         s = ""
         array = False
         if m.group(2):  # NPN|PNP
             if m.group(1):  # number of units
-                s += f"{m.group(1)}x"
                 array = True
+                s += f"{m.group(1)}x"
             s += m.group(2)
-        if m.group(3):  # second NPN|PNP
-            s += f"-{m.group(3)}"
+        if m.group(4):  # second NPN|PNP
             array = True
+            s += "-"
+            if m.group(3):  # number of units
+                s += f"{m.group(3)}x"
+            s += f"{m.group(4)}"
         return s, array
 
     @classmethod
