@@ -8,3 +8,6 @@ authors = [{name = "Graham Keeth", email = "graham.keeth@gmail.com"}]
 
 [project.urls]
 repository = "https://github.com/gkeeth/kicad-database-utils"
+
+[tool.ruff.lint]
+select = ["E", "F"]
