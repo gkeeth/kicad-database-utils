@@ -7,9 +7,9 @@ def set_verbose(verbose=True):
     VERBOSE = verbose
 
 
-def print_message(message):
+def print_message(message, verbose=VERBOSE):
     """Print a message to stdout if global variable VERBOSE is True."""
-    if VERBOSE:
+    if verbose:
         print(message)
 
 

@@ -424,12 +424,12 @@ def main():
     else:
         db_path = os.path.abspath("test.db")
 
+    if not (args.initializedb or args.digikey or args.mouser or args.csv):
+        print_message("Nothing to do.", verbose=True)
+        sys.exit()
+
     if args.initializedb:
         initialize_database(db_path)
-
-    if not (args.digikey or args.mouser or args.csv):
-        print_message("no parts to add")
-        sys.exit()
     if args.digikey:
         digikey_pn_list = [pn.strip() for pn in args.digikey.split(",")]
         components = create_component_list_from_digikey_pn_list(
