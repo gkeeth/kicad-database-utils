@@ -370,6 +370,15 @@ def parse_args():
         ),
     )
 
+    parser.add_argument(
+        "--use_test_database",
+        action="store_true",
+        help=(
+            "Use test.db in current directory instead of database specified by "
+            "user configuration."
+        ),
+    )
+
     source_group = parser.add_mutually_exclusive_group()
     source_group.add_argument(
         "--digikey",
@@ -407,10 +416,13 @@ def main():
     print_utils.set_verbose(args.verbose)
     config_data = load_config()
     setup_digikey(config_data)
-    try:
-        db_path = os.path.abspath(config_data["db"]["path"])
-    except KeyError:
-        sys.exit("Error: database path not found in config file")
+    if not args.use_test_database:
+        try:
+            db_path = os.path.abspath(os.path.expanduser(config_data["db"]["path"]))
+        except KeyError:
+            sys.exit("Error: database path not found in config file")
+    else:
+        db_path = os.path.abspath("test.db")
 
     if args.initializedb:
         initialize_database(db_path)
