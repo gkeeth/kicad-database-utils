@@ -18,7 +18,7 @@ from partdb.component import (
     create_component_from_dict,
 )
 
-CONFIG_FILENAME = os.path.expanduser("~/.dblib_add_part_config.json")
+CONFIG_FILENAME = os.path.expanduser("~/.dblib_utils_config.json")
 
 IPN_DUPLICATE_LIMIT = 10
 
@@ -78,7 +78,7 @@ def setup_digikey(config_data):
     Args:
         config_data: dict of configuration data from config file.
     """
-    DIGIKEY_DEFAULT_CACHE_DIR = os.path.expanduser("~/.dblib_digikey_cache_dir")
+    DIGIKEY_DEFAULT_CACHE_DIR = os.path.expanduser("~/.dblib_utils_digikey_cache")
 
     dk_config = config_data["digikey"]
     os.environ["DIGIKEY_CLIENT_ID"] = dk_config["client_id"]
