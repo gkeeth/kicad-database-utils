@@ -299,8 +299,8 @@ class Resistor(Component):
     @staticmethod
     def process_resistance(param):
         """Return a processed resistance string, e.g. 10 or 1.0K."""
-        resistance = re.search(r"\d+\.?\d*[kKmMG]?", param).group(0)
-        return re.sub("k", "K", resistance)
+        resistance = re.search(r"\d+\.?\d*\s*[kKmMG]?", param).group(0)
+        return re.sub(r"\s", "", re.sub("k", "K", resistance))
 
     @staticmethod
     def process_power(param):

@@ -101,6 +101,7 @@ class TestParameterUtils(unittest.TestCase):
             ("1K", "1K"),
             ("1K", "1k Ohm"),
             ("1K", "1kOhm"),
+            ("1.6K", "1.6 kOhms"),
             ("10K", "10kOhm"),
             ("1.00K", "1.00kOhm"),
             ("1m", "1m"),
