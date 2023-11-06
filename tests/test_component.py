@@ -621,7 +621,7 @@ class TestVRegFromDigikeyPart(TestFromDigikeyPart):
         )
         self.check_component_matches_csv(mock_part)
 
-    @patch("partdb.component.input", return_value="Regulator_Linear:LM7912_TO-220")
+    @patch("partdb.component.input", return_value="Regulator_Linear:LM7912_TO220")
     def test_vreg_neg_fixed_from_digikey(self, mock_input):
         mock_part = self.init_vreg_mock(
             datasheet=(

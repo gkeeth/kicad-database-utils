@@ -51,7 +51,7 @@ class TestCreateFromDigikeyAPI(unittest.TestCase):
     def test_vreg_pos_adj_from_digikey_pn(self, mock_input):
         self.check_component_from_digikey_pn_matches_csv("LM317HVT/NOPB-ND")
 
-    @patch("partdb.component.input", return_value="Regulator_Linear:LM7912_TO-220")
+    @patch("partdb.component.input", return_value="Regulator_Linear:LM7912_TO220")
     def test_neg_fixed_from_digikey_pn(self, mock_input):
         self.check_component_from_digikey_pn_matches_csv("LM7912CT/NOPB-ND")
 
