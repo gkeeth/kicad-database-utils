@@ -329,8 +329,9 @@ class Resistor(Component):
             elif p.parameter == "Power (Watts)":
                 data["power"] = cls.process_power(p.value)
             elif p.parameter == "Composition":
-                raw_composition = p.value
-                data["composition"] = cls.process_composition(raw_composition)
+                data["composition"] = p.value
+                # raw_composition = p.value
+                processed_composition = cls.process_composition(data["composition"])
             elif p.parameter == "Supplier Device Package":
                 data["package"] = p.value
 
@@ -342,10 +343,10 @@ class Resistor(Component):
                 f"{data['resistance']}_"
                 f"Jumper_"
                 f"{data['package']}_"
-                f"{data['composition']}"
+                f"{processed_composition}"
             )
             data["description"] = (
-                f"0Ω Jumper " f"{data['package']} " f"{raw_composition}"
+                f"0Ω Jumper " f"{data['package']} " f"{data['composition']}"
             )
             data["keywords"] = "jumper"
         else:
@@ -355,7 +356,7 @@ class Resistor(Component):
                 f"{data['package']}_"
                 f"{data['tolerance']}_"
                 f"{data['power']}_"
-                f"{data['composition']}"
+                f"{processed_composition}"
             )
             data["description"] = (
                 f"{data['resistance']}Ω "
@@ -363,7 +364,7 @@ class Resistor(Component):
                 f"{data['power']} "
                 f"Resistor "
                 f"{data['package']} "
-                f"{raw_composition}"
+                f"{data['composition']}"
             )
             data["keywords"] = f"r res resistor {data['resistance']}"
 
