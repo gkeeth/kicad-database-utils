@@ -7,6 +7,24 @@ from collections import OrderedDict
 
 from partdb.print_utils import print_error
 
+"""
+TODO
+
+- make word upper/lowercase consistent between descriptions in different tables
+
+# tables to make
+    inductor:             inductance, tolerance
+    ferrite_bead:         impedance_at_freq, current, resistance
+    connector:            series, circuit_configuration, gender, orientation
+    transistor_mosfet:    type, vds_max, id_max, power_max, ft
+    transistor_jfet:      type, vds_max, idss, power_max, ft
+    crystal:              frequency, load_capacitance
+    potentiometer:        value, tolerance, power, composition, orientation
+    switch:               type, configuration, orientation, current
+    relay:                configuration, coil_voltage, coil_current, switch_current
+    logic:                function, number_of_units
+"""
+
 
 def create_component_from_digikey_part(part):
     """Factory to construct the appropriate component type object for a given

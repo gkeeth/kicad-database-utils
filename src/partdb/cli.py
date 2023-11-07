@@ -22,49 +22,6 @@ from partdb.component import (
 CONFIG_FILENAME = os.path.expanduser("~/.dblib_utils_config.json")
 
 
-"""
-common columns:
-    IPN
-    display_name
-    datasheet
-    description
-    keywords
-    exclude_from_bom
-    exclude_from_board
-    kicad_symbol
-    kicad_footprint
-    manufacturer
-    MPN
-    distributor1
-    DPN1
-    distributor2
-    DPN2
-
-tables:
-    x resistor:           value, resistance, tolerance, power, composition,
-                          package
-    x capacitor:          value, capacitance, tolerance, voltage, dielectric,
-                          package
-    inductor:             value, inductance, tolerance, package
-    ferrite_bead:         impedance_at_freq, current, resistance, package
-    connector:            series, circuit_configuration, gender, orientation
-    x led:                  color, package
-    x diode:                type, voltage, package
-    transistor_bjt:       type, package
-    transistor_mosfet:    type, package
-    transistor_jfet:      type, package
-    crystal:              frequency, load_capacitance, package
-    potentiometer:        value, tolerance, power, composition, orientation
-    switch:               type, configuration, orientation, current
-    relay:                configuration, coil_voltage, coil_current,
-                          switch_current
-    x opamp:              input_type, bandwidth, package
-    logic:                function, package
-    x microcontroller:    pins, max_frequency, package
-    x voltage_regulator:  voltage, current, package
-"""
-
-
 def setup_digikey(config_data):
     """Set up environment variables and cache for digikey API calls.
 
@@ -175,8 +132,13 @@ def load_config():
 
 def parse_args():
     """Set up CLI args and return the parsed arguments."""
-    # TODO: add args for --dry-run (don't actually update database, but execute
-    # everything up to db commit). Consider using a rolled-back transaction.
+    # TODO:
+    # - add args for --dry-run (don't actually update database, but execute
+    #   everything up to db commit). Consider using a rolled-back transaction.
+    # - mode/argument for update by MPN or DPN
+    # - mode/argument to remove part by IPN (or maybe MPN and/or DPN)
+    # - mode/argument to dump a list (CSV?) of table, DPN, symbol, footprint
+
     parser = argparse.ArgumentParser(
         description=(
             "Add a part to the parts database, either manually or by "
