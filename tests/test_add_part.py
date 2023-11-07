@@ -5,7 +5,7 @@ import re
 import unittest
 from unittest.mock import patch
 
-from partdb import cli
+from partdb import api_helpers, cli
 
 from tests.test_component import expected_component_from_csv
 
@@ -13,13 +13,13 @@ from tests.test_component import expected_component_from_csv
 @unittest.skipIf(int(os.getenv("SLOW_TESTS", 0)) < 1, "external API call")
 class TestCreateFromDigikeyAPI(unittest.TestCase):
     def check_component_from_digikey_pn_matches_csv(self, digikey_pn):
-        actual = cli.create_component_from_digikey_pn(digikey_pn)
+        actual = api_helpers.create_component_from_digikey_pn(digikey_pn)
         csv_name = re.sub(r"/", "_", f"{digikey_pn}.csv")
         expected = expected_component_from_csv(f"sample_parts_csv/{csv_name}")
         self.assertEqual(expected.to_csv(), actual.to_csv())
 
     def setUp(self):
-        cli.setup_digikey(cli.load_config())
+        api_helpers.setup_digikey(cli.load_config())
 
     def test_resistor_from_digikey_pn(self):
         self.check_component_from_digikey_pn_matches_csv("YAG2320CT-ND")
