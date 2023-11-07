@@ -1,5 +1,6 @@
 #! /usr/bin/env python
 
+import os
 import re
 import unittest
 from unittest.mock import patch
@@ -9,7 +10,7 @@ from partdb import cli
 from tests.test_component import expected_component_from_csv
 
 
-@unittest.skip("external API call")
+@unittest.skipIf(int(os.getenv("SLOW_TESTS", 0)) < 1, "external API call")
 class TestCreateFromDigikeyAPI(unittest.TestCase):
     def check_component_from_digikey_pn_matches_csv(self, digikey_pn):
         actual = cli.create_component_from_digikey_pn(digikey_pn)
