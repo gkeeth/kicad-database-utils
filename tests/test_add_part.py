@@ -23,6 +23,9 @@ class TestCreateFromDigikeyAPI(unittest.TestCase):
     def test_resistor_from_digikey_pn(self):
         self.check_component_from_digikey_pn_matches_csv("YAG2320CT-ND")
 
+    def test_jumper_from_digikey_pn(self):
+        self.check_component_from_digikey_pn_matches_csv("311-0.0GRCT-ND")
+
     def test_ceramic_capacitor_from_digikey_pn(self):
         self.check_component_from_digikey_pn_matches_csv("1276-1123-1-ND")
 

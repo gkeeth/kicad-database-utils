@@ -365,7 +365,7 @@ class Resistor(Component):
                 f"{processed_composition}"
             )
             data["description"] = (
-                f"0Ω Jumper " f"{data['package']} " f"{data['composition']}"
+                f"0Ω jumper, {data['package']}, {data['composition'].lower()}"
             )
             data["keywords"] = "jumper"
         else:
@@ -379,11 +379,11 @@ class Resistor(Component):
             )
             data["description"] = (
                 f"{data['resistance']}Ω "
-                f"±{data['tolerance']} "
+                f"±{data['tolerance']}, "
                 f"{data['power']} "
-                f"Resistor "
-                f"{data['package']} "
-                f"{data['composition']}"
+                f"resistor, "
+                f"{data['package']}, "
+                f"{data['composition'].lower()}"
             )
             data["keywords"] = f"r res resistor {data['resistance']}"
 

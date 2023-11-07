@@ -396,6 +396,23 @@ class TestResistorFromDigikeyPart(TestFromDigikeyPart):
         )
         self.check_component_matches_csv(mock_part)
 
+    def test_jumper_from_digikey(self):
+        mock_part = self.init_resistor_mock(
+            resistance="0 Ohms",
+            tolerance="Jumper",
+            power="-",
+            composition="Thick Film",
+            package="0603",
+            datasheet=(
+                "https://www.yageo.com/upload/media/product/productsearch/"
+                "datasheet/rchip/PYu-RC_Group_51_RoHS_L_12.pdf"
+            ),
+            mfg="YAGEO",
+            MPN="RC0603JR-070RL",
+            digikey_PN="311-0.0GRCT-ND",
+        )
+        self.check_component_matches_csv(mock_part)
+
 
 class TestCapacitorFromDigikeyPart(TestFromDigikeyPart):
     @staticmethod
