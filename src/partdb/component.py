@@ -555,13 +555,17 @@ class Capacitor(Component):
         )
         if package_dims:
             data["IPN"] += f"_{package_dims}"
+
+        dielectric = data["dielectric"]
+        if "olarized" in dielectric:
+            dielectric = dielectric.lower()
         data["description"] = (
             f"{data['capacitance']} "
-            f"±{data['tolerance']} "
-            f"{data['voltage']} "
-            f"{data['dielectric']} "
-            f"Capacitor "
-            f"{package_short}"
+            f"±{data['tolerance']}, "
+            f"{data['voltage']}, "
+            f"{dielectric} "
+            f"capacitor, "
+            f"{package_short.lower()}"
         )
         if package_dims:
             dims = (
@@ -570,7 +574,7 @@ class Capacitor(Component):
                 .replace("P", "pitch ")
                 .replace("_", " ")
             )
-            data["description"] += f" {dims}"
+            data["description"] += f", {dims}"
         data["keywords"] = (
             f"c cap capacitor " f"{polarization.lower()} {data['capacitance']}"
         )
