@@ -7,6 +7,7 @@ import unittest
 from partdb import component  # for create_component_from_dict()
 from partdb import db
 
+
 class TestDatabaseFunctions(unittest.TestCase):
     db_path = "unittests.db"
 

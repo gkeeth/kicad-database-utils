@@ -6,6 +6,7 @@ from partdb.print_utils import print_message, print_error
 
 IPN_DUPLICATE_LIMIT = 10
 
+
 class TooManyDuplicateIPNsInTableError(Exception):
     def __init__(self, IPN, table):
         self.IPN = IPN

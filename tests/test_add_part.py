@@ -8,6 +8,7 @@ from partdb import cli
 
 from tests.test_component import expected_component_from_csv
 
+
 @unittest.skip("external API call")
 class TestCreateFromDigikeyAPI(unittest.TestCase):
     def check_component_from_digikey_pn_matches_csv(self, digikey_pn):

@@ -708,11 +708,11 @@ class Microcontroller(Component):
         data["value"] = "${MPN}"
         data["keywords"] = "mcu microcontroller uc"
         data["description"] = (
-                f"{pincount} pin "
-                f"{data['core']} MCU, "
-                f"{data['speed']}, "
-                f"{data['package']}"
-                )
+            f"{pincount} pin "
+            f"{data['core']} MCU, "
+            f"{data['speed']}, "
+            f"{data['package']}"
+        )
         IPN = f"MCU_{data['manufacturer']}_{data['MPN']}"
         data["IPN"] = re.sub(r"\s+", "", IPN)
 
