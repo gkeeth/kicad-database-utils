@@ -987,7 +987,7 @@ class LED(Component):
             data["IPN"] += "Addressable_"
         data["description"] += "LED, "
         if data["diode_configuration"]:
-            data["description"] += f"{data['diode_configuration']}, "
+            data["description"] += f"{data['diode_configuration'].lower()}, "
         data["description"] += f"{data['package']}"
         mfg = re.sub(r"[\.,\s]", "", data["manufacturer"])
         data["IPN"] += f"{data['package']}_{mfg}_{data['MPN']}"
