@@ -96,6 +96,7 @@ class Component(ABC):
         description,
         keywords,
         value,
+        package,
         kicad_symbol,
         kicad_footprint,
         manufacturer,
@@ -115,6 +116,7 @@ class Component(ABC):
         self.columns["description"] = description
         self.columns["keywords"] = keywords
         self.columns["value"] = value
+        self.columns["package"] = package
         self.columns["exclude_from_bom"] = int(exclude_from_bom)
         self.columns["exclude_from_board"] = int(exclude_from_board)
         self.columns["kicad_symbol"] = kicad_symbol
@@ -288,13 +290,12 @@ class Resistor(Component):
         "1210": "Resistor_SMD:R_1210_3225Metric",
     }
 
-    def __init__(self, resistance, tolerance, power, composition, package, **kwargs):
+    def __init__(self, resistance, tolerance, power, composition, **kwargs):
         super().__init__(**kwargs)
         self.columns["resistance"] = resistance
         self.columns["tolerance"] = tolerance
         self.columns["power"] = power
         self.columns["composition"] = composition
-        self.columns["package"] = package
 
     @staticmethod
     def process_resistance(param):
@@ -386,13 +387,12 @@ class Capacitor(Component):
         "1210": "Capacitor_SMD:C_1210_3225Metric",
     }
 
-    def __init__(self, capacitance, tolerance, voltage, dielectric, package, **kwargs):
+    def __init__(self, capacitance, tolerance, voltage, dielectric, **kwargs):
         super().__init__(**kwargs)
         self.columns["capacitance"] = capacitance
         self.columns["tolerance"] = tolerance
         self.columns["voltage"] = voltage
         self.columns["dielectric"] = dielectric
-        self.columns["package"] = package
 
     @staticmethod
     def process_capacitance(param):
@@ -626,7 +626,7 @@ class OpAmp(Component):
             elif p.parameter == "Slew Rate":
                 slewrate = p.value
             elif p.parameter == "Package / Case":
-                package = p.value
+                data["package"] = p.value
             elif p.parameter == "Supplier Device Package":
                 short_package = p.value
             elif p.parameter == "Number of Circuits":
@@ -645,7 +645,7 @@ class OpAmp(Component):
 
         data["kicad_symbol"] = cls._get_sym_or_fp_from_user(data["DPN1"], fp=False)
 
-        cls._determine_footprint(data, package)
+        cls._determine_footprint(data, data["package"])
 
         return cls(**data)
 
@@ -698,8 +698,8 @@ class Microcontroller(Component):
 
         for p in digikey_part.parameters:
             if p.parameter == "Supplier Device Package":
-                package = p.value
-                pincount = cls.process_pincount(package)
+                data["package"] = p.value
+                pincount = cls.process_pincount(data["package"])
             elif p.parameter == "Core Processor":
                 data["core"] = cls.process_core(p.value)
             elif p.parameter == "Speed":
@@ -708,13 +708,16 @@ class Microcontroller(Component):
         data["value"] = "${MPN}"
         data["keywords"] = "mcu microcontroller uc"
         data["description"] = (
-            f"{pincount} pin " f"{data['core']} MCU, " f"{data['speed']}, " f"{package}"
-        )
+                f"{pincount} pin "
+                f"{data['core']} MCU, "
+                f"{data['speed']}, "
+                f"{data['package']}"
+                )
         IPN = f"MCU_{data['manufacturer']}_{data['MPN']}"
         data["IPN"] = re.sub(r"\s+", "", IPN)
 
         data["kicad_symbol"] = cls._get_sym_or_fp_from_user(data["DPN1"], fp=False)
-        cls._determine_footprint(data, package)
+        cls._determine_footprint(data, data["package"])
 
         return cls(**data)
 
@@ -736,7 +739,7 @@ class VoltageRegulator(Component):
 
         for p in digikey_part.parameters:
             if p.parameter == "Supplier Device Package":
-                package = p.value
+                data["package"] = p.value
             elif p.parameter == "Voltage - Input (Max)":
                 vin_max = p.value
             elif p.parameter == "Voltage - Output (Min/Fixed)":
@@ -761,13 +764,13 @@ class VoltageRegulator(Component):
             f"{data['voltage']} @{data['current']} out, "
             f"{vin_max} in, "
             f"{output_type} voltage regulator, "
-            f"{package}"
+            f"{data['package']}"
         )
         IPN = f"VReg_{data['manufacturer']}_{data['MPN']}"
         data["IPN"] = re.sub(r"\s+", "", IPN)
 
         data["kicad_symbol"] = cls._get_sym_or_fp_from_user(data["DPN1"], fp=False)
-        cls._determine_footprint(data, package)
+        cls._determine_footprint(data, data["package"])
 
         return cls(**data)
 
@@ -801,7 +804,7 @@ class Diode(Component):
 
         for p in digikey_part.parameters:
             if p.parameter == "Supplier Device Package":
-                package = p.value
+                data["package"] = p.value
             elif p.parameter == "Technology":
                 data["diode_type"] = p.value.lower()
             elif p.parameter == "Voltage - DC Reverse (Vr) (Max)":
@@ -827,7 +830,7 @@ class Diode(Component):
         if "diode_configuration" in data:
             data["description"] += f"{data['diode_configuration']}, "
             data["keywords"] += " array"
-        data["description"] += f"{package}"
+        data["description"] += f"{data['package']}"
         IPN = f"D_{data['manufacturer']}_{data['MPN']}"
         data["IPN"] = re.sub(r"\s+", "", IPN)
 
@@ -840,7 +843,7 @@ class Diode(Component):
             data["kicad_symbol"] = kicad_symbol_map[data["diode_type"]]
         else:
             data["kicad_symbol"] = cls._get_sym_or_fp_from_user(data["DPN1"], fp=False)
-        cls._determine_footprint(data, package)
+        cls._determine_footprint(data, data["package"])
 
         if "diode_configuration" not in data:
             data["diode_configuration"] = ""
@@ -855,12 +858,11 @@ class LED(Component):
         "5mm": "LED_THT:LED_D5.0mm",
     }
 
-    def __init__(self, color, forward_voltage, diode_configuration, package, **kwargs):
+    def __init__(self, color, forward_voltage, diode_configuration, **kwargs):
         super().__init__(**kwargs)
         self.columns["color"] = color
         self.columns["forward_voltage"] = forward_voltage
         self.columns["diode_configuration"] = diode_configuration
-        self.columns["package"] = package
 
     @staticmethod
     def process_led_package(param):
@@ -983,14 +985,13 @@ class BJT(Component):
         "TO-92-3": "Package_TO_SOT_THT:TO-92_Inline",
     }
 
-    def __init__(self, bjt_type, vce_max, ic_max, power_max, ft, package, **kwargs):
+    def __init__(self, bjt_type, vce_max, ic_max, power_max, ft, **kwargs):
         super().__init__(**kwargs)
         self.columns["bjt_type"] = bjt_type
         self.columns["vce_max"] = vce_max
         self.columns["ic_max"] = ic_max
         self.columns["power_max"] = power_max
         self.columns["ft"] = ft
-        self.columns["package"] = package
 
     @staticmethod
     def process_transistor_type(param):

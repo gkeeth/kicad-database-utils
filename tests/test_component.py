@@ -45,25 +45,25 @@ class TestComponentOutputs(unittest.TestCase):
 
     def test_to_csv(self):
         header = (
-            "IPN,datasheet,description,keywords,value,exclude_from_bom,"
-            "exclude_from_board,kicad_symbol,kicad_footprint,"
+            "IPN,datasheet,description,keywords,value,package,"
+            "exclude_from_bom,exclude_from_board,kicad_symbol,kicad_footprint,"
             "manufacturer,MPN,distributor1,DPN1,distributor2,DPN2,"
-            "resistance,tolerance,power,composition,package\r\n"
+            "resistance,tolerance,power,composition\r\n"
         )
         values = (
-            "R_test,ds,desc,kw,val,0,0,sym,fp,mfg,mpn,dist1,dpn1,dist2,"
-            "dpn2,10k,1%,0.125W,ThinFilm,0603\r\n"
+            "R_test,ds,desc,kw,val,0603,0,0,sym,fp,mfg,mpn,dist1,dpn1,dist2,"
+            "dpn2,10k,1%,0.125W,ThinFilm\r\n"
         )
         self.assertEqual(header + values, self.resistor.to_csv())
         self.assertEqual(values, self.resistor.to_csv(header=False))
 
     def test_to_sql(self):
         columns = (
-            ":IPN, :datasheet, :description, :keywords, :value, "
+            ":IPN, :datasheet, :description, :keywords, :value, :package, "
             ":exclude_from_bom, :exclude_from_board, :kicad_symbol, "
             ":kicad_footprint, :manufacturer, :MPN, :distributor1, "
             ":DPN1, :distributor2, :DPN2, :resistance, :tolerance, "
-            ":power, :composition, :package)"
+            ":power, :composition)"
         )
         sql_update_expected = "INSERT OR REPLACE INTO resistor VALUES(" + columns
         sql_noupdate_expected = "INSERT INTO resistor VALUES(" + columns
@@ -80,10 +80,10 @@ class TestComponentOutputs(unittest.TestCase):
         sql_expected = (
             "CREATE TABLE IF NOT EXISTS resistor("
             "IPN PRIMARY KEY, datasheet, description, keywords, "
-            "value, exclude_from_bom, exclude_from_board, "
+            "value, package, exclude_from_bom, exclude_from_board, "
             "kicad_symbol, kicad_footprint, manufacturer, MPN, "
             "distributor1, DPN1, distributor2, DPN2, resistance, "
-            "tolerance, power, composition, package)"
+            "tolerance, power, composition)"
         )
         self.assertEqual(sql_expected, self.resistor.get_create_table_string())
 
