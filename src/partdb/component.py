@@ -846,7 +846,7 @@ class Diode(Component):
         data["value"] = "${MPN}"
         data["keywords"] = "diode"
         data["description"] = (
-            f"{data['reverse_voltage']} {data['current_or_power']} "
+            f"{data['reverse_voltage']}, {data['current_or_power']} "
             f"{data['diode_type']} diode, "
         )
         if "diode_configuration" in data:

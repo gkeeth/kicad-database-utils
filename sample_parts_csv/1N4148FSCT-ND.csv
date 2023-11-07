@@ -1,2 +1,2 @@
 IPN,datasheet,description,keywords,value,package,exclude_from_bom,exclude_from_board,kicad_symbol,kicad_footprint,manufacturer,MPN,distributor1,DPN1,distributor2,DPN2,diode_type,reverse_voltage,current_or_power,diode_configuration
-D_onsemi_1N4148TR,https://www.onsemi.com/download/data-sheet/pdf/1n914-d.pdf,"100V 200mA standard diode, DO-35",diode,${MPN},DO-35,0,0,Device:D,Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal,onsemi,1N4148TR,Digikey,1N4148FSCT-ND,,,standard,100V,200mA,
+D_onsemi_1N4148TR,https://www.onsemi.com/download/data-sheet/pdf/1n914-d.pdf,"100V, 200mA standard diode, DO-35",diode,${MPN},DO-35,0,0,Device:D,Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal,onsemi,1N4148TR,Digikey,1N4148FSCT-ND,,,standard,100V,200mA,
