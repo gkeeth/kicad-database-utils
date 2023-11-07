@@ -362,9 +362,8 @@ class Resistor(Component):
                 f"{data['package']}_"
                 f"{processed_composition}"
             )
-            data["description"] = (
-                f"0Ω jumper, {data['package']}, {data['composition'].lower()}"
-            )
+            composition = data["composition"].lower()
+            data["description"] = f"0Ω jumper, {data['package']}, {composition}"
             data["keywords"] = "jumper"
         else:
             data["IPN"] = (
