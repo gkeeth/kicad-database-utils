@@ -10,8 +10,6 @@ from partdb.print_utils import print_error
 """
 TODO
 
-- make word upper/lowercase consistent between descriptions in different tables
-
 # tables to make
     inductor:             inductance, tolerance
     ferrite_bead:         impedance_at_freq, current, resistance
@@ -655,12 +653,12 @@ class OpAmp(Component):
                 data["num_units"] = p.value
 
         data["value"] = "${MPN}"
-        data["keywords"] = "amplifier op amp opamp"
+        data["keywords"] = "amplifier op amp"
 
         num_unit_map = {"1": "Single", "2": "Dual", "4": "Quad"}
         data["description"] = (
             f"{num_unit_map[data['num_units']]} "
-            f"{data['bandwidth']}, {slewrate} Op Amp, {short_package}"
+            f"{data['bandwidth']}, {slewrate} opamp, {short_package}"
         )
         IPN = f"OpAmp_{data['manufacturer']}_{data['MPN']}"
         data["IPN"] = re.sub(r"\s+", "", IPN)
