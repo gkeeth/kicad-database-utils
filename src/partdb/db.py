@@ -1,3 +1,5 @@
+import csv
+import io
 import os
 import sqlite3
 import sys
@@ -160,3 +162,28 @@ def add_components_from_list_to_db(db_path, components, update=False, increment=
     """
     for comp in components:
         open_connection_and_add_component_to_db(db_path, comp, update, increment)
+
+def dump_database_to_csv_minimal(con):
+    """Dump selected columns from the database to CSV (distributor names,
+    distributor part numbers, KiCad symbol, and KiCad footprint).
+
+    Args:
+        con: Database connection to use.
+
+    Returns:
+        CSV-formatted string containing the selected column names (as a header)
+        and the column values, for all rows in all component databases.
+    """
+
+    select_cols = ["distributor1", "DPN1", "distributor2", "DPN2", "kicad_symbol", "kicad_footprint",]
+    cur = con.cursor()
+    res = cur.execute("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")
+    tables = [t[0] for t in res.fetchall()]
+    with io.StringIO() as csv_string:
+        csvwriter = csv.writer(csv_string)
+        csvwriter.writerow(select_cols)
+        for table in tables:
+            res = cur.execute(f"SELECT {','.join(select_cols)} from {table}")
+            for row in res.fetchall():
+                csvwriter.writerow(row)
+        return csv_string.getvalue()

@@ -12,7 +12,27 @@ class TestDatabaseFunctions(unittest.TestCase):
     db_path = "unittests.db"
 
     @staticmethod
-    def create_dummy_component(IPN="R_test"):
+    def create_dummy_component(IPN="R_test", **extra_fields):
+        """Create a component based on a specified IPN, a default set of fields,
+        and an optional additional set of fields.
+
+        By default, the component will be a resistor, but this can be changed
+        to an arbitrary component by providing an appropriate IPN and additional
+        fields.
+
+        Args:
+            IPN:
+                The IPN to use for the new component. Defaults to "R_test".
+            **extra_fields:
+                Additional fields to use when constructing the component. These
+                can be new fields or override fields. These are necessary in
+                order to create a component other than a resistor.
+
+        Returns:
+            A component created from the specified IPN, specified extra fields,
+            and a base dictionary of fields.
+        """
+
         base_dict = {
             "IPN": IPN,
             "datasheet": "ds",
@@ -35,6 +55,7 @@ class TestDatabaseFunctions(unittest.TestCase):
             "composition": "ThinFilm",
             "package": "0603",
         }
+        base_dict.update(extra_fields)
         return component.create_component_from_dict(base_dict)
 
     def setUp(self):
@@ -116,6 +137,21 @@ class TestDatabaseFunctions(unittest.TestCase):
         e = cm.exception
         self.assertEqual("R_test", e.IPN)
         self.assertEqual("resistor", e.table)
+
+    def test_dump_database_to_csv_minimal(self):
+        r1 = self.create_dummy_component("R_1")
+        r2 = self.create_dummy_component("R_2")
+        c1 = self.create_dummy_component("C_1", capacitance="cap", voltage="volt", dielectric="X7R")
+        db.add_component_to_db(self.con, r1)
+        db.add_component_to_db(self.con, r2)
+        db.add_component_to_db(self.con, c1)
+
+        dump = db.dump_database_to_csv_minimal(self.con)
+        expected = (
+            "distributor1,DPN1,distributor2,DPN2,kicad_symbol,kicad_footprint\r\n"
+            + 3 * "dist1,dpn1,dist2,dpn2,sym,fp\r\n"
+        )
+        self.assertEqual(expected, dump)
 
 
 if __name__ == "__main__":
