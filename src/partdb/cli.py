@@ -6,14 +6,14 @@ import json
 import os
 import sys
 
-from partdb import print_utils
-from partdb.print_utils import print_message
 from partdb.api_helpers import (
     setup_digikey,
     create_component_list_from_csv,
     create_component_list_from_digikey_pn_list,
 )
-from partdb.db import initialize_database, add_components_from_list_to_db
+from partdb import db
+from partdb import print_utils
+from partdb.print_utils import print_message
 
 
 CONFIG_FILENAME = os.path.expanduser("~/.dblib_utils_config.json")
@@ -164,7 +164,7 @@ def main():
         sys.exit()
 
     if args.initialize_db:
-        initialize_database(db_path)
+        db.initialize_database(db_path)
     if args.digikey:
         digikey_pn_list = [pn.strip() for pn in args.digikey.split(",")]
         components = create_component_list_from_digikey_pn_list(
@@ -176,12 +176,14 @@ def main():
         components = create_component_list_from_csv(args.csv)
 
     if not args.no_db:
-        add_components_from_list_to_db(
-            db_path,
+        con = db.connect_to_database(db_path)
+        db.add_components_from_list_to_db(
+            con,
             components,
             update=args.update_existing,
             increment=args.increment_duplicates,
         )
+        con.close()
 
     if args.csv_output:
         print_components_from_list_as_csv(components)

@@ -27,6 +27,16 @@ def initialize_database(db_path):
     con.close()
 
 
+def connect_to_database(db_path):
+    """Connect to a database at `db_path` and return the connection object."""
+    try:
+        con = sqlite3.connect(f"file:{db_path}?mode=rw", uri=True)
+    except sqlite3.OperationalError:
+        print_error(f"could not connect to database at path: {db_path}")
+        return
+    return con
+
+
 def add_component_to_db(con, comp, update=False, increment=False):
     """Add the given component object to a database.
 
@@ -34,7 +44,7 @@ def add_component_to_db(con, comp, update=False, increment=False):
     automatically, and created if it does not already exist.
 
     Args:
-        con: database connection to database.
+        con: database connection object.
         comp: Component object to add to database.
         update: When True, an existing component in the database with the
             same IPN as the new component will be updated (REPLACE'd) by the
@@ -50,6 +60,10 @@ def add_component_to_db(con, comp, update=False, increment=False):
             component will be skipped. When False, the IPN will not be
             incremented and any duplicate IPNs will be skipped. This argument
             is ignored when `update` is True.
+
+    Raises:
+        TooManyDuplicateIPNsInTableError if there are too many duplicate IPNs
+        already in the table.
     """
     insert_string, values = comp.to_sql(update)
 
@@ -102,56 +116,11 @@ def add_component_to_db(con, comp, update=False, increment=False):
         print_message(f"Added component '{values['IPN']}' to table " f"'{comp.table}'")
 
 
-def open_connection_and_add_component_to_db(
-    db_path, comp, update=False, increment=False
-):
-    """Open a database connection and add the given component object to the
-    database.
-
-    The database is opened and closed within this function. The appropriate
-    table is selected automatically, and created if it does not already exist.
-
-    Args:
-        db_path: path to database.
-        comp: Component object to add to database.
-        update: when True, an existing component in the database with the
-            same IPN as the new component will be updated (REPLACE'd) by the
-            new component. The value of `increment` is ignored when `update` is
-            True. When False, duplicate IPNs will not be added; the behavior in
-            the case of duplicates depends on the value of `increment`.
-        increment: When True, if a duplicate component (keyed by IPN) is added,
-            the IPN of the new component will have a numeric suffix ('_1')
-            added to avoid overwriting the existing component. If the modified
-            IPN is still not unique, the suffix will be incremented (up to a
-            maximum defined by IPN_DUPLICATE_LIMIT) in an attempt to create a
-            unique IPN. After IPN_DUPLICATE_LIMIT unsuccessful attempts, the
-            component will be skipped. When False, the IPN will not be
-            incremented and any duplicate IPNs will be skipped. This argument
-            is ignored when `update` is True.
-    """
-
-    try:
-        con = sqlite3.connect(f"file:{db_path}?mode=rw", uri=True)
-    except sqlite3.OperationalError:
-        print_error(f"could not connect to database at path: {db_path}")
-        return
-
-    try:
-        add_component_to_db(con, comp, update, increment)
-    except TooManyDuplicateIPNsInTableError as e:
-        print_error(
-            f"Too many parts with IPN '{e.IPN}' already in table "
-            f"'{e.table}'; skipped"
-        )
-    finally:
-        con.close()
-
-
-def add_components_from_list_to_db(db_path, components, update=False, increment=False):
+def add_components_from_list_to_db(con, components, update=False, increment=False):
     """Add all components in a list to the database.
 
     Args:
-        db_path: absolute path to database.
+        con: Database connection to use.
         components: list of components to add to database.
         update: if True, when duplicate components are encountered, update
             existing components instead of attempting to create a unique
@@ -161,21 +130,35 @@ def add_components_from_list_to_db(db_path, components, update=False, increment=
             unique IPN.
     """
     for comp in components:
-        open_connection_and_add_component_to_db(db_path, comp, update, increment)
+        try:
+            add_component_to_db(con, comp, update, increment)
+        except TooManyDuplicateIPNsInTableError as e:
+            print_error(
+                f"Too many parts with IPN '{e.IPN}' already in table "
+                f"'{e.table}'; skipped"
+            )
+
 
 def dump_database_to_csv_minimal(con):
     """Dump selected columns from the database to CSV (distributor names,
     distributor part numbers, KiCad symbol, and KiCad footprint).
 
     Args:
-        con: Database connection to use.
+        con: database connection object.
 
     Returns:
         CSV-formatted string containing the selected column names (as a header)
         and the column values, for all rows in all component databases.
     """
 
-    select_cols = ["distributor1", "DPN1", "distributor2", "DPN2", "kicad_symbol", "kicad_footprint",]
+    select_cols = [
+        "distributor1",
+        "DPN1",
+        "distributor2",
+        "DPN2",
+        "kicad_symbol",
+        "kicad_footprint",
+    ]
     cur = con.cursor()
     res = cur.execute("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")
     tables = [t[0] for t in res.fetchall()]

@@ -61,7 +61,7 @@ class TestDatabaseFunctions(unittest.TestCase):
     def setUp(self):
         self.backup_IPN_DUPLICATE_LIMIT = db.IPN_DUPLICATE_LIMIT
         db.initialize_database(self.db_path)
-        self.con = sqlite3.connect(f"file:{self.db_path}?mode=rw", uri=True)
+        self.con = db.connect_to_database(self.db_path)
         self.cur = self.con.cursor()
         self.resistor = self.create_dummy_component()
 
@@ -71,16 +71,16 @@ class TestDatabaseFunctions(unittest.TestCase):
         os.remove(self.db_path)
 
     def test_table_automatically_created(self):
-        db.open_connection_and_add_component_to_db(self.db_path, self.resistor)
+        db.add_component_to_db(self.con, self.resistor)
 
         res = self.cur.execute("SELECT name from sqlite_master").fetchall()
 
         self.assertIn(("resistor",), res)
 
     def test_unique_parts_in_table(self):
-        db.open_connection_and_add_component_to_db(self.db_path, self.resistor)
+        db.add_component_to_db(self.con, self.resistor)
         self.resistor.columns["IPN"] = "R_test2"
-        db.open_connection_and_add_component_to_db(self.db_path, self.resistor)
+        db.add_component_to_db(self.con, self.resistor)
 
         res = self.cur.execute("SELECT IPN from resistor").fetchall()
 
@@ -88,11 +88,9 @@ class TestDatabaseFunctions(unittest.TestCase):
         self.assertIn(("R_test2",), res)
 
     def test_update_existing_component(self):
-        db.open_connection_and_add_component_to_db(self.db_path, self.resistor)
+        db.add_component_to_db(self.con, self.resistor)
         self.resistor.columns["value"] = "val2"
-        db.open_connection_and_add_component_to_db(
-            self.db_path, self.resistor, update=True
-        )
+        db.add_component_to_db(self.con, self.resistor, update=True)
 
         res = self.cur.execute("SELECT value from resistor").fetchall()
 
@@ -141,10 +139,10 @@ class TestDatabaseFunctions(unittest.TestCase):
     def test_dump_database_to_csv_minimal(self):
         r1 = self.create_dummy_component("R_1")
         r2 = self.create_dummy_component("R_2")
-        c1 = self.create_dummy_component("C_1", capacitance="cap", voltage="volt", dielectric="X7R")
-        db.add_component_to_db(self.con, r1)
-        db.add_component_to_db(self.con, r2)
-        db.add_component_to_db(self.con, c1)
+        c1 = self.create_dummy_component(
+            "C_1", capacitance="cap", voltage="volt", dielectric="X7R"
+        )
+        db.add_components_from_list_to_db(self.con, [r1, r2, c1])
 
         dump = db.dump_database_to_csv_minimal(self.con)
         expected = (

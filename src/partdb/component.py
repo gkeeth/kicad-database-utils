@@ -123,7 +123,7 @@ class Component(ABC):
         DPN2,
         exclude_from_bom=0,
         exclude_from_board=0,
-        **kwargs
+        **kwargs,
     ):
         # columns that all types of components need. Many of these map onto
         # KiCad builtin fields or properties.
