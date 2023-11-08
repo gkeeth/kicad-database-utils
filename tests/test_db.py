@@ -1,7 +1,6 @@
 #! /usr/bin/env python
 
 import os
-import sqlite3
 import unittest
 
 from partdb import component  # for create_component_from_dict()

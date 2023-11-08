@@ -13,7 +13,6 @@ from partdb.api_helpers import (
 )
 from partdb import db
 from partdb import print_utils
-from partdb.print_utils import print_message
 
 
 CONFIG_FILENAME = os.path.expanduser("~/.dblib_utils_config.json")
@@ -23,6 +22,12 @@ def print_components_from_list_as_csv(components):
     """Print all components in list to stdout, formatted as csv."""
     for comp in components:
         print(comp.to_csv())
+
+
+def print_database_to_csv_minimal(db_path):
+    con = db.connect_to_database(db_path)
+    print(db.dump_database_to_csv_minimal(con))
+    con.close()
 
 
 def load_config():
@@ -40,7 +45,9 @@ def parse_args():
     #   everything up to db commit). Consider using a rolled-back transaction.
     # - mode/argument for update by MPN or DPN
     # - mode/argument to remove part by IPN (or maybe MPN and/or DPN)
-    # - mode/argument to dump a list (CSV?) of table, DPN, symbol, footprint
+    # - mode/argument to dump a full CSV (all fields for all parts for all tables)
+    # - mode/argument to import a minimal CSV
+    # - mode/argument to import a full CSV
 
     parser = argparse.ArgumentParser(
         description=(
@@ -87,11 +94,11 @@ def parse_args():
     )
 
     parser.add_argument(
-        "--csv-output",
+        "--dump-part-csv",
         action="store_true",
         help=(
-            "Write part data to stdout, formatted as CSV. Unless otherwise "
-            "specified, parts are also added to the database."
+            "Write part data for all parts being added to stdout, formatted as CSV. "
+            "Unless otherwise specified, parts are also added to the database."
         ),
     )
 
@@ -99,9 +106,19 @@ def parse_args():
         "--dump-api-response",
         action="store_true",
         help=(
-            "Write API response object data to stdout. This can be used as a "
-            "reference for implementation. Unless otherwise specified, parts "
-            "are also added to the database."
+            "Write API response object data for all parts being added to stdout. "
+            "This can be used as a reference for implementation. "
+            "Unless otherwise specified, parts are also added to the database."
+        ),
+    )
+    parser.add_argument(
+        "--dump-database-csv-minimal",
+        action="store_true",
+        help=(
+            "Write select columns of all components in the database to stdout, "
+            "formatted as CSV. Included fields are: "
+            "distributor1, DPN1, distributor2, DPN2, kicad_symbol, kicad_footprint. "
+            "The database is dumped after adding parts from the current transaction."
         ),
     )
 
@@ -147,6 +164,7 @@ def parse_args():
 
 
 def main():
+    components = None
     args = parse_args()
     print_utils.set_verbose(args.verbose)
     config_data = load_config()
@@ -158,10 +176,6 @@ def main():
             sys.exit("Error: database path not found in config file")
     else:
         db_path = os.path.abspath("test.db")
-
-    if not (args.initialize_db or args.digikey or args.mouser or args.csv):
-        print_message("Nothing to do.", verbose=True)
-        sys.exit()
 
     if args.initialize_db:
         db.initialize_database(db_path)
@@ -175,7 +189,7 @@ def main():
     if args.csv:
         components = create_component_list_from_csv(args.csv)
 
-    if not args.no_db:
+    if not args.no_db and components:
         con = db.connect_to_database(db_path)
         db.add_components_from_list_to_db(
             con,
@@ -185,8 +199,11 @@ def main():
         )
         con.close()
 
-    if args.csv_output:
+    if args.dump_part_csv:
         print_components_from_list_as_csv(components)
+
+    if args.dump_database_csv_minimal:
+        print_database_to_csv_minimal(db_path)
 
 
 if __name__ == "__main__":
