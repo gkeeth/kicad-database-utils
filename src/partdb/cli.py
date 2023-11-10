@@ -30,6 +30,12 @@ def print_database_to_csv_minimal(db_path):
     con.close()
 
 
+def print_database_to_csv_full(db_path):
+    con = db.connect_to_database(db_path)
+    print(db.dump_database_to_csv_full(con))
+    con.close()
+
+
 def load_config():
     """Return dict containing all config data in config file."""
     with open(CONFIG_FILENAME, "r") as f:
@@ -45,7 +51,6 @@ def parse_args():
     #   everything up to db commit). Consider using a rolled-back transaction.
     # - mode/argument for update by MPN or DPN
     # - mode/argument to remove part by IPN (or maybe MPN and/or DPN)
-    # - mode/argument to dump a full CSV (all fields for all parts for all tables)
     # - mode/argument to import a minimal CSV
     # - mode/argument to import a full CSV
 
@@ -111,6 +116,17 @@ def parse_args():
             "Unless otherwise specified, parts are also added to the database."
         ),
     )
+
+    parser.add_argument(
+        "--dump-database-csv-full",
+        action="store_true",
+        help=(
+            "Write all columns of all components in the database contents to stdout, "
+            "formatted as CSV. "
+            "The database is dumped after adding parts from the current transaction."
+        ),
+    )
+
     parser.add_argument(
         "--dump-database-csv-minimal",
         action="store_true",
@@ -204,6 +220,9 @@ def main():
 
     if args.dump_database_csv_minimal:
         print_database_to_csv_minimal(db_path)
+
+    if args.dump_database_csv_full:
+        print_database_to_csv_full(db_path)
 
 
 if __name__ == "__main__":

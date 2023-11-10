@@ -1,5 +1,6 @@
 #! /usr/bin/env python
 
+from collections import defaultdict
 import os
 import unittest
 
@@ -20,12 +21,11 @@ class TestDatabaseFunctions(unittest.TestCase):
         fields.
 
         Args:
-            IPN:
-                The IPN to use for the new component. Defaults to "R_test".
-            **extra_fields:
-                Additional fields to use when constructing the component. These
-                can be new fields or override fields. These are necessary in
-                order to create a component other than a resistor.
+            IPN: The IPN to use for the new component. Defaults to "R_test".
+            **extra_fields: Additional fields to use when constructing the
+                component. These can be new fields or override fields. These
+                are necessary in order to create a component other than a
+                resistor.
 
         Returns:
             A component created from the specified IPN, specified extra fields,
@@ -57,8 +57,38 @@ class TestDatabaseFunctions(unittest.TestCase):
         base_dict.update(extra_fields)
         return component.create_component_from_dict(base_dict)
 
+    @staticmethod
+    def get_superset_keys(components):
+        """Returns a string of the superset of column names for all components
+        in the given iterable, sorted and comma-separated.
+        """
+        keys = set()
+        for c in components:
+            keys.update(c.columns.keys())
+        return ",".join(sorted(keys))
+
+    @staticmethod
+    def get_csv_for_components(components, keys):
+        """Return a CSV string for the given components, with `keys` as the
+        column names.
+
+        Args:
+            components: an iterable of component objects to get values from.
+            keys: a comma-separated string of column names.
+        Returns:
+            a CSV string containing a header line with column names and lines
+            for each component.
+        """
+        rows = []
+        for c in components:
+            row = [str(defaultdict(str, c.columns)[k]) for k in keys.split(",")]
+            rows.append(",".join(row))
+        return "\r\n".join([keys] + rows) + "\r\n"
+
     def setUp(self):
         self.backup_IPN_DUPLICATE_LIMIT = db.IPN_DUPLICATE_LIMIT
+        if os.path.exists(self.db_path):
+            os.remove(self.db_path)
         db.initialize_database(self.db_path)
         self.con = db.connect_to_database(self.db_path)
         self.cur = self.con.cursor()
@@ -135,19 +165,38 @@ class TestDatabaseFunctions(unittest.TestCase):
         self.assertEqual("R_test", e.IPN)
         self.assertEqual("resistor", e.table)
 
+    def test_dump_database_to_csv_full(self):
+        r1 = self.create_dummy_component("R_1")
+        r2 = self.create_dummy_component("R_2")
+        c1 = self.create_dummy_component(
+            "C_1", capacitance="cap", voltage="volt", dielectric="X7R"
+        )
+        components = [c1, r1, r2]
+        db.add_components_from_list_to_db(self.con, components)
+
+        expected_keys = self.get_superset_keys(components)
+        expected = self.get_csv_for_components(components, expected_keys)
+
+        dump = db.dump_database_to_csv_full(self.con)
+
+        self.assertEqual(expected, dump)
+
     def test_dump_database_to_csv_minimal(self):
         r1 = self.create_dummy_component("R_1")
         r2 = self.create_dummy_component("R_2")
         c1 = self.create_dummy_component(
             "C_1", capacitance="cap", voltage="volt", dielectric="X7R"
         )
-        db.add_components_from_list_to_db(self.con, [r1, r2, c1])
+        components = [c1, r1, r2]
+        db.add_components_from_list_to_db(self.con, components)
+
+        expected_keys = (
+            "distributor1,DPN1,distributor2,DPN2,kicad_symbol,kicad_footprint"
+        )
+        expected = self.get_csv_for_components(components, expected_keys)
 
         dump = db.dump_database_to_csv_minimal(self.con)
-        expected = (
-            "distributor1,DPN1,distributor2,DPN2,kicad_symbol,kicad_footprint\r\n"
-            + 3 * "dist1,dpn1,dist2,dpn2,sym,fp\r\n"
-        )
+
         self.assertEqual(expected, dump)
 
 

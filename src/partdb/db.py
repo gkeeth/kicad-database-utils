@@ -1,3 +1,4 @@
+from collections import defaultdict
 import csv
 import io
 import os
@@ -120,7 +121,7 @@ def add_components_from_list_to_db(con, components, update=False, increment=Fals
     """Add all components in a list to the database.
 
     Args:
-        con: Database connection to use.
+        con: Database connection object.
         components: list of components to add to database.
         update: if True, when duplicate components are encountered, update
             existing components instead of attempting to create a unique
@@ -137,6 +138,52 @@ def add_components_from_list_to_db(con, components, update=False, increment=Fals
                 f"Too many parts with IPN '{e.IPN}' already in table "
                 f"'{e.table}'; skipped"
             )
+
+
+def get_table_names(con):
+    """Return a list of table names for the connection `con`."""
+    cur = con.cursor()
+    res = cur.execute("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")
+    tables = [t[0] for t in res.fetchall()]
+    return tables
+
+
+def dump_database_to_csv_full(con):
+    """Return a CSV string for all tables in the database.
+
+    Header row contains the superset of all column names in all tables, sorted
+    alphabetically. Any columns that don't exist for a given component type
+    are filled by an empty string.
+
+    Args:
+        con: Database connection object.
+    Returns:
+        A CSV string containing every column for every component in every
+        table in the database.
+    """
+
+    def defaultdict_factory(cursor, row):
+        fields = [column[0] for column in cursor.description]
+        d = defaultdict(str, {field: row[n] for n, field in enumerate(fields)})
+        return d
+
+    tables = get_table_names(con)
+    cur = con.cursor()
+    cur.row_factory = defaultdict_factory
+    rows = []
+    cols = set()
+    for table in tables:
+        res = cur.execute(f"SELECT * FROM {table}")
+        fields = [column[0] for column in res.description]
+        cols.update(fields)
+        for row in res:
+            rows.append(row)
+    with io.StringIO() as csv_string:
+        csvwriter = csv.DictWriter(csv_string, fieldnames=sorted(cols))
+        csvwriter.writeheader()
+        for row in rows:
+            csvwriter.writerow(row)
+        return csv_string.getvalue()
 
 
 def dump_database_to_csv_minimal(con):
@@ -160,8 +207,7 @@ def dump_database_to_csv_minimal(con):
         "kicad_footprint",
     ]
     cur = con.cursor()
-    res = cur.execute("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")
-    tables = [t[0] for t in res.fetchall()]
+    tables = get_table_names(con)
     with io.StringIO() as csv_string:
         csvwriter = csv.writer(csv_string)
         csvwriter.writerow(select_cols)
