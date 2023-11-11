@@ -77,26 +77,17 @@ def create_component_from_dict(columns_and_values):
 
     Returns:
         A `Component` object constructed from the given dict.
+
+    Raises:
+        NotImplementedError if the appropriate component type cannot be
+        determined.
     """
     IPN = columns_and_values["IPN"]
-    if IPN.startswith("R_"):
-        return Resistor(**columns_and_values)
-    elif IPN.startswith("C_"):
-        return Capacitor(**columns_and_values)
-    elif IPN.startswith("OpAmp_"):
-        return OpAmp(**columns_and_values)
-    elif IPN.startswith("MCU_"):
-        return Microcontroller(**columns_and_values)
-    elif IPN.startswith("VReg_"):
-        return VoltageRegulator(**columns_and_values)
-    elif IPN.startswith("D_"):
-        return Diode(**columns_and_values)
-    elif IPN.startswith("LED_"):
-        return LED(**columns_and_values)
-    elif IPN.startswith("BJT_"):
-        return BJT(**columns_and_values)
-    else:
-        raise NotImplementedError(f"No component type to handle part '{IPN}'")
+    for component_type in component_type_registry:
+        if component_type.type_matches_IPN(IPN):
+            return component_type(**columns_and_values)
+
+    raise NotImplementedError(f"No component type to handle part '{IPN}'")
 
 
 class Component(ABC):
@@ -218,6 +209,12 @@ class Component(ABC):
         else:
             return ""
 
+    @classmethod
+    def type_matches_IPN(cls, IPN):
+        """Returns true if the component type is appropriate based on the given
+        IPN."""
+        return IPN.startswith(cls.IPN_prefix)
+
     @staticmethod
     @abstractmethod
     def type_matches_digikey_part(digikey_part):
@@ -303,6 +300,7 @@ class Component(ABC):
 @component
 class Resistor(Component):
     table = "resistor"
+    IPN_prefix = "R_"
     kicad_footprint_map = {
         "0201": "Resistor_SMD:R_0201_0603Metric",
         "0402": "Resistor_SMD:R_0402_1005Metric",
@@ -366,7 +364,7 @@ class Resistor(Component):
 
         if data["resistance"] == "0":
             data["IPN"] = (
-                f"R_"
+                f"{cls.IPN_prefix}"
                 f"{data['resistance']}_"
                 f"Jumper_"
                 f"{data['package']}_"
@@ -377,7 +375,7 @@ class Resistor(Component):
             data["keywords"] = "jumper"
         else:
             data["IPN"] = (
-                f"R_"
+                f"{cls.IPN_prefix}"
                 f"{data['resistance']}_"
                 f"{data['package']}_"
                 f"{data['tolerance']}_"
@@ -404,6 +402,7 @@ class Resistor(Component):
 @component
 class Capacitor(Component):
     table = "capacitor"
+    IPN_prefix = "C_"
     kicad_footprint_map = {
         "0201": "Capacitor_SMD:C_0201_0603Metric",
         "0402": "Capacitor_SMD:C_0402_1005Metric",
@@ -537,8 +536,8 @@ class Capacitor(Component):
 
         return package_short, package_dims
 
-    @staticmethod
-    def _determine_metadata(data, polarization, package_short, package_dims):
+    @classmethod
+    def _determine_metadata(cls, data, polarization, package_short, package_dims):
         """Create an IPN, description, and keywords for the component.
 
         Args:
@@ -554,7 +553,7 @@ class Capacitor(Component):
                 "" or "D5.00mm_H10.0mm_P2.00mm".
         """
         data["IPN"] = (
-            f"C_"
+            f"{cls.IPN_prefix}"
             f"{data['capacitance']}_"
             f"{package_short}_"
             f"{data['tolerance']}_"
@@ -642,6 +641,7 @@ class Capacitor(Component):
 @component
 class OpAmp(Component):
     table = "opamp"
+    IPN_prefix = "OpAmp_"
     kicad_footprint_map = {
         '8-SOIC (0.154", 3.90mm Width)': "Package_SO:SOIC-8_3.9x4.9mm_P1.27mm",
     }
@@ -681,7 +681,7 @@ class OpAmp(Component):
             f"{num_unit_map[data['num_units']]} "
             f"{data['bandwidth']}, {slewrate} opamp, {short_package}"
         )
-        IPN = f"OpAmp_{data['manufacturer']}_{data['MPN']}"
+        IPN = f"{cls.IPN_prefix}{data['manufacturer']}_{data['MPN']}"
         data["IPN"] = re.sub(r"\s+", "", IPN)
 
         data["kicad_symbol"] = cls._get_sym_or_fp_from_user(data["DPN1"], fp=False)
@@ -694,6 +694,7 @@ class OpAmp(Component):
 @component
 class Microcontroller(Component):
     table = "microcontroller"
+    IPN_prefix = "MCU_"
     kicad_footprint_map = {
         "8-SOIC": "Package_SO:SOIC-8_3.9x4.9mm_P1.27mm",
         "14-TSSOP": "Package_SO:TSSOP-14_4.4x5mm_P0.65mm",
@@ -763,7 +764,7 @@ class Microcontroller(Component):
             f"{data['speed']}, "
             f"{data['package']}"
         )
-        IPN = f"MCU_{data['manufacturer']}_{data['MPN']}"
+        IPN = f"{cls.IPN_prefix}{data['manufacturer']}_{data['MPN']}"
         data["IPN"] = re.sub(r"\s+", "", IPN)
 
         data["kicad_symbol"] = cls._get_sym_or_fp_from_user(data["DPN1"], fp=False)
@@ -775,6 +776,7 @@ class Microcontroller(Component):
 @component
 class VoltageRegulator(Component):
     table = "voltage_regulator"
+    IPN_prefix = "VReg_"
     kicad_footprint_map = {
         "TO-220-3": "Package_TO_SOT_THT:TO-220-3_Vertical",
     }
@@ -826,7 +828,7 @@ class VoltageRegulator(Component):
             f"{output_type} voltage regulator, "
             f"{data['package']}"
         )
-        IPN = f"VReg_{data['manufacturer']}_{data['MPN']}"
+        IPN = f"{cls.IPN_prefix}{data['manufacturer']}_{data['MPN']}"
         data["IPN"] = re.sub(r"\s+", "", IPN)
 
         data["kicad_symbol"] = cls._get_sym_or_fp_from_user(data["DPN1"], fp=False)
@@ -838,6 +840,7 @@ class VoltageRegulator(Component):
 @component
 class Diode(Component):
     table = "diode"
+    IPN_prefix = "D_"
     kicad_footprint_map = {
         "DO-35": "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal",
         "SOD-123": "Diode_SMD:D_SOD-123",
@@ -900,7 +903,7 @@ class Diode(Component):
             data["description"] += f"{data['diode_configuration']}, "
             data["keywords"] += " array"
         data["description"] += f"{data['package']}"
-        IPN = f"D_{data['manufacturer']}_{data['MPN']}"
+        IPN = f"{cls.IPN_prefix}{data['manufacturer']}_{data['MPN']}"
         data["IPN"] = re.sub(r"\s+", "", IPN)
 
         kicad_symbol_map = {
@@ -923,6 +926,7 @@ class Diode(Component):
 @component
 class LED(Component):
     table = "led"
+    IPN_prefix = "LED_"
     kicad_footprint_map = {
         "0603": "LED_SMD:LED_0603_1608Metric",
         "5mm": "LED_THT:LED_D5.0mm",
@@ -1032,7 +1036,7 @@ class LED(Component):
         short_color = cls.process_led_color(data["color"])
         data["value"] = "${Color}"
         data["keywords"] = "led"
-        data["IPN"] = f"LED_{short_color}_"
+        data["IPN"] = f"{cls.IPN_prefix}{short_color}_"
         data["description"] = f"{data['color']} "
         if addressable:
             data["description"] += "addressable "
@@ -1056,6 +1060,7 @@ class LED(Component):
 @component
 class BJT(Component):
     table = "transistor_bjt"
+    IPN_prefix = "BJT_"
     kicad_footprint_map = {
         "TO-92-3": "Package_TO_SOT_THT:TO-92_Inline",
     }
@@ -1128,7 +1133,7 @@ class BJT(Component):
         data["value"] = "${MPN}"
         data["keywords"] = f"bjt transistor {npn_or_bjt}"
         mfg = re.sub(r"[\.,\s]", "", data["manufacturer"])
-        data["IPN"] = f"BJT_{data['bjt_type']}_{mfg}_{data['MPN']}"
+        data["IPN"] = f"{cls.IPN_prefix}{data['bjt_type']}_{mfg}_{data['MPN']}"
         array_string = " array" if array else ""
         data["description"] = (
             f"{data['ic_max']} Ic, "
