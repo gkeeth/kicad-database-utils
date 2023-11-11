@@ -24,6 +24,17 @@ TODO
 """
 
 
+component_type_registry = []
+
+
+def component(cls):
+    """Decorator for component classes. Adds the component to the
+    component_type_registry.
+    """
+    component_type_registry.append(cls)
+    return cls
+
+
 def create_component_from_digikey_part(part):
     """Factory to construct the appropriate component type object for a given
     digikey part (API response object).
@@ -36,29 +47,15 @@ def create_component_from_digikey_part(part):
 
     Returns:
         A `Component` object constructed from the Digikey part details.
+
+    Raises:
+        NotImplementedError if the appropriate component type cannot be
+        determined.
     """
 
-    part_type = part.limited_taxonomy.value
-    if part_type == "Resistors":
-        return Resistor.from_digikey(part)
-    elif part_type == "Capacitors":
-        return Capacitor.from_digikey(part)
-    elif part_type == "Integrated Circuits (ICs)":
-        subtype = part.limited_taxonomy.children[0].value
-        if "OP Amps" in subtype:
-            return OpAmp.from_digikey(part)
-        elif "Microcontrollers" in subtype:
-            return Microcontroller.from_digikey(part)
-        elif "Voltage Regulators" in subtype:
-            return VoltageRegulator.from_digikey(part)
-    elif part_type == "Discrete Semiconductor Products":
-        subtype = part.limited_taxonomy.children[0].value
-        if "Diodes - Rectifiers" in subtype or "Diodes - Zener" in subtype:
-            return Diode.from_digikey(part)
-        elif "Bipolar (BJT)" in subtype:
-            return BJT.from_digikey(part)
-    elif part_type == "Optoelectronics":
-        return LED.from_digikey(part)
+    for component_type in component_type_registry:
+        if component_type.type_matches_digikey_part(part):
+            return component_type.from_digikey(part)
 
     raise NotImplementedError(
         "No component type to handle part type "
@@ -221,6 +218,13 @@ class Component(ABC):
         else:
             return ""
 
+    @staticmethod
+    @abstractmethod
+    def type_matches_digikey_part(digikey_part):
+        """Returns true if the component type is appropriate for the provided
+        Digikey part."""
+        raise NotImplementedError
+
     @classmethod
     @abstractmethod
     def from_digikey(cls, digikey_part):
@@ -296,6 +300,7 @@ class Component(ABC):
             return csv_string.getvalue()
 
 
+@component
 class Resistor(Component):
     table = "resistor"
     kicad_footprint_map = {
@@ -334,6 +339,10 @@ class Resistor(Component):
     def process_composition(param):
         """Return a processed composition string, e.g. ThinFilm."""
         return re.sub(" ", "", param)
+
+    @staticmethod
+    def type_matches_digikey_part(digikey_part):
+        return digikey_part.limited_taxonomy.value == "Resistors"
 
     @classmethod
     def from_digikey(cls, digikey_part):
@@ -392,6 +401,7 @@ class Resistor(Component):
         return cls(**data)
 
 
+@component
 class Capacitor(Component):
     table = "capacitor"
     kicad_footprint_map = {
@@ -577,6 +587,10 @@ class Capacitor(Component):
             f"c cap capacitor " f"{polarization.lower()} {data['capacitance']}"
         )
 
+    @staticmethod
+    def type_matches_digikey_part(digikey_part):
+        return digikey_part.limited_taxonomy.value == "Capacitors"
+
     @classmethod
     def from_digikey(cls, digikey_part):
         data = cls.get_digikey_common_data(digikey_part)
@@ -625,6 +639,7 @@ class Capacitor(Component):
         return cls(**data)
 
 
+@component
 class OpAmp(Component):
     table = "opamp"
     kicad_footprint_map = {
@@ -635,6 +650,12 @@ class OpAmp(Component):
         super().__init__(**kwargs)
         self.columns["bandwidth"] = bandwidth
         self.columns["num_units"] = num_units
+
+    @staticmethod
+    def type_matches_digikey_part(digikey_part):
+        part_type = digikey_part.limited_taxonomy.value
+        sub_type = digikey_part.limited_taxonomy.children[0].value
+        return part_type == "Integrated Circuits (ICs)" and "OP Amps" in sub_type
 
     @classmethod
     def from_digikey(cls, digikey_part):
@@ -670,6 +691,7 @@ class OpAmp(Component):
         return cls(**data)
 
 
+@component
 class Microcontroller(Component):
     table = "microcontroller"
     kicad_footprint_map = {
@@ -712,6 +734,14 @@ class Microcontroller(Component):
         """
         return re.sub(r"[^\d\w \-]", "", param)
 
+    @staticmethod
+    def type_matches_digikey_part(digikey_part):
+        part_type = digikey_part.limited_taxonomy.value
+        sub_type = digikey_part.limited_taxonomy.children[0].value
+        return (
+            part_type == "Integrated Circuits (ICs)" and "Microcontrollers" in sub_type
+        )
+
     @classmethod
     def from_digikey(cls, digikey_part):
         data = cls.get_digikey_common_data(digikey_part)
@@ -742,6 +772,7 @@ class Microcontroller(Component):
         return cls(**data)
 
 
+@component
 class VoltageRegulator(Component):
     table = "voltage_regulator"
     kicad_footprint_map = {
@@ -752,6 +783,15 @@ class VoltageRegulator(Component):
         super().__init__(**kwargs)
         self.columns["voltage"] = voltage
         self.columns["current"] = current
+
+    @staticmethod
+    def type_matches_digikey_part(digikey_part):
+        part_type = digikey_part.limited_taxonomy.value
+        sub_type = digikey_part.limited_taxonomy.children[0].value
+        return (
+            part_type == "Integrated Circuits (ICs)"
+            and "Voltage Regulators" in sub_type
+        )
 
     @classmethod
     def from_digikey(cls, digikey_part):
@@ -795,6 +835,7 @@ class VoltageRegulator(Component):
         return cls(**data)
 
 
+@component
 class Diode(Component):
     table = "diode"
     kicad_footprint_map = {
@@ -817,6 +858,14 @@ class Diode(Component):
         self.columns["reverse_voltage"] = reverse_voltage
         self.columns["current_or_power"] = current_or_power
         self.columns["diode_configuration"] = diode_configuration
+
+    @staticmethod
+    def type_matches_digikey_part(digikey_part):
+        part_type = digikey_part.limited_taxonomy.value
+        sub_type = digikey_part.limited_taxonomy.children[0].value
+        return part_type == "Discrete Semiconductor Products" and (
+            "Diodes - Rectifiers" in sub_type or "Diodes - Zener" in sub_type
+        )
 
     @classmethod
     def from_digikey(cls, digikey_part):
@@ -871,6 +920,7 @@ class Diode(Component):
         return cls(**data)
 
 
+@component
 class LED(Component):
     table = "led"
     kicad_footprint_map = {
@@ -944,6 +994,10 @@ class LED(Component):
         else:
             data["kicad_footprint"] = cls._get_sym_or_fp_from_user(data["DPN1"])
 
+    @staticmethod
+    def type_matches_digikey_part(digikey_part):
+        return digikey_part.limited_taxonomy.value == "Optoelectronics"
+
     @classmethod
     def from_digikey(cls, digikey_part):
         data = cls.get_digikey_common_data(digikey_part)
@@ -999,6 +1053,7 @@ class LED(Component):
         return cls(**data)
 
 
+@component
 class BJT(Component):
     table = "transistor_bjt"
     kicad_footprint_map = {
@@ -1041,6 +1096,15 @@ class BJT(Component):
                 s += f"{m.group(3)}x"
             s += f"{m.group(4)}"
         return s, array
+
+    @staticmethod
+    def type_matches_digikey_part(digikey_part):
+        part_type = digikey_part.limited_taxonomy.value
+        sub_type = digikey_part.limited_taxonomy.children[0].value
+        return (
+            part_type == "Discrete Semiconductor Products"
+            and "Bipolar (BJT)" in sub_type
+        )
 
     @classmethod
     def from_digikey(cls, digikey_part):
