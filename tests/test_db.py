@@ -99,14 +99,14 @@ class TestDatabaseFunctions(unittest.TestCase):
         db.IPN_DUPLICATE_LIMIT = self.backup_IPN_DUPLICATE_LIMIT
         os.remove(self.db_path)
 
-    def test_table_automatically_created(self):
+    def test_add_table_automatically_created(self):
         db.add_component_to_db(self.con, self.resistor)
 
         res = self.cur.execute("SELECT name from sqlite_master").fetchall()
 
         self.assertIn(("resistor",), res)
 
-    def test_unique_parts_in_table(self):
+    def test_add_unique_parts_in_table(self):
         db.add_component_to_db(self.con, self.resistor)
         self.resistor.columns["IPN"] = "R_test2"
         db.add_component_to_db(self.con, self.resistor)
@@ -116,7 +116,7 @@ class TestDatabaseFunctions(unittest.TestCase):
         self.assertIn(("R_test",), res)
         self.assertIn(("R_test2",), res)
 
-    def test_update_existing_component(self):
+    def test_add_update_existing_component(self):
         db.add_component_to_db(self.con, self.resistor)
         self.resistor.columns["value"] = "val2"
         db.add_component_to_db(self.con, self.resistor, update=True)
@@ -126,11 +126,10 @@ class TestDatabaseFunctions(unittest.TestCase):
         self.assertNotIn(("val",), res)
         self.assertIn(("val2",), res)
 
-    def test_auto_increment_IPN(self):
+    def test_add_auto_increment_IPN(self):
         db.IPN_DUPLICATE_LIMIT = 3
         for n in range(db.IPN_DUPLICATE_LIMIT):
-            r = self.create_dummy_component()
-            r.columns["value"] = f"val{n}"
+            r = self.create_dummy_component(value=f"val{n}")
             db.add_component_to_db(self.con, r, increment=True)
 
         res = self.cur.execute("SELECT IPN, value from resistor").fetchall()
@@ -139,11 +138,10 @@ class TestDatabaseFunctions(unittest.TestCase):
         self.assertIn(("R_test_1", "val1"), res)
         self.assertIn(("R_test_2", "val2"), res)
 
-    def test_too_many_duplicate_IPNs_increment(self):
+    def test_add_too_many_duplicate_IPNs_increment(self):
         db.IPN_DUPLICATE_LIMIT = 3
         for n in range(db.IPN_DUPLICATE_LIMIT):
-            r = self.create_dummy_component()
-            r.columns["value"] = f"val{n}"
+            r = self.create_dummy_component(value=f"val{n}")
             db.add_component_to_db(self.con, r, increment=True)
 
         with self.assertRaises(db.TooManyDuplicateIPNsInTableError) as cm:
@@ -153,9 +151,8 @@ class TestDatabaseFunctions(unittest.TestCase):
         self.assertEqual("R_test", e.IPN)
         self.assertEqual("resistor", e.table)
 
-    def test_too_many_duplicate_IPNs(self):
+    def test_add_too_many_duplicate_IPNs(self):
         r = self.create_dummy_component()
-        r.columns["value"] = "val"
         db.add_component_to_db(self.con, r, increment=False)
 
         with self.assertRaises(db.TooManyDuplicateIPNsInTableError) as cm:

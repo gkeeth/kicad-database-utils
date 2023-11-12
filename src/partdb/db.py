@@ -23,7 +23,7 @@ def initialize_database(db_path):
         db_path: absolute path to database.
     """
     if os.path.isfile(db_path):
-        sys.exit(f"Error: {db_path} already exists and cannot be " "re-initialized.")
+        sys.exit(f"Error: {db_path} already exists and cannot be re-initialized.")
     con = sqlite3.connect(f"file:{db_path}", uri=True)
     con.close()
 
@@ -114,7 +114,7 @@ def add_component_to_db(con, comp, update=False, increment=False):
         # 3) A modified IPN with a suffix to make it unique
         cur.execute(insert_string, values)
 
-        print_message(f"Added component '{values['IPN']}' to table " f"'{comp.table}'")
+        print_message(f"Adding component '{values['IPN']}' to table '{comp.table}'")
 
 
 def add_components_from_list_to_db(con, components, update=False, increment=False):
