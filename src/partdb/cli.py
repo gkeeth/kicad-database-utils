@@ -12,7 +12,7 @@ from partdb.api_helpers import (
     create_component_list_from_digikey_pn_list,
 )
 from partdb import db
-from partdb import print_utils
+from partdb.print_utils import print_error, set_verbose
 
 
 CONFIG_FILENAME = os.path.expanduser("~/.dblib_utils_config.json")
@@ -22,6 +22,57 @@ def print_components_from_list_as_csv(components):
     """Print all components in list to stdout, formatted as csv."""
     for comp in components:
         print(comp.to_csv())
+
+
+def add_components_from_list_to_db(
+    db_path, components, update=False, increment=False, no_db=False
+):
+    """Add all components in a list to the database.
+
+    Args:
+        db_path: Database file path.
+        components: list of components to add to database.
+        update: if True, when duplicate components are encountered, update
+            existing components instead of attempting to create a unique
+            component.
+        increment: if True, when duplicate components are encountered (and if
+            `update` is False), append a numeric suffix to IPN to create a
+            unique IPN.
+        no_db: if True, skip database operations.
+    """
+    if no_db:
+        return
+    con = db.connect_to_database(db_path)
+    for comp in components:
+        try:
+            db.add_component_to_db(con, comp, update, increment)
+        except db.TooManyDuplicateIPNsInTableError as e:
+            print_error(
+                f"Too many parts with IPN '{e.IPN}' already in table "
+                f"'{e.table}'; skipped"
+            )
+    con.close()
+
+
+def remove_components_from_list_from_db(db_path, part_numbers, no_db=False):
+    """Remove each component in a list from the database. Components can be
+    identified by IPN, DPN1, or DPN2.
+
+    All tables are searched. For each part number, the first matching part is
+    removed. If the first match corresponds to multiple components, nothing is
+    removed.
+
+    Args:
+        db_path: Database file path.
+        part_numbers: list of IPN, DPN1, or DPN2 for each component to remove.
+        no_db: if True, skip database operations.
+    """
+    if no_db:
+        return
+    con = db.connect_to_database(db_path)
+    for part_number in part_numbers:
+        db.remove_component_from_db(con, part_number)
+    con.close()
 
 
 def print_database_to_csv_minimal(db_path):
@@ -180,9 +231,9 @@ def parse_args():
 
 
 def main():
-    components = None
+    components = []
     args = parse_args()
-    print_utils.set_verbose(args.verbose)
+    set_verbose(args.verbose)
     config_data = load_config()
     setup_digikey(config_data)
     if not args.use_test_database:
@@ -200,20 +251,24 @@ def main():
         components = create_component_list_from_digikey_pn_list(
             digikey_pn_list, args.dump_api_response
         )
+        db.add_components_from_list_to_db(
+            db_path,
+            components,
+            update=args.update_existing,
+            increment=args.increment_duplicates,
+            no_db=args.no_db,
+        )
     if args.mouser:
         raise NotImplementedError
     if args.csv:
         components = create_component_list_from_csv(args.csv)
-
-    if not args.no_db and components:
-        con = db.connect_to_database(db_path)
         db.add_components_from_list_to_db(
-            con,
+            db_path,
             components,
             update=args.update_existing,
             increment=args.increment_duplicates,
+            no_db=args.no_db,
         )
-        con.close()
 
     if args.dump_part_csv:
         print_components_from_list_as_csv(components)

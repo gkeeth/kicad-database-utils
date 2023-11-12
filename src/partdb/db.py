@@ -117,29 +117,6 @@ def add_component_to_db(con, comp, update=False, increment=False):
         print_message(f"Adding component '{values['IPN']}' to table '{comp.table}'")
 
 
-def add_components_from_list_to_db(con, components, update=False, increment=False):
-    """Add all components in a list to the database.
-
-    Args:
-        con: Database connection object.
-        components: list of components to add to database.
-        update: if True, when duplicate components are encountered, update
-            existing components instead of attempting to create a unique
-            component.
-        increment: if True, when duplicate components are encountered (and if
-            `update` is False), append a numeric suffix to IPN to create a
-            unique IPN.
-    """
-    for comp in components:
-        try:
-            add_component_to_db(con, comp, update, increment)
-        except TooManyDuplicateIPNsInTableError as e:
-            print_error(
-                f"Too many parts with IPN '{e.IPN}' already in table "
-                f"'{e.table}'; skipped"
-            )
-
-
 def get_table_names(con):
     """Return a list of table names for the connection `con`."""
     cur = con.cursor()

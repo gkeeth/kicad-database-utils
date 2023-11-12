@@ -173,7 +173,8 @@ class TestDatabaseFunctions(unittest.TestCase):
             "C_1", capacitance="cap", voltage="volt", dielectric="X7R"
         )
         components = [c1, r1, r2]
-        db.add_components_from_list_to_db(self.con, components)
+        for comp in components:
+            db.add_component_to_db(self.con, comp)
 
         expected_keys = self.get_superset_keys(components)
         expected = self.get_csv_for_components(components, expected_keys)
@@ -189,7 +190,8 @@ class TestDatabaseFunctions(unittest.TestCase):
             "C_1", capacitance="cap", voltage="volt", dielectric="X7R"
         )
         components = [c1, r1, r2]
-        db.add_components_from_list_to_db(self.con, components)
+        for comp in components:
+            db.add_component_to_db(self.con, comp)
 
         expected_keys = (
             "distributor1,DPN1,distributor2,DPN2,kicad_symbol,kicad_footprint"
@@ -203,8 +205,8 @@ class TestDatabaseFunctions(unittest.TestCase):
     def test_remove_by_IPN(self):
         r1 = self.create_dummy_component("R_1")
         r2 = self.create_dummy_component("R_2", value="val2")
-        components = [r1, r2]
-        db.add_components_from_list_to_db(self.con, components)
+        for comp in [r1, r2]:
+            db.add_component_to_db(self.con, comp)
 
         db.remove_component_from_db(self.con, "R_1")
 
@@ -215,8 +217,8 @@ class TestDatabaseFunctions(unittest.TestCase):
     def test_remove_by_DPN1(self):
         r1 = self.create_dummy_component("R_1")
         r2 = self.create_dummy_component("R_2", value="val2", DPN1="dpn1a")
-        components = [r1, r2]
-        db.add_components_from_list_to_db(self.con, components)
+        for comp in [r1, r2]:
+            db.add_component_to_db(self.con, comp)
 
         db.remove_component_from_db(self.con, "dpn1")
 
@@ -227,8 +229,8 @@ class TestDatabaseFunctions(unittest.TestCase):
     def test_remove_by_DPN2(self):
         r1 = self.create_dummy_component("R_1")  # default DPN2="dpn2"
         r2 = self.create_dummy_component("R_2", value="val2", DPN2="dpn2a")
-        components = [r1, r2]
-        db.add_components_from_list_to_db(self.con, components)
+        for comp in [r1, r2]:
+            db.add_component_to_db(self.con, comp)
 
         db.remove_component_from_db(self.con, "dpn2")
 
@@ -239,8 +241,8 @@ class TestDatabaseFunctions(unittest.TestCase):
     def test_remove_skip_multiple_hits(self):
         r1 = self.create_dummy_component("R_1")
         r2 = self.create_dummy_component("R_2", value="val2")
-        components = [r1, r2]
-        db.add_components_from_list_to_db(self.con, components)
+        for comp in [r1, r2]:
+            db.add_component_to_db(self.con, comp)
 
         db.remove_component_from_db(self.con, "dpn2")
 
