@@ -148,6 +148,41 @@ def get_table_names(con):
     return tables
 
 
+def remove_component_from_db(con, part_number):
+    """Remove a component from the database by IPN, DPN1, or DPN2.
+
+    All tables are searched. The first matching part is removed. If the first
+    match corresponds to multiple components, nothing is removed.
+
+    Args:
+        con: Database connection object.
+        part_number: IPN, DPN1, or DPN2 of the component to remove.
+    """
+
+    tables = get_table_names(con)
+    with con:
+        cur = con.cursor()
+        for table in tables:
+            for col in ["IPN", "DPN1", "DPN2"]:
+                res = cur.execute(
+                    f"SELECT IPN FROM {table} WHERE {col} = '{part_number}'"
+                ).fetchall()
+                if len(res) == 1:
+                    cur.execute(f"DELETE FROM {table} WHERE {col} = '{part_number}'")
+                    print_message(
+                        f"Removing component '{res[0][0]}' from table '{table}'"
+                    )
+                    return
+                if len(res) > 1:
+                    IPNs = ", ".join(f"'{c[0]}'" for c in res)
+                    print_message(
+                        f"Multiple components with {col}=='{part_number}' "
+                        f"in table '{table}' ({IPNs}); skipping"
+                    )
+                    return
+    print_message(f"No component matching '{part_number}' found")
+
+
 def dump_database_to_csv_full(con):
     """Return a CSV string for all tables in the database.
 

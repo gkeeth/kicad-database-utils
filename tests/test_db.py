@@ -1,11 +1,14 @@
 #! /usr/bin/env python
 
 from collections import defaultdict
+import io
 import os
 import unittest
+from unittest.mock import patch
 
 from partdb import component  # for create_component_from_dict()
 from partdb import db
+from partdb.print_utils import set_verbose
 
 
 class TestDatabaseFunctions(unittest.TestCase):
@@ -96,8 +99,9 @@ class TestDatabaseFunctions(unittest.TestCase):
 
     def tearDown(self):
         self.con.close()
-        db.IPN_DUPLICATE_LIMIT = self.backup_IPN_DUPLICATE_LIMIT
         os.remove(self.db_path)
+        db.IPN_DUPLICATE_LIMIT = self.backup_IPN_DUPLICATE_LIMIT
+        set_verbose(False)
 
     def test_add_table_automatically_created(self):
         db.add_component_to_db(self.con, self.resistor)
@@ -195,6 +199,65 @@ class TestDatabaseFunctions(unittest.TestCase):
         dump = db.dump_database_to_csv_minimal(self.con)
 
         self.assertEqual(expected, dump)
+
+    def test_remove_by_IPN(self):
+        r1 = self.create_dummy_component("R_1")
+        r2 = self.create_dummy_component("R_2", value="val2")
+        components = [r1, r2]
+        db.add_components_from_list_to_db(self.con, components)
+
+        db.remove_component_from_db(self.con, "R_1")
+
+        res = self.cur.execute("SELECT IPN from resistor").fetchall()
+        self.assertNotIn(("R_1",), res)
+        self.assertIn(("R_2",), res)
+
+    def test_remove_by_DPN1(self):
+        r1 = self.create_dummy_component("R_1")
+        r2 = self.create_dummy_component("R_2", value="val2", DPN1="dpn1a")
+        components = [r1, r2]
+        db.add_components_from_list_to_db(self.con, components)
+
+        db.remove_component_from_db(self.con, "dpn1")
+
+        res = self.cur.execute("SELECT IPN from resistor").fetchall()
+        self.assertNotIn(("R_1",), res)
+        self.assertIn(("R_2",), res)
+
+    def test_remove_by_DPN2(self):
+        r1 = self.create_dummy_component("R_1")  # default DPN2="dpn2"
+        r2 = self.create_dummy_component("R_2", value="val2", DPN2="dpn2a")
+        components = [r1, r2]
+        db.add_components_from_list_to_db(self.con, components)
+
+        db.remove_component_from_db(self.con, "dpn2")
+
+        res = self.cur.execute("SELECT IPN from resistor").fetchall()
+        self.assertNotIn(("R_1",), res)
+        self.assertIn(("R_2",), res)
+
+    def test_remove_skip_multiple_hits(self):
+        r1 = self.create_dummy_component("R_1")
+        r2 = self.create_dummy_component("R_2", value="val2")
+        components = [r1, r2]
+        db.add_components_from_list_to_db(self.con, components)
+
+        db.remove_component_from_db(self.con, "dpn2")
+
+        res = self.cur.execute("SELECT IPN from resistor").fetchall()
+        self.assertIn(("R_1",), res)
+        self.assertIn(("R_2",), res)
+
+    @patch("sys.stdout", new_callable=io.StringIO)
+    def test_remove_no_hits(self, mock_stdout):
+        db.add_component_to_db(self.con, self.resistor)
+        set_verbose(True)
+        db.remove_component_from_db(self.con, "R_nonexistent")
+        res = self.cur.execute("SELECT IPN from resistor")
+        self.assertIn(("R_test",), res)
+        self.assertEqual(
+            "No component matching 'R_nonexistent' found\n", mock_stdout.getvalue()
+        )
 
 
 if __name__ == "__main__":
