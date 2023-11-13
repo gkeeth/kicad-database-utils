@@ -10,7 +10,7 @@ authors = [{name = "Graham Keeth", email = "graham.keeth@gmail.com"}]
 repository = "https://github.com/gkeeth/kicad-database-utils"
 
 [project.scripts]
-add_part = "partdb.cli:main"
+partdb = "partdb.cli:main"
 
 
 [tool.ruff.lint]
