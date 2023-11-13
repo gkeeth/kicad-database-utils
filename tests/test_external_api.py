@@ -5,7 +5,7 @@ import re
 import unittest
 from unittest.mock import patch
 
-from partdb import api_helpers, cli
+from partdb import api_helpers, config
 
 from tests.test_component import expected_component_from_csv
 
@@ -19,7 +19,7 @@ class TestCreateFromDigikeyAPI(unittest.TestCase):
         self.assertEqual(expected.to_csv(), actual.to_csv())
 
     def setUp(self):
-        api_helpers.setup_digikey(cli.load_config())
+        api_helpers.setup_digikey(config.load_config())
 
     def test_resistor_from_digikey_pn(self):
         self.check_component_from_digikey_pn_matches_csv("YAG2320CT-ND")
