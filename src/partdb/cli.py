@@ -154,6 +154,7 @@ def parse_args():
             "Parts can be added, removed, edited, updated, and displayed."
         )
     )
+    parser.set_defaults(func=lambda _1, _2: parser.print_help())
 
     subparsers = parser.add_subparsers(
         title="subcommands", description="Commands for interacting with the database."
