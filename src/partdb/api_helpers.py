@@ -76,8 +76,6 @@ def create_component_list_from_digikey_pn_list(
         comp = create_component_from_digikey_pn(pn, dump_api_response)
         if comp:
             components.append(comp)
-        else:
-            print_error(f"could not get info for part {pn}")
     return components
 
 
