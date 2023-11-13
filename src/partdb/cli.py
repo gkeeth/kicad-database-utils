@@ -100,6 +100,11 @@ def print_database_to_csv_full(db_path):
 def subcommand_add(args, db_path):
     components = []
 
+    if not (args.digikey or args.mouser or args.csv):
+        args.add_parser.error(
+            "no part information source provided (--digikey/--mouser/--csv)"
+        )
+
     if args.digikey:
         setup_digikey(config.config_data)
         digikey_pn_list = [pn.strip() for pn in args.digikey]
@@ -163,7 +168,7 @@ def parse_args(argv=None):
     parser_add = subparsers.add_parser("add", description=add_help, help=add_help)
     parser_add.set_defaults(func=subcommand_add)
     group_add_source = parser_add.add_argument_group(
-        "data sources", "Data source for new components"
+        "data sources", "Data source for new components. At least one must be provided"
     )
     group_add_source.add_argument(
         "--digikey",
@@ -295,7 +300,16 @@ def parse_args(argv=None):
         ),
     )
 
-    return parser.parse_args(argv)
+    # define a custom namespace that contains references to the parsers, so
+    # we can later add parser error messages from within subcommands
+    class ArgContext(argparse.Namespace):
+        top_parser = parser
+        add_parser = parser_add
+        rm_parser = parser_rm
+
+    arg_context = ArgContext()
+
+    return parser.parse_args(argv, namespace=arg_context)
 
 
 def main(argv=None):
