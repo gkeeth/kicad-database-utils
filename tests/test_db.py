@@ -99,7 +99,8 @@ class TestDatabaseFunctions(unittest.TestCase):
 
     def tearDown(self):
         self.con.close()
-        os.remove(self.db_path)
+        if os.path.exists(self.db_path):
+            os.remove(self.db_path)
         db.IPN_DUPLICATE_LIMIT = self.backup_IPN_DUPLICATE_LIMIT
         set_verbose(False)
 
