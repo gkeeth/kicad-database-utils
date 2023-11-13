@@ -1,8 +1,6 @@
 #! /usr/bin/env python
 
 import argparse
-import json
-
 import os
 import sys
 
@@ -11,11 +9,23 @@ from partdb.api_helpers import (
     create_component_list_from_csv,
     create_component_list_from_digikey_pn_list,
 )
+from partdb import config
 from partdb import db
 from partdb.print_utils import print_error, set_verbose
 
 
-CONFIG_FILENAME = os.path.expanduser("~/.dblib_utils_config.json")
+def get_database_path(args, config_data):
+    """Determine database file path based on user configuration file and
+    command line arguments (--use-test-database).
+    """
+    if not args.use_test_database:
+        try:
+            db_path = os.path.abspath(os.path.expanduser(config_data["db"]["path"]))
+        except KeyError:
+            sys.exit("Error: database path not found in config file")
+    else:
+        db_path = os.path.abspath("test.db")
+    return db_path
 
 
 def print_components_from_list_as_csv(components):
@@ -87,12 +97,45 @@ def print_database_to_csv_full(db_path):
     con.close()
 
 
-def load_config():
-    """Return dict containing all config data in config file."""
-    with open(CONFIG_FILENAME, "r") as f:
-        config_data = json.load(f)
+def subcommand_add(args, db_path):
+    components = []
 
-    return config_data
+    if args.digikey:
+        setup_digikey(config.config_data)
+        digikey_pn_list = [pn.strip() for pn in args.digikey]
+        # TODO: refactor the below steps
+        components = create_component_list_from_digikey_pn_list(
+            digikey_pn_list, args.dump_api_response
+        )
+        add_components_from_list_to_db(
+            db_path,
+            components,
+            update=args.update_existing,
+            increment=args.increment_duplicates,
+            no_db=args.no_db,
+        )
+
+    if args.mouser:
+        raise NotImplementedError
+
+    if args.csv:
+        for csvfile in args.csv:
+            components += create_component_list_from_csv(csvfile.strip())
+        add_components_from_list_to_db(
+            db_path,
+            components,
+            update=args.update_existing,
+            increment=args.increment_duplicates,
+            no_db=args.no_db,
+        )
+
+    if args.dump_part_csv:
+        print_components_from_list_as_csv(components)
+
+
+def subcommand_rm(args, db_path):
+    part_numbers = [pn.strip() for pn in args.rm_part_number]
+    remove_components_from_list_from_db(db_path, part_numbers, no_db=False)
 
 
 def parse_args():
@@ -101,15 +144,106 @@ def parse_args():
     # - add args for --dry-run (don't actually update database, but execute
     #   everything up to db commit). Consider using a rolled-back transaction.
     # - mode/argument for update by MPN or DPN
-    # - mode/argument to remove part by IPN (or maybe MPN and/or DPN)
     # - mode/argument to import a minimal CSV
     # - mode/argument to import a full CSV
+    # - add sources (digikey/mouser/csv) don't need to be mutually exclusive
 
     parser = argparse.ArgumentParser(
         description=(
-            "Add a part to the parts database, either manually or by "
-            "distributor lookup."
+            "Manage parts in the parts database. "
+            "Parts can be added, removed, edited, updated, and displayed."
         )
+    )
+
+    subparsers = parser.add_subparsers(
+        title="subcommands", description="Commands for interacting with the database."
+    )
+    add_help = "Add part(s) to the part database."
+    parser_add = subparsers.add_parser("add", description=add_help, help=add_help)
+    parser_add.set_defaults(func=subcommand_add)
+    group_add_source = parser_add.add_mutually_exclusive_group()
+    group_add_source.add_argument(
+        "--digikey",
+        "-d",
+        metavar="DIGIKEY_PN",
+        nargs="+",
+        help=("Digikey part number(s) for part(s) to add to database."),
+    )
+    group_add_source.add_argument(
+        "--mouser",
+        "-m",
+        metavar="MOUSER_PN",
+        nargs="+",
+        help=("Mouser part number(s) for part(s) to add to database."),
+    )
+    group_add_source.add_argument(
+        "--csv",
+        "-p",
+        metavar="CSVFILE",
+        nargs="+",
+        help=(
+            "CSV filename(s) containing columns for all required part parameters. "
+            "Each row is a separate part."
+        ),
+    )
+
+    group_add_duplicates = parser_add.add_mutually_exclusive_group()
+    group_add_duplicates.add_argument(
+        "--increment-duplicates",
+        "-i",
+        action="store_true",
+        help=(
+            "If specified part already exists in database, add a new part with "
+            "an incremented internal part number."
+        ),
+    )
+    group_add_duplicates.add_argument(
+        "--update-existing",
+        "-u",
+        action="store_true",
+        help=(
+            "If specified part already exists in database, update the existing "
+            "component instead of adding a new, unique part."
+        ),
+    )
+
+    parser_add.add_argument(
+        "--no-db",
+        action="store_true",
+        help=(
+            "Don't add part to database. This may be useful in combination "
+            "with another output format, such as CSV."
+        ),
+    )
+
+    parser_add.add_argument(
+        "--dump-part-csv",
+        action="store_true",
+        help=(
+            "Write part data to stdout, formatted as CSV, for all parts in "
+            "transaction. "
+            "This action is performed in addition to the primary add transaction."
+        ),
+    )
+
+    parser_add.add_argument(
+        "--dump-api-response",
+        action="store_true",
+        help=(
+            "Write API response object data to stdout, if any, for all parts in "
+            "transaction. This can be used as a reference for implementation. "
+            "This action is performed in addition to the primary add transaction."
+        ),
+    )
+
+    rm_help = "Remove part(s) from the part database."
+    parser_rm = subparsers.add_parser("rm", description=rm_help, help=rm_help)
+    parser_rm.set_defaults(func=subcommand_rm)
+    parser_rm.add_argument(
+        "rm_part_number",
+        metavar="PART_NUMBER",
+        nargs="+",
+        help="Part number(s) for part(s) to remove. Can be IPN, DPN1, or DPN2.",
     )
 
     parser.add_argument(
@@ -120,61 +254,14 @@ def parse_args():
         "--initialize-db", action="store_true", help="Initialize new, empty database."
     )
 
-    duplicates_group = parser.add_mutually_exclusive_group()
-    duplicates_group.add_argument(
-        "--increment-duplicates",
-        "-i",
-        action="store_true",
-        help=(
-            "If specified part already exists in database, add a new part with "
-            "an incremented internal part number."
-        ),
-    )
-    duplicates_group.add_argument(
-        "--update-existing",
-        "-u",
-        action="store_true",
-        help=(
-            "If specified part already exists in database, update the existing "
-            "component instead of adding a new, unique part."
-        ),
-    )
-
-    parser.add_argument(
-        "--no-db",
-        action="store_true",
-        help=(
-            "Don't add part to database. This may be useful in combination "
-            "with another output format, such as CSV."
-        ),
-    )
-
-    parser.add_argument(
-        "--dump-part-csv",
-        action="store_true",
-        help=(
-            "Write part data for all parts being added to stdout, formatted as CSV. "
-            "Unless otherwise specified, parts are also added to the database."
-        ),
-    )
-
-    parser.add_argument(
-        "--dump-api-response",
-        action="store_true",
-        help=(
-            "Write API response object data for all parts being added to stdout. "
-            "This can be used as a reference for implementation. "
-            "Unless otherwise specified, parts are also added to the database."
-        ),
-    )
-
     parser.add_argument(
         "--dump-database-csv-full",
         action="store_true",
         help=(
-            "Write all columns of all components in the database contents to stdout, "
+            "Write all columns of all components in the database to stdout, "
             "formatted as CSV. "
-            "The database is dumped after adding parts from the current transaction."
+            "The database is dumped after completing the current transaction "
+            "(e.g. add or rm)."
         ),
     )
 
@@ -185,7 +272,8 @@ def parse_args():
             "Write select columns of all components in the database to stdout, "
             "formatted as CSV. Included fields are: "
             "distributor1, DPN1, distributor2, DPN2, kicad_symbol, kicad_footprint. "
-            "The database is dumped after adding parts from the current transaction."
+            "The database is dumped after completing the current transaction "
+            "(e.g. add or rm)."
         ),
     )
 
@@ -198,80 +286,19 @@ def parse_args():
         ),
     )
 
-    source_group = parser.add_mutually_exclusive_group()
-    source_group.add_argument(
-        "--digikey",
-        "-d",
-        metavar="DIGIKEY_PN",
-        help=(
-            "Digikey part number, or comma-separated list of part numbers, for "
-            "part(s) to add to database."
-        ),
-    )
-    source_group.add_argument(
-        "--mouser",
-        "-m",
-        metavar="MOUSER_PN",
-        help=(
-            "Mouser part number, or comma-separated list of part numbers, for "
-            "part(s) to add to database."
-        ),
-    )
-    source_group.add_argument(
-        "--csv",
-        "-p",
-        metavar="CSVFILE",
-        help=(
-            "CSV filename containing columns for all required part parameters. "
-            "Each row is a separate part."
-        ),
-    )
-
     return parser.parse_args()
 
 
 def main():
-    components = []
     args = parse_args()
     set_verbose(args.verbose)
-    config_data = load_config()
-    setup_digikey(config_data)
-    if not args.use_test_database:
-        try:
-            db_path = os.path.abspath(os.path.expanduser(config_data["db"]["path"]))
-        except KeyError:
-            sys.exit("Error: database path not found in config file")
-    else:
-        db_path = os.path.abspath("test.db")
+    config.load_config()
+    db_path = get_database_path(args, config.config_data)
 
     if args.initialize_db:
         db.initialize_database(db_path)
-    if args.digikey:
-        digikey_pn_list = [pn.strip() for pn in args.digikey.split(",")]
-        components = create_component_list_from_digikey_pn_list(
-            digikey_pn_list, args.dump_api_response
-        )
-        db.add_components_from_list_to_db(
-            db_path,
-            components,
-            update=args.update_existing,
-            increment=args.increment_duplicates,
-            no_db=args.no_db,
-        )
-    if args.mouser:
-        raise NotImplementedError
-    if args.csv:
-        components = create_component_list_from_csv(args.csv)
-        db.add_components_from_list_to_db(
-            db_path,
-            components,
-            update=args.update_existing,
-            increment=args.increment_duplicates,
-            no_db=args.no_db,
-        )
 
-    if args.dump_part_csv:
-        print_components_from_list_as_csv(components)
+    args.func(args, db_path)
 
     if args.dump_database_csv_minimal:
         print_database_to_csv_minimal(db_path)
