@@ -10,7 +10,7 @@ This is likely only useful for my particular workflow.
 Use your preferred python environment management tool. With venv:
 
 ```
-# create a new venv in a location of your choice, e.g. kicad-database-utils/venv
+# create a new venv in a location of your choice, e.g. kicad-database-utils/.venv
 python -m venv /path/to/new/virtual/environment
 # activate the venv
 source /path/to/new/virtual/environment/bin/activate
