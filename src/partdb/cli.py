@@ -138,7 +138,7 @@ def subcommand_rm(args, db_path):
     remove_components_from_list_from_db(db_path, part_numbers, no_db=False)
 
 
-def parse_args():
+def parse_args(argv=None):
     """Set up CLI args and return the parsed arguments."""
     # TODO:
     # - add args for --dry-run (don't actually update database, but execute
@@ -295,11 +295,11 @@ def parse_args():
         ),
     )
 
-    return parser.parse_args()
+    return parser.parse_args(argv)
 
 
-def main():
-    args = parse_args()
+def main(argv=None):
+    args = parse_args(argv)
     set_verbose(args.verbose)
     config.load_config()
     db_path = get_database_path(args, config.config_data)
