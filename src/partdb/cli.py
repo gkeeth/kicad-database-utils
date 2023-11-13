@@ -16,15 +16,15 @@ from partdb.print_utils import print_error, set_verbose
 
 def get_database_path(args, config_data):
     """Determine database file path based on user configuration file and
-    command line arguments (--use-test-database).
+    command line arguments (--database).
     """
-    if not args.use_test_database:
+    if args.database:
+        db_path = os.path.abspath(args.database)
+    else:
         try:
             db_path = os.path.abspath(os.path.expanduser(config_data["db"]["path"]))
         except KeyError:
             sys.exit("Error: database path not found in config file")
-    else:
-        db_path = os.path.abspath("test.db")
     return db_path
 
 
@@ -151,7 +151,6 @@ def parse_args(argv=None):
     # - mode/argument for update by MPN or DPN
     # - mode/argument to import a minimal CSV
     # - mode/argument to import a full CSV
-    # - instead of a test database flag, allow specifying a custom dbpath
 
     parser = argparse.ArgumentParser(
         description=(
@@ -292,10 +291,10 @@ def parse_args(argv=None):
     )
 
     parser.add_argument(
-        "--use-test-database",
-        action="store_true",
+        "--database",
+        metavar="DATABASE_PATH",
         help=(
-            "Use test.db in current directory instead of database specified by "
+            "Use DATABASE_PATH instead of the database specified by "
             "user configuration."
         ),
     )
