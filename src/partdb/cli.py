@@ -146,7 +146,7 @@ def parse_args():
     # - mode/argument for update by MPN or DPN
     # - mode/argument to import a minimal CSV
     # - mode/argument to import a full CSV
-    # - add sources (digikey/mouser/csv) don't need to be mutually exclusive
+    # - instead of a test database flag, allow specifying a custom dbpath
 
     parser = argparse.ArgumentParser(
         description=(
@@ -161,7 +161,9 @@ def parse_args():
     add_help = "Add part(s) to the part database."
     parser_add = subparsers.add_parser("add", description=add_help, help=add_help)
     parser_add.set_defaults(func=subcommand_add)
-    group_add_source = parser_add.add_mutually_exclusive_group()
+    group_add_source = parser_add.add_argument_group(
+        "data sources", "Data source for new components"
+    )
     group_add_source.add_argument(
         "--digikey",
         "-d",
@@ -187,8 +189,12 @@ def parse_args():
         ),
     )
 
-    group_add_duplicates = parser_add.add_mutually_exclusive_group()
-    group_add_duplicates.add_argument(
+    group_add_duplicates = parser_add.add_argument_group(
+        "duplicate handling",
+        "How to handle duplicate IPNs (default: skip adding the new component)",
+    )
+    exclusive_group_add_duplicates = group_add_duplicates.add_mutually_exclusive_group()
+    exclusive_group_add_duplicates.add_argument(
         "--increment-duplicates",
         "-i",
         action="store_true",
@@ -197,7 +203,7 @@ def parse_args():
             "an incremented internal part number."
         ),
     )
-    group_add_duplicates.add_argument(
+    exclusive_group_add_duplicates.add_argument(
         "--update-existing",
         "-u",
         action="store_true",
@@ -216,7 +222,10 @@ def parse_args():
         ),
     )
 
-    parser_add.add_argument(
+    group_add_output = parser_add.add_argument_group(
+        "component data dumping", "Output control for dumping new part data to stdout"
+    )
+    group_add_output.add_argument(
         "--dump-part-csv",
         action="store_true",
         help=(
@@ -225,8 +234,7 @@ def parse_args():
             "This action is performed in addition to the primary add transaction."
         ),
     )
-
-    parser_add.add_argument(
+    group_add_output.add_argument(
         "--dump-api-response",
         action="store_true",
         help=(
