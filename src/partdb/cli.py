@@ -53,6 +53,8 @@ def add_components_from_list_to_db(
     if no_db:
         return
     con = db.connect_to_database(db_path)
+    if not con:
+        return
     for comp in components:
         try:
             db.add_component_to_db(con, comp, update, increment)
@@ -80,6 +82,8 @@ def remove_components_from_list_from_db(db_path, part_numbers, no_db=False):
     if no_db:
         return
     con = db.connect_to_database(db_path)
+    if not con:
+        return
     for part_number in part_numbers:
         db.remove_component_from_db(con, part_number)
     con.close()
@@ -87,12 +91,16 @@ def remove_components_from_list_from_db(db_path, part_numbers, no_db=False):
 
 def print_database_to_csv_minimal(db_path):
     con = db.connect_to_database(db_path)
+    if not con:
+        return
     print(db.dump_database_to_csv_minimal(con))
     con.close()
 
 
 def print_database_to_csv_full(db_path):
     con = db.connect_to_database(db_path)
+    if not con:
+        return
     print(db.dump_database_to_csv_full(con))
     con.close()
 
