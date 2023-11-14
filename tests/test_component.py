@@ -8,6 +8,8 @@ from unittest.mock import patch, MagicMock
 from partdb import component
 from partdb.component import Component, Resistor, Capacitor, Microcontroller, LED, BJT
 
+from tests import digikey_mocks
+
 
 def expected_component_from_csv(csvpath):
     with open(csvpath, "r") as infile:
@@ -365,458 +367,81 @@ class TestFromDigikeyPart(unittest.TestCase):
 
 
 class TestResistorFromDigikeyPart(TestFromDigikeyPart):
-    @staticmethod
-    def init_resistor_mock(
-        resistance, tolerance, power, composition, package, **kwargs
-    ):
-        parameters = {
-            "Resistance": resistance,
-            "Tolerance": tolerance,
-            "Power (Watts)": power,
-            "Composition": composition,
-            "Supplier Device Package": package,
-        }
-        s = super(TestResistorFromDigikeyPart, TestResistorFromDigikeyPart)
-        return s.init_mock(category="Resistors", parameters=parameters, **kwargs)
-
     def test_resistor_from_digikey(self):
-        mock_part = self.init_resistor_mock(
-            resistance="100Ω",
-            tolerance="±1%",
-            power="0.1W",
-            composition="Thin Film",
-            package="0603",
-            datasheet=(
-                "https://www.yageo.com/upload/media/product/productsearch/"
-                "datasheet/rchip/PYu-RT_1-to-0.01_RoHS_L_15.pdf"
-            ),
-            mfg="YAGEO",
-            MPN="RT0603FRE07100RL",
-            digikey_PN="YAG2320CT-ND",
-        )
-        self.check_component_matches_csv(mock_part)
+        self.check_component_matches_csv(digikey_mocks.mock_resistor)
 
     def test_jumper_from_digikey(self):
-        mock_part = self.init_resistor_mock(
-            resistance="0 Ohms",
-            tolerance="Jumper",
-            power="-",
-            composition="Thick Film",
-            package="0603",
-            datasheet=(
-                "https://www.yageo.com/upload/media/product/productsearch/"
-                "datasheet/rchip/PYu-RC_Group_51_RoHS_L_12.pdf"
-            ),
-            mfg="YAGEO",
-            MPN="RC0603JR-070RL",
-            digikey_PN="311-0.0GRCT-ND",
-        )
-        self.check_component_matches_csv(mock_part)
+        self.check_component_matches_csv(digikey_mocks.mock_jumper)
 
 
 class TestCapacitorFromDigikeyPart(TestFromDigikeyPart):
-    @staticmethod
-    def init_capacitor_mock(
-        capacitance,
-        tolerance,
-        voltage,
-        package,
-        family,
-        tempco=None,
-        polarization=None,
-        package_size=None,
-        height=None,
-        lead_spacing=None,
-        **kwargs,
-    ):
-        parameters = {
-            "Capacitance": capacitance,
-            "Tolerance": tolerance,
-            "Voltage - Rated": voltage,
-            "Package / Case": package,
-        }
-        if tempco:
-            parameters["Temperature Coefficient"] = tempco
-        if polarization:
-            parameters["Polarization"] = polarization
-        if package_size:
-            parameters["Size / Dimension"] = package_size
-        if height:
-            parameters["Height - Seated (Max)"] = height
-        if lead_spacing:
-            parameters["Lead Spacing"] = lead_spacing
-
-        s = super(TestCapacitorFromDigikeyPart, TestCapacitorFromDigikeyPart)
-        return s.init_mock(
-            category="Capacitors", family=family, parameters=parameters, **kwargs
-        )
-
     def test_ceramic_capacitor_from_digikey(self):
-        mock_part = self.init_capacitor_mock(
-            family="Ceramic Capacitors",
-            datasheet=(
-                "https://mm.digikey.com/Volume0/opasdata/d220001/medias/"
-                "docus/1068/CL21B334KBFNNNE_Spec.pdf"
-            ),
-            mfg="Samsung Electro-Mechanics",
-            MPN="CL21B334KBFNNNE",
-            digikey_PN="1276-1123-1-ND",
-            capacitance="0.33 µF",
-            tolerance="±10%",
-            voltage="50V",
-            tempco="X7R",
-            package="0805 (2012 Metric)",
-        )
-        self.check_component_matches_csv(mock_part)
+        self.check_component_matches_csv(digikey_mocks.mock_ceramic_capacitor)
 
     @patch(
         "partdb.component.input",
         return_value="Capacitor_THT:CP_Radial_D10.0mm_H17.5mm_P5.00mm",
     )
     def test_electrolytic_capacitor_from_digikey(self, mock_input):
-        mock_part = self.init_capacitor_mock(
-            family="Aluminum Electrolytic Capacitors",
-            datasheet=(
-                "https://www.nichicon.co.jp/english/series_items/"
-                "catalog_pdf/e-ucy.pdf"
-            ),
-            mfg="Nichicon",
-            MPN="UCY2G100MPD1TD",
-            digikey_PN="493-13313-1-ND",
-            capacitance="10 µF",
-            tolerance="±20%",
-            voltage="400V",
-            package="Radial, Can",
-            polarization="Polar",
-            package_size='0.394" Dia (10.00mm)',
-            height='0.689" (17.50mm)',
-            lead_spacing='0.197" (5.00mm)',
-        )
-        self.check_component_matches_csv(mock_part)
+        self.check_component_matches_csv(digikey_mocks.mock_electrolytic_capacitor)
 
     @patch(
         "partdb.component.input",
         return_value="Capacitor_THT:C_Radial_D6.30mm_H12.2mm_P5.00mm",
     )
     def test_unpolarized_electrolytic_capacitor_from_digikey(self, mock_input):
-        mock_part = self.init_capacitor_mock(
-            family="Aluminum Electrolytic Capacitors",
-            datasheet=(
-                "https://industrial.panasonic.com/cdbs/www-data/pdf/"
-                "RDF0000/ABA0000C1053.pdf"
-            ),
-            mfg="Panasonic Electronic Components",
-            MPN="ECE-A1HN100UB",
-            digikey_PN="10-ECE-A1HN100UBCT-ND",
-            capacitance="10 µF",
-            tolerance="±20%",
-            voltage="50V",
-            package="Radial, Can",
-            polarization="Bi-Polar",
-            package_size='0.248" Dia (6.30mm)',
-            height='0.480" (12.20mm)',
-            lead_spacing='0.197" (5.00mm)',
+        self.check_component_matches_csv(
+            digikey_mocks.mock_unpolarized_electrolytic_capacitor
         )
-        self.check_component_matches_csv(mock_part)
 
 
 class TestOpAmpFromDigikeyPart(TestFromDigikeyPart):
-    @staticmethod
-    def init_opamp_mock(
-        bandwidth, slewrate, package, short_package, num_units, **kwargs
-    ):
-        parameters = {
-            "Gain Bandwidth Product": bandwidth,
-            "Slew Rate": slewrate,
-            "Package / Case": package,
-            "Supplier Device Package": short_package,
-            "Number of Circuits": num_units,
-        }
-
-        s = super(TestOpAmpFromDigikeyPart, TestOpAmpFromDigikeyPart)
-        return s.init_mock(
-            category="Integrated Circuits (ICs)",
-            subcategory=(
-                "Linear - Amplifiers - Instrumentation, OP Amps, Buffer Amps "
-                "- Amplifiers - Instrumentation, OP Amps, Buffer Amps"
-            ),
-            parameters=parameters,
-            **kwargs,
-        )
-
     @patch("partdb.component.input", return_value="Amplifier_Operational:LM4562")
     def test_opamp_from_digikey(self, mock_input):
-        mock_part = self.init_opamp_mock(
-            datasheet="https://www.ti.com/lit/ds/snas326k/snas326k.pdf",
-            mfg="Texas Instruments",
-            MPN="LM4562MAX/NOPB",
-            digikey_PN="296-35279-1-ND",
-            bandwidth="55 MHz",
-            slewrate="20V/µs",
-            package='8-SOIC (0.154", 3.90mm Width)',
-            short_package="8-SOIC",
-            num_units="2",
-        )
-        self.check_component_matches_csv(mock_part)
+        self.check_component_matches_csv(digikey_mocks.mock_opamp)
 
 
 class TestMicrocontrollerFromDigikeyPart(TestFromDigikeyPart):
-    @staticmethod
-    def init_microcontroller_mock(core, speed, package, **kwargs):
-        parameters = {
-            "Core Processor": core,
-            "Speed": speed,
-            "Supplier Device Package": package,
-        }
-
-        s = super(
-            TestMicrocontrollerFromDigikeyPart, TestMicrocontrollerFromDigikeyPart
-        )
-        return s.init_mock(
-            category="Integrated Circuits (ICs)",
-            subcategory="Embedded - Microcontrollers - Microcontrollers",
-            parameters=parameters,
-            **kwargs,
-        )
-
     @patch("partdb.component.input", return_value="MCU_ST_STM32F0:STM32F042K4Tx")
     def test_microcontroller_from_digikey(self, mock_input):
-        mock_part = self.init_microcontroller_mock(
-            datasheet=("https://www.st.com/resource/en/datasheet/" "stm32f042k4.pdf"),
-            mfg="STMicroelectronics",
-            MPN="STM32F042K4T6TR",
-            digikey_PN="STM32F042K4T6TR-ND",
-            core="ARM® Cortex®-M0",
-            package="32-LQFP (7x7)",
-            speed="48MHz",
-        )
-        self.check_component_matches_csv(mock_part)
+        self.check_component_matches_csv(digikey_mocks.mock_microcontroller)
 
 
 class TestVRegFromDigikeyPart(TestFromDigikeyPart):
-    @staticmethod
-    def init_vreg_mock(
-        vout_min, vout_max, vin_max, iout, output_type, package, **kwargs
-    ):
-        parameters = {
-            "Supplier Device Package": package,
-            "Voltage - Output (Min/Fixed)": vout_min,
-            "Voltage - Output (Max)": vout_max,
-            "Voltage - Input (Max)": vin_max,
-            "Current - Output": iout,
-            "Output Type": output_type,
-        }
-
-        s = super(TestVRegFromDigikeyPart, TestVRegFromDigikeyPart)
-        return s.init_mock(
-            category="Integrated Circuits (ICs)",
-            subcategory=(
-                "Power Management (PMIC) - Voltage Regulators - Linear, "
-                "Low Drop Out (LDO) Regulators - Voltage Regulators - "
-                "Linear, Low Drop Out (LDO) Regulators"
-            ),
-            parameters=parameters,
-            **kwargs,
-        )
-
     @patch("partdb.component.input", return_value="Regulator_Linear:LM317_TO-220")
     def test_vreg_pos_adj_from_digikey(self, mock_input):
-        mock_part = self.init_vreg_mock(
-            datasheet=(
-                "https://www.ti.com/general/docs/suppproductinfo.tsp?"
-                "distId=10&gotoUrl=https%3A%2F%2Fwww.ti.com%2Flit%2Fgpn"
-                "%2Flm117hv"
-            ),
-            mfg="Texas Instruments",
-            MPN="LM317HVT/NOPB",
-            digikey_PN="LM317HVT/NOPB-ND",
-            package="TO-220-3",
-            vout_min="1.25V",
-            vout_max="57V",
-            vin_max="60V",
-            iout="1.5A",
-            output_type="Adjustable",
-        )
-        self.check_component_matches_csv(mock_part)
+        self.check_component_matches_csv(digikey_mocks.mock_vreg_pos_adj)
 
     @patch("partdb.component.input", return_value="Regulator_Linear:LM7912_TO220")
     def test_vreg_neg_fixed_from_digikey(self, mock_input):
-        mock_part = self.init_vreg_mock(
-            datasheet=(
-                "https://www.ti.com/general/docs/suppproductinfo.tsp?"
-                "distId=10&gotoUrl=https%3A%2F%2Fwww.ti.com"
-                "%2Flit%2Fgpn%2Flm79"
-            ),
-            mfg="Texas Instruments",
-            MPN="LM7912CT/NOPB",
-            digikey_PN="LM7912CT/NOPB-ND",
-            package="TO-220-3",
-            vout_min="-12V",
-            vout_max="-",
-            vin_max="-35V",
-            iout="1.5A",
-            output_type="Fixed",
-        )
-        self.check_component_matches_csv(mock_part)
+        self.check_component_matches_csv(digikey_mocks.mock_vreg_neg_fixed)
 
 
 class TestDiodeFromDigikeyPart(TestFromDigikeyPart):
-    @staticmethod
-    def init_diode_mock(
-        reverse_voltage,
-        package,
-        current_or_power,
-        diode_type=None,
-        diode_configuration="",
-        **kwargs,
-    ):
-        parameters = {
-            "Supplier Device Package": package,
-        }
-        if diode_configuration:
-            parameters["Diode Configuration"] = diode_configuration
-        if diode_type in ("Standard", "Schottky"):
-            parameters["Voltage - DC Reverse (Vr) (Max)"] = reverse_voltage
-            parameters["Current - Average Rectified (Io)"] = current_or_power
-            parameters["Technology"] = diode_type
-            subcategory = (
-                "Diodes - Rectifiers - Single Diodes - Rectifiers - " "Single Diodes"
-            )
-        else:
-            parameters["Voltage - Zener (Nom) (Vz)"] = reverse_voltage
-            parameters["Power - Max"] = current_or_power
-            subcategory = (
-                "Diodes - Zener - Single Zener Diodes - Zener - " "Single Zener Diodes"
-            )
-
-        s = super(TestDiodeFromDigikeyPart, TestDiodeFromDigikeyPart)
-        return s.init_mock(
-            category="Discrete Semiconductor Products",
-            subcategory=subcategory,
-            parameters=parameters,
-            **kwargs,
-        )
-
     def test_diode_from_digikey(self):
-        mock_part = self.init_diode_mock(
-            datasheet=("https://www.onsemi.com/download/data-sheet/pdf/" "1n914-d.pdf"),
-            mfg="onsemi",
-            MPN="1N4148TR",
-            digikey_PN="1N4148FSCT-ND",
-            package="DO-35",
-            reverse_voltage="100 V",
-            current_or_power="200mA",
-            diode_type="Standard",
-        )
-        self.check_component_matches_csv(mock_part)
+        self.check_component_matches_csv(digikey_mocks.mock_diode)
 
     def test_schottky_diode_from_digikey(self):
-        mock_part = self.init_diode_mock(
-            datasheet=("https://www.diodes.com/assets/Datasheets/ds30098.pdf"),
-            mfg="Diodes Incorporated",
-            MPN="BAT54WS-7-F",
-            digikey_PN="BAT54WS-FDICT-ND",
-            package="SOD-323",
-            reverse_voltage="30 V",
-            current_or_power="100mA",
-            diode_type="Schottky",
-        )
-        self.check_component_matches_csv(mock_part)
+        self.check_component_matches_csv(digikey_mocks.mock_schottky_diode)
 
     def test_zener_diode_from_digikey(self):
-        mock_part = self.init_diode_mock(
-            datasheet=("https://www.diodes.com/assets/Datasheets/ds18010.pdf"),
-            mfg="Diodes Incorporated",
-            MPN="MMSZ5231B-7-F",
-            digikey_PN="MMSZ5231B-FDICT-ND",
-            package="SOD-123",
-            reverse_voltage="5.1 V",
-            current_or_power="500mW",
-        )
-        self.check_component_matches_csv(mock_part)
+        self.check_component_matches_csv(digikey_mocks.mock_zener_diode)
 
     @patch("partdb.component.input", return_value="Device:D_Dual_Series_ACK")
     def test_diode_array_from_digikey(self, mock_input):
-        mock_part = self.init_diode_mock(
-            datasheet=("https://www.mccsemi.com/pdf/Products/BAV99(SOT-23).pdf"),
-            mfg="Micro Commercial Co",
-            MPN="BAV99-TP",
-            digikey_PN="BAV99TPMSCT-ND",
-            package="SOT-23",
-            reverse_voltage="70 V",
-            current_or_power="200mA",
-            diode_type="Standard",
-            diode_configuration="1 Pair Series Connection",
-        )
-        self.check_component_matches_csv(mock_part)
+        self.check_component_matches_csv(digikey_mocks.mock_diode_array)
 
 
 class TestLEDFromDigikeyPart(TestFromDigikeyPart):
-    @staticmethod
-    def init_led_mock(
-        color,
-        diode_configuration,
-        forward_voltage="",
-        interface="",
-        supplier_device_package="",
-        package="",
-        size_dimension="",
-        **kwargs,
-    ):
-        parameters = {
-            "Color": color,
-            "Configuration": diode_configuration,
-        }
-        if forward_voltage:
-            parameters["Voltage - Forward (Vf) (Typ)"] = forward_voltage
-        if interface:
-            parameters["Interface"] = interface
-        if package:
-            parameters["Package / Case"] = package
-        if supplier_device_package:
-            parameters["Supplier Device Package"] = supplier_device_package
-        if size_dimension:
-            parameters["Size / Dimension"] = size_dimension
-
-        s = super(TestLEDFromDigikeyPart, TestLEDFromDigikeyPart)
-        return s.init_mock(category="Optoelectronics", parameters=parameters, **kwargs)
-
     def test_led_from_digikey(self):
-        mock_part = self.init_led_mock(
-            datasheet=(
-                "https://optoelectronics.liteon.com/upload/download/"
-                "DS22-2000-222/LTST-C191KFKT.pdf"
-            ),
-            mfg="Lite-On Inc.",
-            MPN="LTST-C191KFKT",
-            digikey_PN="160-1445-1-ND",
-            color="Orange",
-            forward_voltage="2V",
-            diode_configuration="Standard",
-            package="0603 (1608 Metric)",
-        )
-        self.check_component_matches_csv(mock_part)
+        self.check_component_matches_csv(digikey_mocks.mock_led)
 
     @patch(
         "partdb.component.input",
         side_effect=["Device:LED_RKBG", "LED_THT:LED_D5.0mm-4_RGB"],
     )
     def test_led_rgb_from_digikey(self, mock_input):
-        mock_part = self.init_led_mock(
-            datasheet=(
-                "https://www.KingbrightUSA.com/images/catalog/SPEC/"
-                "WP154A4SUREQBFZGC.pdf"
-            ),
-            mfg="Kingbright",
-            MPN="WP154A4SUREQBFZGC",
-            digikey_PN="754-1615-ND",
-            color="Red, Green, Blue (RGB)",
-            forward_voltage="1.9V Red, 3.3V Green, 3.3V Blue",
-            diode_configuration="Common Cathode",
-            package="Radial - 4 Leads",
-            supplier_device_package="T-1 3/4",
-        )
-        self.check_component_matches_csv(mock_part)
+        self.check_component_matches_csv(digikey_mocks.mock_rgb_led)
 
     @patch(
         "partdb.component.input",
@@ -826,85 +451,23 @@ class TestLEDFromDigikeyPart(TestFromDigikeyPart):
         ],
     )
     def test_led_adressable_from_digikey(self, mock_input):
-        mock_part = self.init_led_mock(
-            datasheet=(
-                "https://www.inolux-corp.com/datasheet/SMDLED/"
-                "Addressable%20LED/IN-PI554FCH.pdf"
-            ),
-            mfg="Inolux",
-            MPN="IN-PI554FCH",
-            digikey_PN="1830-1106-1-ND",
-            color="Red, Green, Blue (RGB)",
-            diode_configuration="Discrete",
-            interface="PWM",
-            size_dimension="5.00mm L x 5.00mm W",
-        )
-        self.check_component_matches_csv(mock_part)
+        self.check_component_matches_csv(digikey_mocks.mock_addressable_led)
 
 
 class TestBJTFromDigikeyPart(TestFromDigikeyPart):
-    @staticmethod
-    def init_bjt_mock(
-        transistor_type, vce_max, ic_max, power_max, ft, package, **kwargs
-    ):
-        parameters = {
-            "Transistor Type": transistor_type,
-            "Voltage - Collector Emitter Breakdown (Max)": vce_max,
-            "Current - Collector (Ic) (Max)": ic_max,
-            "Power - Max": power_max,
-            "Frequency - Transition": ft,
-            "Supplier Device Package": package,
-        }
-
-        s = super(TestBJTFromDigikeyPart, TestBJTFromDigikeyPart)
-        return s.init_mock(
-            category="Discrete Semiconductor Products",
-            subcategory=(
-                "Transistors - Bipolar (BJT) - "
-                "Single Bipolar Transistors - Bipolar (BJT) - "
-                "Single Bipolar Transistors"
-            ),
-            parameters=parameters,
-            **kwargs,
-        )
-
     @patch(
         "partdb.component.input",
         side_effect=["Device:Q_NPN_EBC", "Package_TO_SOT_THT:TO-92_Inline"],
     )
     def test_bjt_from_digikey(self, mock_input):
-        mock_part = self.init_bjt_mock(
-            datasheet="https://www.onsemi.com/pdf/datasheet/pzt3904-d.pdf",
-            mfg="onsemi",
-            MPN="2N3904BU",
-            digikey_PN="2N3904FS-ND",
-            transistor_type="NPN",
-            vce_max="40 V",
-            ic_max="200 mA",
-            power_max="625 mW",
-            ft="300MHz",
-            package="TO-92-3",
-        )
-        self.check_component_matches_csv(mock_part)
+        self.check_component_matches_csv(digikey_mocks.mock_bjt)
 
     @patch(
         "partdb.component.input",
         side_effect=["Device:Q_NPN_QUAD_FAKE", "Package_SO:SOIC-16_3.9x9.9mm_P1.27mm"],
     )
     def test_bjt_array_from_digikey(self, mock_input):
-        mock_part = self.init_bjt_mock(
-            datasheet="https://www.onsemi.com/pdf/datasheet/ffb3904-d.pdf",
-            mfg="onsemi",
-            MPN="MMPQ3904",
-            digikey_PN="MMPQ3904FSCT-ND",
-            transistor_type="4 NPN (Quad)",
-            vce_max="40V",
-            ic_max="200mA",
-            power_max="1W",
-            ft="250MHz",
-            package="16-SOIC",
-        )
-        self.check_component_matches_csv(mock_part)
+        self.check_component_matches_csv(digikey_mocks.mock_bjt_array)
 
 
 if __name__ == "__main__":
