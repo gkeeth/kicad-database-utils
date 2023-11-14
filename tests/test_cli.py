@@ -1,3 +1,4 @@
+import io
 import os
 import unittest
 from unittest.mock import patch
@@ -71,6 +72,25 @@ class TestAdd(TestCLI):
             ]
         )
         self.check_table_and_IPN()
+
+    @patch("sys.stdout", new_callable=io.StringIO)
+    def test_add_verbose(self, stdout_mock):
+        cli.main(
+            [
+                "--initialize-db",
+                "--verbose",
+                "--database",
+                self.db_path,
+                "add",
+                "--csv",
+                "sample_parts_csv/YAG2320CT-ND.csv",
+            ]
+        )
+        self.assertEqual(
+            "Creating table 'resistor'\n"
+            "Adding component 'R_100_0603_1%_0.1W_ThinFilm' to table 'resistor'\n",
+            stdout_mock.getvalue()
+        )
 
     def test_add_multiple(self):
         cli.main(
