@@ -8,7 +8,6 @@ from tests import digikey_mocks
 
 """
 TODO tests
-- add multiple
 - verbose
 - dump-database-csv-full
 - dump-database-csv-minimal
@@ -30,19 +29,18 @@ class TestCLI(unittest.TestCase):
         if os.path.exists(self.db_path):
             os.remove(self.db_path)
 
-    def check_table_and_IPN(self, table="resistor", IPN="R_100_0603_1%_0.1W_ThinFilm"):
+    def check_table_and_IPN(
+        self, table="resistor", IPNs=["R_100_0603_1%_0.1W_ThinFilm"]
+    ):
         con = db.connect_to_database(self.db_path)
         tables = db.get_table_names(con)
         self.assertEqual([f"{table}"], tables)
 
-        if IPN:
-            expected_IPNs = [(IPN,)]
-        else:
-            expected_IPNs = []
+        expected_IPNs = [(IPN,) for IPN in IPNs]
 
         cur = con.cursor()
         res = cur.execute(f"SELECT IPN FROM {table}").fetchall()
-        self.assertEqual(expected_IPNs, res)
+        self.assertEqual(sorted(expected_IPNs), sorted(res))
         con.close()
 
 
@@ -73,6 +71,22 @@ class TestAdd(TestCLI):
             ]
         )
         self.check_table_and_IPN()
+
+    def test_add_multiple(self):
+        cli.main(
+            [
+                "--initialize-db",
+                "--database",
+                self.db_path,
+                "add",
+                "--csv",
+                "sample_parts_csv/YAG2320CT-ND.csv",
+                "sample_parts_csv/311-0.0GRCT-ND.csv",
+            ]
+        )
+        self.check_table_and_IPN(
+            IPNs=["R_100_0603_1%_0.1W_ThinFilm", "R_0_Jumper_0603_ThickFilm"]
+        )
 
 
 class TestRm(TestCLI):
@@ -111,4 +125,4 @@ class TestRm(TestCLI):
                 "R_100_0603_1%_0.1W_ThinFilm",
             ]
         )
-        self.check_table_and_IPN(IPN=None)
+        self.check_table_and_IPN(IPNs=[])
