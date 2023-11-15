@@ -116,16 +116,8 @@ def subcommand_add(args, db_path):
     if args.digikey:
         setup_digikey(config.config_data)
         digikey_pn_list = [pn.strip() for pn in args.digikey]
-        # TODO: refactor the below steps
-        components = create_component_list_from_digikey_pn_list(
+        components += create_component_list_from_digikey_pn_list(
             digikey_pn_list, args.dump_api_response
-        )
-        add_components_from_list_to_db(
-            db_path,
-            components,
-            update=args.update_existing,
-            increment=args.increment_duplicates,
-            no_db=args.no_db,
         )
 
     if args.mouser:
@@ -134,16 +126,17 @@ def subcommand_add(args, db_path):
     if args.csv:
         for csvfile in args.csv:
             components += create_component_list_from_csv(csvfile.strip())
-        add_components_from_list_to_db(
-            db_path,
-            components,
-            update=args.update_existing,
-            increment=args.increment_duplicates,
-            no_db=args.no_db,
-        )
 
     if args.dump_part_csv:
         print_components_from_list_as_csv(components)
+
+    add_components_from_list_to_db(
+        db_path,
+        components,
+        update=args.update_existing,
+        increment=args.increment_duplicates,
+        no_db=args.no_db,
+    )
 
 
 def subcommand_rm(args, db_path):
