@@ -21,6 +21,11 @@ TODO tests
 
 class TestCLI(unittest.TestCase):
     db_path = "unittests.db"
+    DPN_to_IPN = {
+        "YAG2320CT-ND": "R_100_0603_1%_0.1W_ThinFilm",
+        "311-0.0GRCT-ND": "R_0_Jumper_0603_ThickFilm",
+    }
+    DPNs = list(DPN_to_IPN.keys())
 
     def setUp(self):
         if os.path.exists(self.db_path):
@@ -30,9 +35,10 @@ class TestCLI(unittest.TestCase):
         if os.path.exists(self.db_path):
             os.remove(self.db_path)
 
-    def check_table_and_IPN(
-        self, table="resistor", IPNs=["R_100_0603_1%_0.1W_ThinFilm"]
-    ):
+    def check_table_and_IPN(self, table="resistor", IPNs=None):
+        if IPNs is None:
+            IPNs = [self.DPN_to_IPN[self.DPNs[0]]]
+
         con = db.connect_to_database(self.db_path)
         tables = db.get_table_names(con)
         self.assertEqual([f"{table}"], tables)
@@ -55,7 +61,7 @@ class TestAdd(TestCLI):
                 self.db_path,
                 "add",
                 "--digikey",
-                "YAG2320CT-ND",
+                self.DPNs[0],
             ]
         )
         self.check_table_and_IPN()
@@ -68,7 +74,7 @@ class TestAdd(TestCLI):
                 self.db_path,
                 "add",
                 "--csv",
-                "sample_parts_csv/YAG2320CT-ND.csv",
+                f"sample_parts_csv/{self.DPNs[0]}.csv",
             ]
         )
         self.check_table_and_IPN()
@@ -83,13 +89,13 @@ class TestAdd(TestCLI):
                 self.db_path,
                 "add",
                 "--csv",
-                "sample_parts_csv/YAG2320CT-ND.csv",
+                f"sample_parts_csv/{self.DPNs[0]}.csv",
             ]
         )
         self.assertEqual(
             "Creating table 'resistor'\n"
-            "Adding component 'R_100_0603_1%_0.1W_ThinFilm' to table 'resistor'\n",
-            stdout_mock.getvalue()
+            f"Adding component '{self.DPN_to_IPN[self.DPNs[0]]}' to table 'resistor'\n",
+            stdout_mock.getvalue(),
         )
 
     def test_add_multiple(self):
@@ -100,13 +106,11 @@ class TestAdd(TestCLI):
                 self.db_path,
                 "add",
                 "--csv",
-                "sample_parts_csv/YAG2320CT-ND.csv",
-                "sample_parts_csv/311-0.0GRCT-ND.csv",
+                f"sample_parts_csv/{self.DPNs[0]}.csv",
+                f"sample_parts_csv/{self.DPNs[1]}.csv",
             ]
         )
-        self.check_table_and_IPN(
-            IPNs=["R_100_0603_1%_0.1W_ThinFilm", "R_0_Jumper_0603_ThickFilm"]
-        )
+        self.check_table_and_IPN(IPNs=self.DPN_to_IPN.values())
 
 
 class TestRm(TestCLI):
@@ -119,8 +123,8 @@ class TestRm(TestCLI):
                 self.db_path,
                 "add",
                 "--csv",
-                "sample_parts_csv/YAG2320CT-ND.csv",
-                "sample_parts_csv/311-0.0GRCT-ND.csv",
+                f"sample_parts_csv/{self.DPNs[0]}.csv",
+                f"sample_parts_csv/{self.DPNs[1]}.csv",
             ]
         )
 
@@ -130,7 +134,7 @@ class TestRm(TestCLI):
                 "--database",
                 self.db_path,
                 "rm",
-                "311-0.0GRCT-ND",
+                self.DPNs[1],
             ]
         )
         self.check_table_and_IPN()
@@ -141,8 +145,8 @@ class TestRm(TestCLI):
                 "--database",
                 self.db_path,
                 "rm",
-                "311-0.0GRCT-ND",
-                "R_100_0603_1%_0.1W_ThinFilm",
+                self.DPNs[1],
+                self.DPN_to_IPN[self.DPNs[0]],  # remove 1 by DPN and 1 by IPN
             ]
         )
         self.check_table_and_IPN(IPNs=[])
