@@ -195,7 +195,7 @@ def dump_database_to_csv_full(con):
         csvwriter.writeheader()
         for row in rows:
             csvwriter.writerow(row)
-        return csv_string.getvalue()
+        return csv_string.getvalue().strip()
 
 
 def dump_database_to_csv_minimal(con):
@@ -227,4 +227,4 @@ def dump_database_to_csv_minimal(con):
             res = cur.execute(f"SELECT {','.join(select_cols)} from {table}")
             for row in res.fetchall():
                 csvwriter.writerow(row)
-        return csv_string.getvalue()
+        return csv_string.getvalue().strip()

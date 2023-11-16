@@ -86,7 +86,7 @@ class TestDatabaseFunctions(unittest.TestCase):
         for c in components:
             row = [str(defaultdict(str, c.columns)[k]) for k in keys.split(",")]
             rows.append(",".join(row))
-        return "\r\n".join([keys] + rows) + "\r\n"
+        return "\r\n".join([keys] + rows)
 
     def setUp(self):
         self.backup_IPN_DUPLICATE_LIMIT = db.IPN_DUPLICATE_LIMIT

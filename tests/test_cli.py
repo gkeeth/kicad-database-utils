@@ -150,3 +150,100 @@ class TestRm(TestCLI):
             ]
         )
         self.check_table_and_IPN(IPNs=[])
+
+
+class TestShow(TestCLI):
+    def setUp(self):
+        super().setUp()
+        cli.main(
+            [
+                "--initialize-db",
+                "--database",
+                self.db_path,
+                "add",
+                "--csv",
+                f"sample_parts_csv/{self.DPNs[0]}.csv",
+                f"sample_parts_csv/{self.DPNs[1]}.csv",
+            ]
+        )
+
+    @patch("sys.stdout", new_callable=io.StringIO)
+    def test_show_table_names(self, stdout_mock):
+        cli.main(
+            [
+                "--database",
+                self.db_path,
+                "add",
+                "--csv",
+                "sample_parts_csv/BAT54WS-FDICT-ND.csv",
+            ]
+        )
+        cli.main(
+            [
+                "--database",
+                self.db_path,
+                "show",
+                "--table-names-only",
+                "--csv",
+            ]
+        )
+
+        self.assertEqual(
+            "diode\nresistor\n",
+            stdout_mock.getvalue(),
+        )
+
+    @patch("sys.stdout", new_callable=io.StringIO)
+    def test_show_csv_minimal(self, stdout_mock):
+        cli.main(
+            [
+                "--database",
+                self.db_path,
+                "show",
+                "--minimal-columns",
+                "--csv",
+            ]
+        )
+        expected = (
+            "distributor1,DPN1,distributor2,DPN2,kicad_symbol,kicad_footprint\r\n"
+            "Digikey,YAG2320CT-ND,,,Device:R,Resistor_SMD:R_0603_1608Metric\r\n"
+            "Digikey,311-0.0GRCT-ND,,,Device:R,Resistor_SMD:R_0603_1608Metric\n"
+        )
+
+        self.assertEqual(
+            expected,
+            stdout_mock.getvalue(),
+        )
+
+    @patch("sys.stdout", new_callable=io.StringIO)
+    def test_show_csv_full(self, stdout_mock):
+        cli.main(
+            [
+                "--database",
+                self.db_path,
+                "show",
+                "--all-columns",
+                "--csv",
+            ]
+        )
+        expected = (
+            "DPN1,DPN2,IPN,MPN,composition,datasheet,description,"
+            "distributor1,distributor2,exclude_from_board,exclude_from_bom,"
+            "keywords,kicad_footprint,kicad_symbol,manufacturer,package,power,"
+            "resistance,tolerance,value\r\n"
+            "YAG2320CT-ND,,R_100_0603_1%_0.1W_ThinFilm,RT0603FRE07100RL,Thin Film,"
+            "https://www.yageo.com/upload/media/product/productsearch/datasheet/"
+            "rchip/PYu-RT_1-to-0.01_RoHS_L_15.pdf,"
+            '"100Ω ±1%, 0.1W resistor, 0603, thin film",Digikey,,0,0,'
+            "r res resistor 100,Resistor_SMD:R_0603_1608Metric,Device:R,YAGEO,"
+            "0603,0.1W,100,1%,${Resistance}\r\n"
+            "311-0.0GRCT-ND,,R_0_Jumper_0603_ThickFilm,RC0603JR-070RL,Thick Film,"
+            "https://www.yageo.com/upload/media/product/productsearch/datasheet/"
+            'rchip/PYu-RC_Group_51_RoHS_L_12.pdf,"0Ω jumper, 0603, thick film",'
+            "Digikey,,0,0,jumper,Resistor_SMD:R_0603_1608Metric,Device:R,YAGEO,0603,-,0,-,${Resistance}\n"
+        )
+
+        self.assertEqual(
+            expected,
+            stdout_mock.getvalue(),
+        )

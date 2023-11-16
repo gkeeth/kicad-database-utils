@@ -105,6 +105,14 @@ def print_database_to_csv_full(db_path):
     con.close()
 
 
+def print_database_table_names(db_path):
+    con = db.connect_to_database(db_path)
+    if not con:
+        return
+    for table in db.get_table_names(con):
+        print(table)
+
+
 def subcommand_add(args, db_path):
     components = []
 
@@ -144,6 +152,16 @@ def subcommand_rm(args, db_path):
     remove_components_from_list_from_db(db_path, part_numbers, no_db=False)
 
 
+def subcommand_show(args, db_path):
+    if args.table_names_only:
+        print_database_table_names(db_path)
+    elif args.csv:
+        if args.minimal_columns:
+            print_database_to_csv_minimal(db_path)
+        else:
+            print_database_to_csv_full(db_path)
+
+
 def parse_args(argv=None):
     """Set up CLI args and return the parsed arguments."""
     # TODO:
@@ -152,6 +170,7 @@ def parse_args(argv=None):
     # - mode/argument for update by MPN or DPN
     # - mode/argument to import a minimal CSV
     # - mode/argument to import a full CSV
+    # - support removing by MPN
 
     parser = argparse.ArgumentParser(
         description=(
@@ -258,6 +277,57 @@ def parse_args(argv=None):
         metavar="PART_NUMBER",
         nargs="+",
         help="Part number(s) for part(s) to remove. Can be IPN, DPN1, or DPN2.",
+    )
+
+    show_help = "Show contents of part database."
+    parser_show = subparsers.add_parser("show", description=show_help, help=show_help)
+    parser_show.set_defaults(func=subcommand_show)
+    parser_show.add_argument(
+        "--table",
+        metavar="TABLE_NAME",
+        nargs="+",
+        help=(
+            "Table name(s) for tables to show. "
+            "If not specified, all tables are shown."
+        ),
+    )
+    group_show_column_filters = parser_show.add_argument_group(
+        "output contents", "Database contents to show"
+    )
+    exclusive_group_show_column_filters = (
+        group_show_column_filters.add_mutually_exclusive_group()
+    )
+    exclusive_group_show_column_filters.add_argument(
+        "--all-columns",
+        action="store_true",
+        help="Display all columns for all parts being printed (default).",
+    )
+    exclusive_group_show_column_filters.add_argument(
+        "--minimal-columns",
+        action="store_true",
+        help=(
+            "Display a minimal set of columns: "
+            "distributor1, DPN1, distributor2, DPN2, kicad_symbol, and kicad_footprint."
+        ),
+    )
+    exclusive_group_show_column_filters.add_argument(
+        "--table-names-only",
+        action="store_true",
+        help=(
+            "Only display table names, not the parts in each table. "
+            "Each table name is printed on its own line. "
+            "The output format argument is ignored."
+        ),
+    )
+    group_show_format = parser_show.add_argument_group(
+        "output format", "Format of printed output"
+    )
+    exclusive_group_show_format = group_show_format.add_mutually_exclusive_group()
+    exclusive_group_show_format.add_argument(
+        "--tabular", action="store_true", help="print in tabular format (default)"
+    )
+    exclusive_group_show_format.add_argument(
+        "--csv", action="store_true", help="print in CSV format"
     )
 
     parser.add_argument(
