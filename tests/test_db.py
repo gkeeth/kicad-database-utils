@@ -180,7 +180,7 @@ class TestDatabaseFunctions(unittest.TestCase):
         expected_keys = self.get_superset_keys(components)
         expected = self.get_csv_for_components(components, expected_keys)
 
-        dump = db.dump_database_to_csv_full(self.con)
+        dump = db.dump_database_to_csv(self.con)
 
         self.assertEqual(expected, dump)
 
@@ -199,7 +199,7 @@ class TestDatabaseFunctions(unittest.TestCase):
         )
         expected = self.get_csv_for_components(components, expected_keys)
 
-        dump = db.dump_database_to_csv_minimal(self.con)
+        dump = db.dump_database_to_csv(self.con, full=False)
 
         self.assertEqual(expected, dump)
 

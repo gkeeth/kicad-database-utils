@@ -160,19 +160,15 @@ def remove_component_from_db(con, part_number):
     print_message(f"No component matching '{part_number}' found")
 
 
-def dump_database_to_csv_full(con):
-    """Return a CSV string for all tables in the database.
-
-    Header row contains the superset of all column names in all tables, sorted
-    alphabetically. Any columns that don't exist for a given component type
-    are filled by an empty string.
-
-    Args:
-        con: Database connection object.
-    Returns:
-        A CSV string containing every column for every component in every
-        table in the database.
-    """
+def dump_database_to_csv(con, full=True):
+    minimal_cols = [
+        "distributor1",
+        "DPN1",
+        "distributor2",
+        "DPN2",
+        "kicad_symbol",
+        "kicad_footprint",
+    ]
 
     def defaultdict_factory(cursor, row):
         fields = [column[0] for column in cursor.description]
@@ -191,40 +187,14 @@ def dump_database_to_csv_full(con):
         for row in res:
             rows.append(row)
     with io.StringIO() as csv_string:
-        csvwriter = csv.DictWriter(csv_string, fieldnames=sorted(cols))
+        if full:
+            fieldnames = sorted(cols)
+        else:
+            fieldnames = minimal_cols
+        csvwriter = csv.DictWriter(
+            csv_string, fieldnames=fieldnames, extrasaction="ignore"
+        )
         csvwriter.writeheader()
         for row in rows:
             csvwriter.writerow(row)
-        return csv_string.getvalue().strip()
-
-
-def dump_database_to_csv_minimal(con):
-    """Dump selected columns from the database to CSV (distributor names,
-    distributor part numbers, KiCad symbol, and KiCad footprint).
-
-    Args:
-        con: database connection object.
-
-    Returns:
-        CSV-formatted string containing the selected column names (as a header)
-        and the column values, for all rows in all component databases.
-    """
-
-    select_cols = [
-        "distributor1",
-        "DPN1",
-        "distributor2",
-        "DPN2",
-        "kicad_symbol",
-        "kicad_footprint",
-    ]
-    cur = con.cursor()
-    tables = get_table_names(con)
-    with io.StringIO() as csv_string:
-        csvwriter = csv.writer(csv_string)
-        csvwriter.writerow(select_cols)
-        for table in tables:
-            res = cur.execute(f"SELECT {','.join(select_cols)} from {table}")
-            for row in res.fetchall():
-                csvwriter.writerow(row)
         return csv_string.getvalue().strip()

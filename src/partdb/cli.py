@@ -89,19 +89,11 @@ def remove_components_from_list_from_db(db_path, part_numbers, no_db=False):
     con.close()
 
 
-def print_database_to_csv_minimal(db_path):
+def print_database_to_csv(db_path, full=True):
     con = db.connect_to_database(db_path)
     if not con:
         return
-    print(db.dump_database_to_csv_minimal(con))
-    con.close()
-
-
-def print_database_to_csv_full(db_path):
-    con = db.connect_to_database(db_path)
-    if not con:
-        return
-    print(db.dump_database_to_csv_full(con))
+    print(db.dump_database_to_csv(con, full))
     con.close()
 
 
@@ -156,10 +148,7 @@ def subcommand_show(args, db_path):
     if args.table_names_only:
         print_database_table_names(db_path)
     elif args.csv:
-        if args.minimal_columns:
-            print_database_to_csv_minimal(db_path)
-        else:
-            print_database_to_csv_full(db_path)
+        print_database_to_csv(db_path, args.all_columns)
 
 
 def parse_args(argv=None):
@@ -394,10 +383,10 @@ def main(argv=None):
     args.func(args, db_path)
 
     if args.dump_database_csv_minimal:
-        print_database_to_csv_minimal(db_path)
+        print_database_to_csv(db_path, full=False)
 
     if args.dump_database_csv_full:
-        print_database_to_csv_full(db_path)
+        print_database_to_csv(db_path, full=True)
 
 
 if __name__ == "__main__":
