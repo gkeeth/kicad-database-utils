@@ -97,6 +97,14 @@ def print_database_to_csv(db_path, full=True):
     con.close()
 
 
+def print_database_to_table(db_path, full=True):
+    con = db.connect_to_database(db_path)
+    if not con:
+        return
+    print(db.dump_database_to_table(con, full))
+    con.close()
+
+
 def print_database_table_names(db_path):
     con = db.connect_to_database(db_path)
     if not con:
@@ -149,6 +157,8 @@ def subcommand_show(args, db_path):
         print_database_table_names(db_path)
     elif args.csv:
         print_database_to_csv(db_path, args.all_columns)
+    else:
+        print_database_to_table(db_path, args.all_columns)
 
 
 def parse_args(argv=None):

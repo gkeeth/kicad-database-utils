@@ -4,6 +4,7 @@ import io
 import os
 import sqlite3
 import sys
+from tabulate import tabulate
 
 from partdb.print_utils import print_message, print_error
 
@@ -160,7 +161,26 @@ def remove_component_from_db(con, part_number):
     print_message(f"No component matching '{part_number}' found")
 
 
-def dump_database_to_csv(con, full=True):
+def dump_database_to_dict_list(con, full=True):
+    """
+    Return a list of dicts of each row in the database, one dict per row.
+
+    TODO:
+    - add a table filter
+    - add a column filter
+
+    Args:
+        con: database connection object.
+        full: if True, dump all columns (superset of columns containing every
+            column in the database). If False, dump a miinimal set of columns:
+            distributor1, DPN1, distributor2, DPN2, kicad_symbol, kicad_footprint.
+
+    Returns:
+        a list of dicts, one dict per database row, each dict containing a key
+        for every column in the database. The value for a key is empty if the
+        key does not apply to the component in question.
+    """
+
     minimal_cols = [
         "distributor1",
         "DPN1",
@@ -186,15 +206,33 @@ def dump_database_to_csv(con, full=True):
         cols.update(fields)
         for row in res:
             rows.append(row)
+
+    if full:
+        selected_cols = sorted(cols)
+    else:
+        selected_cols = minimal_cols
+
+    # freeze default dict into a regular dict with consistent keys
+    rows = [{k: row[k] for k in selected_cols} for row in rows]
+
+    return rows
+
+
+def dump_database_to_csv(con, full=True):
+    rows = dump_database_to_dict_list(con, full)
+    if not rows:  # don't crash on empty database
+        return ""
+
     with io.StringIO() as csv_string:
-        if full:
-            fieldnames = sorted(cols)
-        else:
-            fieldnames = minimal_cols
         csvwriter = csv.DictWriter(
-            csv_string, fieldnames=fieldnames, extrasaction="ignore"
+            csv_string, fieldnames=rows[0].keys(), extrasaction="ignore"
         )
         csvwriter.writeheader()
         for row in rows:
             csvwriter.writerow(row)
         return csv_string.getvalue().strip()
+
+
+def dump_database_to_table(con, full=True):
+    rows = dump_database_to_dict_list(con, full)
+    return tabulate(rows, headers="keys", tablefmt="simple")
