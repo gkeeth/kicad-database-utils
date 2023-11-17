@@ -9,11 +9,6 @@ from partdb import cli, db
 
 from tests import digikey_mocks
 
-"""
-TODO tests
-- dump-api-response
-"""
-
 
 class TestCLI(unittest.TestCase):
     db_path = "unittests.db"
@@ -184,6 +179,22 @@ class TestAdd(TestCLI):
             actual = csv.DictReader(stdout_mock.getvalue().split("\n"))
             for row_expected, row_actual in zip(expected, actual):
                 self.assertEqual(row_expected, row_actual)
+
+    @patch("builtins.print")
+    @patch("digikey.product_details", return_value=digikey_mocks.mock_resistor)
+    def test_add_dump_api_response(self, resistor_mock, print_mock):
+        cli.main(
+            [
+                "--initialize-db",
+                "--database",
+                self.db_path,
+                "add",
+                "--digikey",
+                self.DPNs[0],
+                "--dump-api-response",
+            ]
+        )
+        print_mock.assert_called_with(resistor_mock.return_value)
 
 
 class TestRm(TestCLI):
