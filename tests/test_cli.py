@@ -10,7 +10,6 @@ from tests import digikey_mocks
 
 """
 TODO tests
-- verbose
 - dump-part-csv
 - dump-api-response
 """
@@ -204,6 +203,23 @@ class TestRm(TestCLI):
             ]
         )
         self.check_table_and_IPN(IPNs=[])
+
+    @patch("sys.stdout", new_callable=io.StringIO)
+    def test_remove_verbose(self, stdout_mock):
+        cli.main(
+            [
+                "--verbose",
+                "--database",
+                self.db_path,
+                "rm",
+                self.DPNs[1],
+            ]
+        )
+        self.assertEqual(
+            f"Removing component '{self.DPN_to_IPN[self.DPNs[1]]}' "
+            "from table 'resistor'\n",
+            stdout_mock.getvalue(),
+        )
 
 
 class TestShow(TestCLI):
