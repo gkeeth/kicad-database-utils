@@ -1,4 +1,5 @@
 from copy import deepcopy
+import csv
 import io
 import os
 import unittest
@@ -10,7 +11,6 @@ from tests import digikey_mocks
 
 """
 TODO tests
-- dump-part-csv
 - dump-api-response
 """
 
@@ -164,6 +164,26 @@ class TestAdd(TestCLI):
             ]
         )
         self.check_table_and_IPN(IPNs=self.DPN_to_IPN.values())
+
+    @patch("sys.stdout", new_callable=io.StringIO)
+    @patch("digikey.product_details", return_value=digikey_mocks.mock_resistor)
+    def test_add_dump_part_csv(self, resistor_mock, stdout_mock):
+        cli.main(
+            [
+                "--initialize-db",
+                "--database",
+                self.db_path,
+                "add",
+                "--digikey",
+                self.DPNs[0],
+                "--dump-part-csv",
+            ]
+        )
+        with open(f"sample_parts_csv/{self.DPNs[0]}.csv", "r") as f:
+            expected = csv.DictReader(f)
+            actual = csv.DictReader(stdout_mock.getvalue().split("\n"))
+            for row_expected, row_actual in zip(expected, actual):
+                self.assertEqual(row_expected, row_actual)
 
 
 class TestRm(TestCLI):
