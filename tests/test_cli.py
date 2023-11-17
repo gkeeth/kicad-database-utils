@@ -1,3 +1,4 @@
+from copy import deepcopy
 import io
 import os
 import unittest
@@ -10,8 +11,6 @@ from tests import digikey_mocks
 """
 TODO tests
 - verbose
-- increment-duplicates, maybe
-- update-existing, maybe
 - dump-part-csv
 - dump-api-response
 """
@@ -44,7 +43,7 @@ class TestCLI(unittest.TestCase):
             ]
         )
 
-    def check_table_and_IPN(self, table="resistor", IPNs=None):
+    def check_table_and_IPN(self, table="resistor", IPNs=None, additional_checks={}):
         if IPNs is None:
             IPNs = [self.DPN_to_IPN[self.DPNs[0]]]
 
@@ -57,10 +56,16 @@ class TestCLI(unittest.TestCase):
         cur = con.cursor()
         res = cur.execute(f"SELECT IPN FROM {table}").fetchall()
         self.assertEqual(sorted(expected_IPNs), sorted(res))
+        for col in additional_checks.keys():
+            res = cur.execute(f"SELECT {col} from {table}").fetchall()
+            self.assertEqual([(additional_checks[col],)], res)
         con.close()
 
 
 class TestAdd(TestCLI):
+    mock_resistor_updated = deepcopy(digikey_mocks.mock_resistor)
+    mock_resistor_updated.primary_datasheet = "new_datasheet"
+
     @patch("digikey.product_details", return_value=digikey_mocks.mock_resistor)
     def test_add_from_digikey(self, resistor_mock):
         cli.main(
@@ -74,6 +79,46 @@ class TestAdd(TestCLI):
             ]
         )
         self.check_table_and_IPN()
+
+    @patch("digikey.product_details", return_value=digikey_mocks.mock_resistor)
+    def test_add_increment(self, resistor_mock):
+        cli.main(
+            [
+                "--initialize-db",
+                "--database",
+                self.db_path,
+                "add",
+                "--digikey",
+                self.DPNs[0],
+                self.DPNs[0],
+                "--increment-duplicates",
+            ]
+        )
+        self.check_table_and_IPN(
+            IPNs=["R_100_0603_1%_0.1W_ThinFilm", "R_100_0603_1%_0.1W_ThinFilm_1"]
+        )
+
+    @patch(
+        "digikey.product_details",
+        side_effect=[digikey_mocks.mock_resistor, mock_resistor_updated],
+    )
+    def test_add_update(self, resistor_mock):
+        cli.main(
+            [
+                "--initialize-db",
+                "--database",
+                self.db_path,
+                "add",
+                "--digikey",
+                self.DPNs[0],
+                self.DPNs[0],
+                "--update-existing",
+            ]
+        )
+        self.check_table_and_IPN(
+            IPNs=["R_100_0603_1%_0.1W_ThinFilm"],
+            additional_checks={"datasheet": "new_datasheet"},
+        )
 
     def test_add_from_csv(self):
         cli.main(
