@@ -161,27 +161,7 @@ def subcommand_show(args, db_path):
         print_database_to_table(db_path, args.all_columns)
 
 
-def parse_args(argv=None):
-    """Set up CLI args and return the parsed arguments."""
-    # TODO:
-    # - add args for --dry-run (don't actually update database, but execute
-    #   everything up to db commit). Consider using a rolled-back transaction.
-    # - mode/argument for update by MPN or DPN
-    # - mode/argument to import a minimal CSV
-    # - mode/argument to import a full CSV
-    # - support removing by MPN
-
-    parser = argparse.ArgumentParser(
-        description=(
-            "Manage parts in the parts database. "
-            "Parts can be added, removed, edited, updated, and displayed."
-        )
-    )
-    parser.set_defaults(func=lambda _1, _2: parser.print_help())
-
-    subparsers = parser.add_subparsers(
-        title="subcommands", description="Commands for interacting with the database."
-    )
+def _parse_add_args(subparsers):
     add_help = "Add part(s) to the part database."
     parser_add = subparsers.add_parser("add", description=add_help, help=add_help)
     parser_add.set_defaults(func=subcommand_add)
@@ -268,6 +248,10 @@ def parse_args(argv=None):
         ),
     )
 
+    return parser_add
+
+
+def _parse_rm_args(subparsers):
     rm_help = "Remove part(s) from the part database."
     parser_rm = subparsers.add_parser("rm", description=rm_help, help=rm_help)
     parser_rm.set_defaults(func=subcommand_rm)
@@ -278,6 +262,10 @@ def parse_args(argv=None):
         help="Part number(s) for part(s) to remove. Can be IPN, DPN1, or DPN2.",
     )
 
+    return parser_rm
+
+
+def _parse_show_args(subparsers):
     show_help = "Show contents of part database."
     parser_show = subparsers.add_parser("show", description=show_help, help=show_help)
     parser_show.set_defaults(func=subcommand_show)
@@ -286,8 +274,7 @@ def parse_args(argv=None):
         metavar="TABLE_NAME",
         nargs="+",
         help=(
-            "Table name(s) for tables to show. "
-            "If not specified, all tables are shown."
+            "Table name(s) for tables to show. If not specified, all tables are shown."
         ),
     )
     group_show_column_filters = parser_show.add_argument_group(
@@ -329,14 +316,40 @@ def parse_args(argv=None):
         "--csv", action="store_true", help="print in CSV format"
     )
 
+    return parser_show
+
+
+def parse_args(argv=None):
+    """Set up CLI args and return the parsed arguments."""
+    # TODO:
+    # - add args for --dry-run (don't actually update database, but execute
+    #   everything up to db commit). Consider using a rolled-back transaction.
+    # - mode/argument for update by MPN or DPN
+    # - mode/argument to import a minimal CSV
+    # - mode/argument to import a full CSV
+    # - support removing by MPN
+
+    parser = argparse.ArgumentParser(
+        description=(
+            "Manage parts in the parts database. "
+            "Parts can be added, removed, edited, updated, and displayed."
+        )
+    )
+    parser.set_defaults(func=lambda _1, _2: parser.print_help())
+    subparsers = parser.add_subparsers(
+        title="subcommands", description="Commands for interacting with the database."
+    )
+
+    parser_add = _parse_add_args(subparsers)
+    parser_rm = _parse_rm_args(subparsers)
+    parser_show = _parse_show_args(subparsers)
+
     parser.add_argument(
         "--verbose", "-v", action="store_true", help="Print informational messages."
     )
-
     parser.add_argument(
         "--initialize-db", action="store_true", help="Initialize new, empty database."
     )
-
     parser.add_argument(
         "--dump-database-csv-full",
         action="store_true",
@@ -347,7 +360,6 @@ def parse_args(argv=None):
             "(e.g. add or rm)."
         ),
     )
-
     parser.add_argument(
         "--dump-database-csv-minimal",
         action="store_true",
@@ -359,7 +371,6 @@ def parse_args(argv=None):
             "(e.g. add or rm)."
         ),
     )
-
     parser.add_argument(
         "--database",
         metavar="DATABASE_PATH",
@@ -375,6 +386,7 @@ def parse_args(argv=None):
         top_parser = parser
         add_parser = parser_add
         rm_parser = parser_rm
+        show_parser = parser_show
 
     arg_context = ArgContext()
 
