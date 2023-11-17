@@ -35,6 +35,17 @@ class TestCLI(unittest.TestCase):
         if os.path.exists(self.db_path):
             os.remove(self.db_path)
 
+    def add_diode_to_db(self):
+        cli.main(
+            [
+                "--database",
+                self.db_path,
+                "add",
+                "--csv",
+                "sample_parts_csv/BAT54WS-FDICT-ND.csv",
+            ]
+        )
+
     def check_table_and_IPN(self, table="resistor", IPNs=None):
         if IPNs is None:
             IPNs = [self.DPN_to_IPN[self.DPNs[0]]]
@@ -169,15 +180,7 @@ class TestShow(TestCLI):
 
     @patch("sys.stdout", new_callable=io.StringIO)
     def test_show_table_names(self, stdout_mock):
-        cli.main(
-            [
-                "--database",
-                self.db_path,
-                "add",
-                "--csv",
-                "sample_parts_csv/BAT54WS-FDICT-ND.csv",
-            ]
-        )
+        self.add_diode_to_db()
         cli.main(
             [
                 "--database",
@@ -195,6 +198,7 @@ class TestShow(TestCLI):
 
     @patch("sys.stdout", new_callable=io.StringIO)
     def test_show_csv_minimal(self, stdout_mock):
+        self.add_diode_to_db()
         cli.main(
             [
                 "--database",
@@ -202,6 +206,32 @@ class TestShow(TestCLI):
                 "show",
                 "--minimal-columns",
                 "--csv",
+            ]
+        )
+        expected = (
+            "distributor1,DPN1,distributor2,DPN2,kicad_symbol,kicad_footprint\r\n"
+            "Digikey,BAT54WS-FDICT-ND,,,Device:D_Schottky,Diode_SMD:D_SOD-323\r\n"
+            "Digikey,YAG2320CT-ND,,,Device:R,Resistor_SMD:R_0603_1608Metric\r\n"
+            "Digikey,311-0.0GRCT-ND,,,Device:R,Resistor_SMD:R_0603_1608Metric\n"
+        )
+
+        self.assertEqual(
+            expected,
+            stdout_mock.getvalue(),
+        )
+
+    @patch("sys.stdout", new_callable=io.StringIO)
+    def test_show_csv_filter_tables(self, stdout_mock):
+        self.add_diode_to_db()
+        cli.main(
+            [
+                "--database",
+                self.db_path,
+                "show",
+                "--minimal-columns",
+                "--csv",
+                "--table",
+                "resistor",
             ]
         )
         expected = (
@@ -240,10 +270,8 @@ class TestShow(TestCLI):
             "311-0.0GRCT-ND,,R_0_Jumper_0603_ThickFilm,RC0603JR-070RL,Thick Film,"
             "https://www.yageo.com/upload/media/product/productsearch/datasheet/"
             'rchip/PYu-RC_Group_51_RoHS_L_12.pdf,"0Ω jumper, 0603, thick film",'
-            "Digikey,,0,0,jumper,Resistor_SMD:R_0603_1608Metric,Device:R,YAGEO,0603,-,0,-,${Resistance}\n"
+            "Digikey,,0,0,jumper,Resistor_SMD:R_0603_1608Metric,Device:R,YAGEO,"
+            "0603,-,0,-,${Resistance}\n"
         )
 
-        self.assertEqual(
-            expected,
-            stdout_mock.getvalue(),
-        )
+        self.assertEqual(expected, stdout_mock.getvalue())

@@ -180,7 +180,25 @@ class TestDatabaseFunctions(unittest.TestCase):
         expected_keys = self.get_superset_keys(components)
         expected = self.get_csv_for_components(components, expected_keys)
 
-        dump = db.dump_database_to_csv(self.con)
+        dump = db.dump_database_to_csv(self.con, tables=None)
+
+        self.assertEqual(expected, dump)
+
+    def test_dump_database_to_csv_filter_tables(self):
+        r1 = self.create_dummy_component("R_1")
+        r2 = self.create_dummy_component("R_2")
+        c1 = self.create_dummy_component(
+            "C_1", capacitance="cap", voltage="volt", dielectric="X7R"
+        )
+        components = [c1, r1, r2]
+        for comp in components:
+            db.add_component_to_db(self.con, comp)
+
+        resistors = [r1, r2]
+        expected_keys = self.get_superset_keys(resistors)
+        expected = self.get_csv_for_components(resistors, expected_keys)
+
+        dump = db.dump_database_to_csv(self.con, tables=["resistor"])
 
         self.assertEqual(expected, dump)
 
@@ -199,7 +217,7 @@ class TestDatabaseFunctions(unittest.TestCase):
         )
         expected = self.get_csv_for_components(components, expected_keys)
 
-        dump = db.dump_database_to_csv(self.con, full=False)
+        dump = db.dump_database_to_csv(self.con, tables=None, full=False)
 
         self.assertEqual(expected, dump)
 

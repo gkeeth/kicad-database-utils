@@ -161,16 +161,16 @@ def remove_component_from_db(con, part_number):
     print_message(f"No component matching '{part_number}' found")
 
 
-def dump_database_to_dict_list(con, full=True):
+def dump_database_to_dict_list(con, tables, full=True):
     """
     Return a list of dicts of each row in the database, one dict per row.
 
     TODO:
-    - add a table filter
     - add a column filter
 
     Args:
         con: database connection object.
+        tables: tables to dump. If None, all tables are dumped.
         full: if True, dump all columns (superset of columns containing every
             column in the database). If False, dump a miinimal set of columns:
             distributor1, DPN1, distributor2, DPN2, kicad_symbol, kicad_footprint.
@@ -195,12 +195,21 @@ def dump_database_to_dict_list(con, full=True):
         d = defaultdict(str, {field: row[n] for n, field in enumerate(fields)})
         return d
 
-    tables = get_table_names(con)
+    all_tables = set(get_table_names(con))
+    if tables:
+        valid_tables = all_tables.intersection(tables)
+    else:
+        valid_tables = all_tables
+        tables = all_tables
+    nonexistent_tables = set(tables).difference(all_tables)
+    if nonexistent_tables:
+        print_error(f"skipping nonexistent tables: {', '.join(nonexistent_tables)}")
+
     cur = con.cursor()
     cur.row_factory = defaultdict_factory
     rows = []
     cols = set()
-    for table in tables:
+    for table in sorted(valid_tables):
         res = cur.execute(f"SELECT * FROM {table}")
         fields = [column[0] for column in res.description]
         cols.update(fields)
@@ -218,8 +227,8 @@ def dump_database_to_dict_list(con, full=True):
     return rows
 
 
-def dump_database_to_csv(con, full=True):
-    rows = dump_database_to_dict_list(con, full)
+def dump_database_to_csv(con, tables, full=True):
+    rows = dump_database_to_dict_list(con, tables, full)
     if not rows:  # don't crash on empty database
         return ""
 
@@ -233,6 +242,6 @@ def dump_database_to_csv(con, full=True):
         return csv_string.getvalue().strip()
 
 
-def dump_database_to_table(con, full=True):
-    rows = dump_database_to_dict_list(con, full)
+def dump_database_to_table(con, tables, full=True):
+    rows = dump_database_to_dict_list(con, tables, full)
     return tabulate(rows, headers="keys", tablefmt="simple")

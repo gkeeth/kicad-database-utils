@@ -89,19 +89,23 @@ def remove_components_from_list_from_db(db_path, part_numbers, no_db=False):
     con.close()
 
 
-def print_database_to_csv(db_path, full=True):
+def print_database_to_csv(db_path, tables, full=True):
     con = db.connect_to_database(db_path)
     if not con:
         return
-    print(db.dump_database_to_csv(con, full))
+    dump = db.dump_database_to_csv(con, tables, full)
+    if dump:
+        print(dump)
     con.close()
 
 
-def print_database_to_table(db_path, full=True):
+def print_database_to_table(db_path, tables, full=True):
     con = db.connect_to_database(db_path)
     if not con:
         return
-    print(db.dump_database_to_table(con, full))
+    dump = db.dump_database_to_table(con, tables, full)
+    if dump:
+        print(dump)
     con.close()
 
 
@@ -156,9 +160,9 @@ def subcommand_show(args, db_path):
     if args.table_names_only:
         print_database_table_names(db_path)
     elif args.csv:
-        print_database_to_csv(db_path, args.all_columns)
+        print_database_to_csv(db_path, args.table, args.all_columns)
     else:
-        print_database_to_table(db_path, args.all_columns)
+        print_database_to_table(db_path, args.table, args.all_columns)
 
 
 def _parse_add_args(subparsers):
