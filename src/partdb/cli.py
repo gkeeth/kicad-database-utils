@@ -89,34 +89,6 @@ def remove_components_from_list_from_db(db_path, part_numbers, no_db=False):
     con.close()
 
 
-def print_database_to_csv(db_path, tables, full=True):
-    con = db.connect_to_database(db_path)
-    if not con:
-        return
-    dump = db.dump_database_to_csv(con, tables, full)
-    if dump:
-        print(dump)
-    con.close()
-
-
-def print_database_to_table(db_path, tables, full=True):
-    con = db.connect_to_database(db_path)
-    if not con:
-        return
-    dump = db.dump_database_to_table(con, tables, full)
-    if dump:
-        print(dump)
-    con.close()
-
-
-def print_database_table_names(db_path):
-    con = db.connect_to_database(db_path)
-    if not con:
-        return
-    for table in db.get_table_names(con):
-        print(table)
-
-
 def subcommand_add(args, db_path):
     components = []
 
@@ -157,12 +129,21 @@ def subcommand_rm(args, db_path):
 
 
 def subcommand_show(args, db_path):
+    con = db.connect_to_database(db_path)
+    if not con:
+        return
     if args.table_names_only:
-        print_database_table_names(db_path)
-    elif args.csv:
-        print_database_to_csv(db_path, args.table, args.all_columns)
+        for table in db.get_table_names(con):
+            print(table)
     else:
-        print_database_to_table(db_path, args.table, args.all_columns)
+        if args.csv:
+            dump = db.dump_database_to_csv(con, args.table, args.all_columns)
+        else:
+            dump = db.dump_database_to_table(con, args.table, args.all_columns)
+        if dump:
+            print(dump)
+
+    con.close()
 
 
 def _parse_add_args(subparsers):
