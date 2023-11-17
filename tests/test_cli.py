@@ -189,10 +189,7 @@ class TestShow(TestCLI):
             ]
         )
 
-        self.assertEqual(
-            "diode\nresistor\n",
-            stdout_mock.getvalue(),
-        )
+        self.assertEqual("diode\nresistor\n", stdout_mock.getvalue())
 
     @patch("sys.stdout", new_callable=io.StringIO)
     def test_show_csv_minimal(self, stdout_mock):
@@ -238,10 +235,7 @@ class TestShow(TestCLI):
             "Digikey,311-0.0GRCT-ND,,,Device:R,Resistor_SMD:R_0603_1608Metric\n"
         )
 
-        self.assertEqual(
-            expected,
-            stdout_mock.getvalue(),
-        )
+        self.assertEqual(expected, stdout_mock.getvalue())
 
     @patch("sys.stdout", new_callable=io.StringIO)
     def test_show_csv_full(self, stdout_mock):
@@ -270,6 +264,32 @@ class TestShow(TestCLI):
             'rchip/PYu-RC_Group_51_RoHS_L_12.pdf,"0Ω jumper, 0603, thick film",'
             "Digikey,,0,0,jumper,Resistor_SMD:R_0603_1608Metric,Device:R,YAGEO,"
             "0603,-,0,-,${Resistance}\n"
+        )
+
+        self.assertEqual(expected, stdout_mock.getvalue())
+
+    @patch("sys.stdout", new_callable=io.StringIO)
+    def test_show_table_minimal(self, stdout_mock):
+        self.add_diode_to_db()
+        cli.main(
+            [
+                "--database",
+                self.db_path,
+                "show",
+                "--minimal-columns",
+            ]
+        )
+        expected = (
+            "distributor1    DPN1              distributor2    DPN2    "
+            "kicad_symbol       kicad_footprint\n"
+            "--------------  ----------------  --------------  ------  "
+            "-----------------  ------------------------------\n"
+            "Digikey         BAT54WS-FDICT-ND                          "
+            "Device:D_Schottky  Diode_SMD:D_SOD-323\n"
+            "Digikey         YAG2320CT-ND                              "
+            "Device:R           Resistor_SMD:R_0603_1608Metric\n"
+            "Digikey         311-0.0GRCT-ND                            "
+            "Device:R           Resistor_SMD:R_0603_1608Metric\n"
         )
 
         self.assertEqual(expected, stdout_mock.getvalue())
