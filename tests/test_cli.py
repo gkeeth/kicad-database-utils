@@ -10,8 +10,6 @@ from tests import digikey_mocks
 """
 TODO tests
 - verbose
-- dump-database-csv-full
-- dump-database-csv-minimal
 - increment-duplicates, maybe
 - update-existing, maybe
 - dump-part-csv

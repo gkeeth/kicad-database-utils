@@ -355,27 +355,6 @@ def parse_args(argv=None):
         "--initialize-db", action="store_true", help="Initialize new, empty database."
     )
     parser.add_argument(
-        "--dump-database-csv-full",
-        action="store_true",
-        help=(
-            "Write all columns of all components in the database to stdout, "
-            "formatted as CSV. "
-            "The database is dumped after completing the current transaction "
-            "(e.g. add or rm)."
-        ),
-    )
-    parser.add_argument(
-        "--dump-database-csv-minimal",
-        action="store_true",
-        help=(
-            "Write select columns of all components in the database to stdout, "
-            "formatted as CSV. Included fields are: "
-            "distributor1, DPN1, distributor2, DPN2, kicad_symbol, kicad_footprint. "
-            "The database is dumped after completing the current transaction "
-            "(e.g. add or rm)."
-        ),
-    )
-    parser.add_argument(
         "--database",
         metavar="DATABASE_PATH",
         help=(
@@ -407,12 +386,6 @@ def main(argv=None):
         db.initialize_database(db_path)
 
     args.func(args, db_path)
-
-    if args.dump_database_csv_minimal:
-        print_database_to_csv(db_path, full=False)
-
-    if args.dump_database_csv_full:
-        print_database_to_csv(db_path, full=True)
 
 
 if __name__ == "__main__":
