@@ -263,7 +263,7 @@ def _parse_show_args(subparsers):
         ),
     )
     group_show_column_filters = parser_show.add_argument_group(
-        "output contents", "Database contents to show"
+        "output columns", "Database columns to show"
     )
     exclusive_group_show_column_filters = (
         group_show_column_filters.add_mutually_exclusive_group()
@@ -285,7 +285,7 @@ def _parse_show_args(subparsers):
         "--table-names-only",
         action="store_true",
         help=(
-            "Only display table names, not the parts in each table. "
+            "Only display table names, not the parts or columns in each table. "
             "Each table name is printed on its own line. "
             "The output format argument is ignored."
         ),
