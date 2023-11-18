@@ -322,8 +322,6 @@ def _parse_show_args(subparsers):
 def parse_args(argv=None):
     """Set up CLI args and return the parsed arguments."""
     # TODO:
-    # - add args for --dry-run (don't actually update database, but execute
-    #   everything up to db commit). Consider using a rolled-back transaction.
     # - mode/argument for update by MPN or DPN
     # - mode/argument to import a minimal CSV
     # - mode/argument to import a full CSV
