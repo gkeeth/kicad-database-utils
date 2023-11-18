@@ -322,7 +322,6 @@ def _parse_show_args(subparsers):
 def parse_args(argv=None):
     """Set up CLI args and return the parsed arguments."""
     # TODO:
-    # - mode/argument for update by MPN or DPN
     # - mode/argument to import a minimal CSV
 
     parser = argparse.ArgumentParser(
