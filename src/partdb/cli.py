@@ -68,7 +68,7 @@ def add_components_from_list_to_db(
 
 def remove_components_from_list_from_db(db_path, part_numbers, no_db=False):
     """Remove each component in a list from the database. Components can be
-    identified by IPN, DPN1, or DPN2.
+    identified by IPN, MPN, DPN1, or DPN2.
 
     All tables are searched. For each part number, the first matching part is
     removed. If the first match corresponds to multiple components, nothing is
@@ -76,7 +76,7 @@ def remove_components_from_list_from_db(db_path, part_numbers, no_db=False):
 
     Args:
         db_path: Database file path.
-        part_numbers: list of IPN, DPN1, or DPN2 for each component to remove.
+        part_numbers: list of IPN, MPN, DPN1, or DPN2 for each component to remove.
         no_db: if True, skip database operations.
     """
     if no_db:
@@ -327,7 +327,6 @@ def parse_args(argv=None):
     # - mode/argument for update by MPN or DPN
     # - mode/argument to import a minimal CSV
     # - mode/argument to import a full CSV
-    # - support removing by MPN
 
     parser = argparse.ArgumentParser(
         description=(

@@ -235,6 +235,18 @@ class TestDatabaseFunctions(unittest.TestCase):
         self.assertNotIn(("R_1",), res)
         self.assertIn(("R_2",), res)
 
+    def test_remove_by_MPN(self):
+        r1 = self.create_dummy_component("R_1")
+        r2 = self.create_dummy_component("R_2", MPN="mpn2")
+        for comp in [r1, r2]:
+            db.add_component_to_db(self.con, comp)
+
+        db.remove_component_from_db(self.con, "mpn")
+
+        res = self.cur.execute("SELECT IPN from resistor").fetchall()
+        self.assertNotIn(("R_1",), res)
+        self.assertIn(("R_2",), res)
+
     def test_remove_by_DPN1(self):
         r1 = self.create_dummy_component("R_1")
         r2 = self.create_dummy_component("R_2", value="val2", DPN1="dpn1a")

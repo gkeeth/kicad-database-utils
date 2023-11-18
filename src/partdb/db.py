@@ -136,21 +136,21 @@ def get_table_names(con):
 
 
 def remove_component_from_db(con, part_number):
-    """Remove a component from the database by IPN, DPN1, or DPN2.
+    """Remove a component from the database by IPN, MPN, DPN1, or DPN2.
 
     All tables are searched. The first matching part is removed. If the first
     match corresponds to multiple components, nothing is removed.
 
     Args:
         con: Database connection object.
-        part_number: IPN, DPN1, or DPN2 of the component to remove.
+        part_number: IPN, MPN, DPN1, or DPN2 of the component to remove.
     """
 
     tables = get_table_names(con)
     with con:
         cur = con.cursor()
         for table in tables:
-            for col in ["IPN", "DPN1", "DPN2"]:
+            for col in ["IPN", "MPN", "DPN1", "DPN2"]:
                 res = cur.execute(
                     f"SELECT IPN FROM {table} WHERE {col} = '{part_number}'"
                 ).fetchall()
