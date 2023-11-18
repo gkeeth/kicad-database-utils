@@ -317,7 +317,7 @@ class TestShow(TestCLI):
                 "show",
                 "--minimal-columns",
                 "--csv",
-                "--table",
+                "--tables",
                 "resistor",
             ]
         )
@@ -361,27 +361,24 @@ class TestShow(TestCLI):
         self.assertEqual(expected, stdout_mock.getvalue())
 
     @patch("sys.stdout", new_callable=io.StringIO)
-    def test_show_table_minimal(self, stdout_mock):
+    def test_show_table_filter_columns(self, stdout_mock):
         self.add_diode_to_db()
         cli.main(
             [
                 "--database",
                 self.db_path,
                 "show",
-                "--minimal-columns",
+                "--columns",
+                "IPN",
+                "DPN1",
             ]
         )
         expected = (
-            "distributor1    DPN1              distributor2    DPN2    "
-            "kicad_symbol       kicad_footprint\n"
-            "--------------  ----------------  --------------  ------  "
-            "-----------------  ------------------------------\n"
-            "Digikey         BAT54WS-FDICT-ND                          "
-            "Device:D_Schottky  Diode_SMD:D_SOD-323\n"
-            "Digikey         YAG2320CT-ND                              "
-            "Device:R           Resistor_SMD:R_0603_1608Metric\n"
-            "Digikey         311-0.0GRCT-ND                            "
-            "Device:R           Resistor_SMD:R_0603_1608Metric\n"
+            "IPN                               DPN1\n"
+            "--------------------------------  ----------------\n"
+            "D_DiodesIncorporated_BAT54WS-7-F  BAT54WS-FDICT-ND\n"
+            "R_100_0603_1%_0.1W_ThinFilm       YAG2320CT-ND\n"
+            "R_0_Jumper_0603_ThickFilm         311-0.0GRCT-ND\n"
         )
 
         self.assertEqual(expected, stdout_mock.getvalue())

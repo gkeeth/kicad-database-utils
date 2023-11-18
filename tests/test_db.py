@@ -217,7 +217,9 @@ class TestDatabaseFunctions(unittest.TestCase):
         )
         expected = self.get_csv_for_components(components, expected_keys)
 
-        dump = db.dump_database_to_csv(self.con, tables=None, full=False)
+        dump = db.dump_database_to_csv(
+            self.con, tables=None, columns=db.minimal_columns
+        )
 
         self.assertEqual(expected, dump)
 

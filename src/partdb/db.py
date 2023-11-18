@@ -10,6 +10,15 @@ from partdb.print_utils import print_message, print_error
 
 IPN_DUPLICATE_LIMIT = 10
 
+minimal_columns = [
+    "distributor1",
+    "DPN1",
+    "distributor2",
+    "DPN2",
+    "kicad_symbol",
+    "kicad_footprint",
+]
+
 
 class TooManyDuplicateIPNsInTableError(Exception):
     def __init__(self, IPN, table):
@@ -161,74 +170,66 @@ def remove_component_from_db(con, part_number):
     print_message(f"No component matching '{part_number}' found")
 
 
-def dump_database_to_dict_list(con, tables, full=True):
+def dump_database_to_dict_list(con, tables, columns=[]):
     """
     Return a list of dicts of each row in the database, one dict per row.
-
-    TODO:
-    - add a column filter
 
     Args:
         con: database connection object.
         tables: tables to dump. If None, all tables are dumped.
-        full: if True, dump all columns (superset of columns containing every
-            column in the database). If False, dump a miinimal set of columns:
-            distributor1, DPN1, distributor2, DPN2, kicad_symbol, kicad_footprint.
+        columns: list of columns to print. If a column doesn't exist in any of
+            the searched tables, an error is printed. An empty list means all
+            columns.
 
     Returns:
         a list of dicts, one dict per database row, each dict containing a key
-        for every column in the database. The value for a key is empty if the
+        for every column in `columns`. The value for a key is empty if the
         key does not apply to the component in question.
     """
-
-    minimal_cols = [
-        "distributor1",
-        "DPN1",
-        "distributor2",
-        "DPN2",
-        "kicad_symbol",
-        "kicad_footprint",
-    ]
 
     def defaultdict_factory(cursor, row):
         fields = [column[0] for column in cursor.description]
         d = defaultdict(str, {field: row[n] for n, field in enumerate(fields)})
         return d
 
-    all_tables = set(get_table_names(con))
+    tables_in_database = set(get_table_names(con))
     if tables:
-        valid_tables = all_tables.intersection(tables)
+        valid_tables = tables_in_database.intersection(tables)
     else:
-        valid_tables = all_tables
-        tables = all_tables
-    nonexistent_tables = set(tables).difference(all_tables)
+        valid_tables = tables_in_database
+        tables = tables_in_database
+    nonexistent_tables = set(tables).difference(tables_in_database)
     if nonexistent_tables:
         print_error(f"skipping nonexistent tables: {', '.join(nonexistent_tables)}")
 
     cur = con.cursor()
     cur.row_factory = defaultdict_factory
     rows = []
-    cols = set()
+    cols_in_database = set()
     for table in sorted(valid_tables):
         res = cur.execute(f"SELECT * FROM {table}")
         fields = [column[0] for column in res.description]
-        cols.update(fields)
+        cols_in_database.update(fields)
         for row in res:
             rows.append(row)
 
-    if full:
-        selected_cols = sorted(cols)
-    else:
-        selected_cols = minimal_cols
+    for col in columns:
+        if col not in cols_in_database:
+            # TODO use set operations for this? Collapse to one error as for tables
+            print_error(f"skipping nonexistent column: {col}")
+            columns.remove(col)
+
+    if not columns:
+        columns = sorted(cols_in_database)
 
     # freeze default dict into a regular dict with consistent keys
-    rows = [{k: row[k] for k in selected_cols} for row in rows]
+    rows = [{k: row[k] for k in columns} for row in rows]
 
     return rows
 
 
-def dump_database_to_csv(con, tables, full=True):
-    rows = dump_database_to_dict_list(con, tables, full)
+def dump_database_to_csv(con, tables, columns=[]):
+    rows = dump_database_to_dict_list(con, tables, columns)
     if not rows:  # don't crash on empty database
         return ""
 
@@ -242,6 +243,6 @@ def dump_database_to_csv(con, tables, full=True):
         return csv_string.getvalue().strip()
 
 
-def dump_database_to_table(con, tables, full=True):
-    rows = dump_database_to_dict_list(con, tables, full)
+def dump_database_to_table(con, tables, columns=[]):
+    rows = dump_database_to_dict_list(con, tables, columns)
     return tabulate(rows, headers="keys", tablefmt="simple")

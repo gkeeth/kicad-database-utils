@@ -132,14 +132,22 @@ def subcommand_show(args, db_path):
     con = db.connect_to_database(db_path)
     if not con:
         return
+
+    if args.columns:
+        columns = args.columns
+    elif args.minimal_columns:
+        columns = db.minimal_columns
+    else:
+        columns = []  # all columns
+
     if args.table_names_only:
         for table in db.get_table_names(con):
             print(table)
     else:
         if args.csv:
-            dump = db.dump_database_to_csv(con, args.table, args.all_columns)
+            dump = db.dump_database_to_csv(con, args.tables, columns)
         else:
-            dump = db.dump_database_to_table(con, args.table, args.all_columns)
+            dump = db.dump_database_to_table(con, args.tables, columns)
         if dump:
             print(dump)
 
@@ -255,11 +263,12 @@ def _parse_show_args(subparsers):
     parser_show = subparsers.add_parser("show", description=show_help, help=show_help)
     parser_show.set_defaults(func=subcommand_show)
     parser_show.add_argument(
-        "--table",
+        "--tables",
         metavar="TABLE_NAME",
         nargs="+",
         help=(
-            "Table name(s) for tables to show. If not specified, all tables are shown."
+            "Display the specified table(s). "
+            "If this argument is not given, all tables are shown."
         ),
     )
     group_show_column_filters = parser_show.add_argument_group(
@@ -280,6 +289,12 @@ def _parse_show_args(subparsers):
             "Display a minimal set of columns: "
             "distributor1, DPN1, distributor2, DPN2, kicad_symbol, and kicad_footprint."
         ),
+    )
+    exclusive_group_show_column_filters.add_argument(
+        "--columns",
+        metavar="COLUMN_NAME",
+        nargs="+",
+        help="Display the specified column(s).",
     )
     exclusive_group_show_column_filters.add_argument(
         "--table-names-only",
