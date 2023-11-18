@@ -176,10 +176,10 @@ def dump_database_to_dict_list(con, tables, columns=[]):
 
     Args:
         con: database connection object.
-        tables: tables to dump. If None, all tables are dumped.
+        tables: tables to dump. If Falsy, all tables are dumped.
         columns: list of columns to print. If a column doesn't exist in any of
-            the searched tables, an error is printed. An empty list means all
-            columns.
+            the searched tables, an error is printed. If Falsy, all columns are
+            printed.
 
     Returns:
         a list of dicts, one dict per database row, each dict containing a key
@@ -213,14 +213,14 @@ def dump_database_to_dict_list(con, tables, columns=[]):
         for row in res:
             rows.append(row)
 
+    if not columns:
+        columns = sorted(cols_in_database)
+
     for col in columns:
         if col not in cols_in_database:
             # TODO use set operations for this? Collapse to one error as for tables
             print_error(f"skipping nonexistent column: {col}")
             columns.remove(col)
-
-    if not columns:
-        columns = sorted(cols_in_database)
 
     # freeze default dict into a regular dict with consistent keys
     rows = [{k: row[k] for k in columns} for row in rows]
@@ -229,6 +229,22 @@ def dump_database_to_dict_list(con, tables, columns=[]):
 
 
 def dump_database_to_csv(con, tables, columns=[]):
+    """
+    Return a CSV string, with a header row and one row per row in the database.
+
+    Args:
+        con: database connection object.
+        tables: tables to dump. If Falsy, all tables are dumped.
+        columns: list of columns to print. If a column doesn't exist in any of
+            the searched tables, an error is printed. If Falsy, all columns are
+            printed.
+
+    Returns:
+        a CSV string, with a header row and a value row for each row in the
+        secified tables. There is a column for every column in `columns`. The
+        value in a column will be empty if the column does not exist for the
+        component in question.
+    """
     rows = dump_database_to_dict_list(con, tables, columns)
     if not rows:  # don't crash on empty database
         return ""
@@ -244,5 +260,22 @@ def dump_database_to_csv(con, tables, columns=[]):
 
 
 def dump_database_to_table(con, tables, columns=[]):
+    """
+    Return a string containing a plaintext table, with a header row and one row
+    per row in the database.
+
+    Args:
+        con: database connection object.
+        tables: tables to dump. If Falsy, all tables are dumped.
+        columns: list of columns to print. If a column doesn't exist in any of
+            the searched tables, an error is printed. If Falsy, all columns are
+            printed.
+
+    Returns:
+        a plaintext table, with a header row and a value row for each row in the
+        secified tables. There is a column for every column in `columns`. The
+        value in a column will be empty if the column does not exist for the
+        component in question.
+    """
     rows = dump_database_to_dict_list(con, tables, columns)
     return tabulate(rows, headers="keys", tablefmt="simple")
