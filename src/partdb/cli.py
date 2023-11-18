@@ -323,6 +323,8 @@ def parse_args(argv=None):
     """Set up CLI args and return the parsed arguments."""
     # TODO:
     # - mode/argument to import a minimal CSV
+    # - filter show by IPN (or arbitrary fields, key-value pairs)?
+    # - flag to print out new part nicely after adding it (in table form)
 
     parser = argparse.ArgumentParser(
         description=(
