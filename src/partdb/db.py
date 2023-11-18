@@ -194,33 +194,32 @@ def dump_database_to_dict_list(con, tables, columns=[]):
 
     tables_in_database = set(get_table_names(con))
     if tables:
-        valid_tables = tables_in_database.intersection(tables)
-    else:
-        valid_tables = tables_in_database
+        invalid_tables = set(tables).difference(tables_in_database)
+        if invalid_tables:
+            print_error(f"skipping nonexistent tables: {', '.join(invalid_tables)}")
+        tables = tables_in_database.intersection(tables)
+    else:  # all tables
         tables = tables_in_database
-    nonexistent_tables = set(tables).difference(tables_in_database)
-    if nonexistent_tables:
-        print_error(f"skipping nonexistent tables: {', '.join(nonexistent_tables)}")
 
     cur = con.cursor()
     cur.row_factory = defaultdict_factory
     rows = []
     cols_in_database = set()
-    for table in sorted(valid_tables):
+    for table in sorted(tables):
         res = cur.execute(f"SELECT * FROM {table}")
         fields = [column[0] for column in res.description]
         cols_in_database.update(fields)
         for row in res:
             rows.append(row)
 
-    if not columns:
+    if columns:
+        invalid_columns = set(columns).difference(cols_in_database)
+        if invalid_columns:
+            print_error(f"skipping nonexistent columns: {', '.join(invalid_columns)}")
+        # set intersection, but preserve specified column order
+        columns = [col for col in columns if col in cols_in_database]
+    else:  # all columns
         columns = sorted(cols_in_database)
-
-    for col in columns:
-        if col not in cols_in_database:
-            # TODO use set operations for this? Collapse to one error as for tables
-            print_error(f"skipping nonexistent column: {col}")
-            columns.remove(col)
 
     # freeze default dict into a regular dict with consistent keys
     rows = [{k: row[k] for k in columns} for row in rows]

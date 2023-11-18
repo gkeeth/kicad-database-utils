@@ -319,9 +319,11 @@ class TestShow(TestCLI):
                 "--csv",
                 "--tables",
                 "resistor",
+                "invalid_table",
             ]
         )
         expected = (
+            "Error: skipping nonexistent tables: invalid_table\n"
             "distributor1,DPN1,distributor2,DPN2,kicad_symbol,kicad_footprint\r\n"
             "Digikey,YAG2320CT-ND,,,Device:R,Resistor_SMD:R_0603_1608Metric\r\n"
             "Digikey,311-0.0GRCT-ND,,,Device:R,Resistor_SMD:R_0603_1608Metric\n"
@@ -371,9 +373,11 @@ class TestShow(TestCLI):
                 "--columns",
                 "IPN",
                 "DPN1",
+                "invalid_column",
             ]
         )
         expected = (
+            "Error: skipping nonexistent columns: invalid_column\n"
             "IPN                               DPN1\n"
             "--------------------------------  ----------------\n"
             "D_DiodesIncorporated_BAT54WS-7-F  BAT54WS-FDICT-ND\n"
