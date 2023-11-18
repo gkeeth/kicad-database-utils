@@ -160,6 +160,19 @@ class TestAdd(TestCLI):
         )
         self.check_table_and_IPN(IPNs=self.DPN_to_IPN.values())
 
+    def test_add_multiple_in_one_csv(self):
+        cli.main(
+            [
+                "--initialize-db",
+                "--database",
+                self.db_path,
+                "add",
+                "--csv",
+                "sample_parts_csv/resistors.csv",
+            ]
+        )
+        self.check_table_and_IPN(IPNs=self.DPN_to_IPN.values())
+
     @patch("sys.stdout", new_callable=io.StringIO)
     @patch("digikey.product_details", return_value=digikey_mocks.mock_resistor)
     def test_add_dump_part_csv(self, resistor_mock, stdout_mock):

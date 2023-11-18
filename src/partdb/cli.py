@@ -324,7 +324,6 @@ def parse_args(argv=None):
     # TODO:
     # - mode/argument for update by MPN or DPN
     # - mode/argument to import a minimal CSV
-    # - mode/argument to import a full CSV
 
     parser = argparse.ArgumentParser(
         description=(
