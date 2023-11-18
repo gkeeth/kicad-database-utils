@@ -3,6 +3,7 @@
 import argparse
 import os
 import sys
+from tabulate import tabulate
 
 from partdb.api_helpers import (
     setup_digikey,
@@ -28,8 +29,28 @@ def get_database_path(args, config_data):
     return db_path
 
 
+def print_components_from_list_as_table(components):
+    """Print all components in list to stdout, formatted as a single plaintext table."""
+
+    # we want to print as column for each part, with the first column being
+    # field labels.
+    # To do this, we need to transpose the dicts that we get from each component.
+    # Additionally, we're organizing this as a dict of dict, where the outer dict
+    # has a column per key (with key names as the column headers), and the value
+    # for each key/column is a dict mapping field names to field values for that
+    # component.
+    rownames = {k: None for comp in components for k in comp.columns if k != "IPN"}
+    cols = {"IPN": rownames.keys()}
+    for comp in components:
+        cols[comp.columns["IPN"]] = [comp.columns.get(k, "") for k in rownames]
+
+    print(tabulate(cols, headers="keys", maxcolwidths=30))
+
+
 def print_components_from_list_as_csv(components):
-    """Print all components in list to stdout, formatted as csv."""
+    """Print all components in list to stdout, each formatted as a separate CSV
+    table.
+    """
     for comp in components:
         print(comp.to_csv())
 
@@ -101,7 +122,7 @@ def subcommand_add(args, db_path):
         setup_digikey(config.config_data)
         digikey_pn_list = [pn.strip() for pn in args.digikey]
         components += create_component_list_from_digikey_pn_list(
-            digikey_pn_list, args.dump_api_response
+            digikey_pn_list, args.show_api_response
         )
 
     if args.mouser:
@@ -111,7 +132,10 @@ def subcommand_add(args, db_path):
         for csvfile in args.csv:
             components += create_component_list_from_csv(csvfile.strip())
 
-    if args.dump_part_csv:
+    if args.show:
+        print_components_from_list_as_table(components)
+
+    if args.show_csv:
         print_components_from_list_as_csv(components)
 
     add_components_from_list_to_db(
@@ -220,25 +244,25 @@ def _parse_add_args(subparsers):
     )
 
     group_add_output = parser_add.add_argument_group(
-        "component data dumping", "Output control for dumping new part data to stdout"
+        "component data display", "Output control for printing new part data to stdout"
     )
     group_add_output.add_argument(
-        "--dump-part-csv",
+        "--show",
+        action="store_true",
+        help="Show part data for all new parts, formatted as a single plaintext table.",
+    )
+    group_add_output.add_argument(
+        "--show-csv",
         action="store_true",
         help=(
-            "Write part data to stdout, formatted as CSV, for all parts in "
-            "transaction. "
-            "This action is performed in addition to the primary add transaction."
+            "Show part data for all new parts, formatted as a separate CSV "
+            "table for each part."
         ),
     )
     group_add_output.add_argument(
-        "--dump-api-response",
+        "--show-api-response",
         action="store_true",
-        help=(
-            "Write API response object data to stdout, if any, for all parts in "
-            "transaction. This can be used as a reference for implementation. "
-            "This action is performed in addition to the primary add transaction."
-        ),
+        help="Show API response data, if any, for all new parts.",
     )
 
     return parser_add
@@ -324,7 +348,6 @@ def parse_args(argv=None):
     # TODO:
     # - mode/argument to import a minimal CSV
     # - filter show by IPN (or arbitrary fields, key-value pairs)?
-    # - flag to print out new part nicely after adding it (in table form)
 
     parser = argparse.ArgumentParser(
         description=(

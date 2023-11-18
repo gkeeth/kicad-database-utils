@@ -2,6 +2,7 @@ from copy import deepcopy
 import csv
 import io
 import os
+import re
 import unittest
 from unittest.mock import patch
 
@@ -174,8 +175,11 @@ class TestAdd(TestCLI):
         self.check_table_and_IPN(IPNs=self.DPN_to_IPN.values())
 
     @patch("sys.stdout", new_callable=io.StringIO)
-    @patch("digikey.product_details", return_value=digikey_mocks.mock_resistor)
-    def test_add_dump_part_csv(self, resistor_mock, stdout_mock):
+    @patch(
+        "digikey.product_details",
+        side_effect=[digikey_mocks.mock_resistor, digikey_mocks.mock_ceramic_capacitor],
+    )
+    def test_add_show(self, part_mock, stdout_mock):
         cli.main(
             [
                 "--initialize-db",
@@ -184,7 +188,34 @@ class TestAdd(TestCLI):
                 "add",
                 "--digikey",
                 self.DPNs[0],
-                "--dump-part-csv",
+                "1276-1123-1-ND",
+                "--show",
+            ]
+        )
+        expected = [
+            r"^IPN\s+R_100_0603_1%_0.1W_ThinFilm\s+C_330nF_0805_10%_50V_X7R\n",
+            r"\n[- ]+\n",
+            r"\ndatasheet\s+http[\w:/\.\s]+\n",
+            r"\nresistance\s+100\n",
+            r"\ncapacitance\s+330nF\n",
+        ]
+
+        actual = stdout_mock.getvalue()
+        for r in expected:
+            self.assertTrue(re.search(r, actual))
+
+    @patch("sys.stdout", new_callable=io.StringIO)
+    @patch("digikey.product_details", return_value=digikey_mocks.mock_resistor)
+    def test_add_show_csv(self, resistor_mock, stdout_mock):
+        cli.main(
+            [
+                "--initialize-db",
+                "--database",
+                self.db_path,
+                "add",
+                "--digikey",
+                self.DPNs[0],
+                "--show-csv",
             ]
         )
         with open(f"sample_parts_csv/{self.DPNs[0]}.csv", "r") as f:
@@ -195,7 +226,7 @@ class TestAdd(TestCLI):
 
     @patch("builtins.print")
     @patch("digikey.product_details", return_value=digikey_mocks.mock_resistor)
-    def test_add_dump_api_response(self, resistor_mock, print_mock):
+    def test_add_show_api_response(self, resistor_mock, print_mock):
         cli.main(
             [
                 "--initialize-db",
@@ -204,7 +235,7 @@ class TestAdd(TestCLI):
                 "add",
                 "--digikey",
                 self.DPNs[0],
-                "--dump-api-response",
+                "--show-api-response",
             ]
         )
         print_mock.assert_called_with(resistor_mock.return_value)
