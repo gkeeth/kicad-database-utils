@@ -81,7 +81,7 @@ def add_components_from_list_to_db(
             db.add_component_to_db(con, comp, update, increment)
         except db.TooManyDuplicateIPNsInTableError as e:
             print_error(
-                f"Too many parts with IPN '{e.IPN}' already in table "
+                f"too many components with IPN '{e.IPN}' already in table "
                 f"'{e.table}'; skipped"
             )
     con.close()
@@ -115,7 +115,7 @@ def subcommand_add(args, db_path):
 
     if not (args.digikey or args.mouser or args.csv):
         args.add_parser.error(
-            "no part information source provided (--digikey/--mouser/--csv)"
+            "no component information source provided (--digikey/--mouser/--csv)"
         )
 
     if args.digikey:
@@ -179,25 +179,25 @@ def subcommand_show(args, db_path):
 
 
 def _parse_add_args(subparsers):
-    add_help = "Add part(s) to the part database."
+    add_help = "add component(s) to the part database"
     parser_add = subparsers.add_parser("add", description=add_help, help=add_help)
     parser_add.set_defaults(func=subcommand_add)
     group_add_source = parser_add.add_argument_group(
-        "data sources", "Data source for new components. At least one must be provided"
+        "data sources", "data source for new components; at least one must be provided"
     )
     group_add_source.add_argument(
         "--digikey",
         "-d",
         metavar="DIGIKEY_PN",
         nargs="+",
-        help=("Digikey part number(s) for part(s) to add to database."),
+        help=("Digikey part number(s) for component(s) to add to database"),
     )
     group_add_source.add_argument(
         "--mouser",
         "-m",
         metavar="MOUSER_PN",
         nargs="+",
-        help=("Mouser part number(s) for part(s) to add to database."),
+        help=("Mouser part number(s) for component(s) to add to database."),
     )
     group_add_source.add_argument(
         "--csv",
@@ -205,14 +205,14 @@ def _parse_add_args(subparsers):
         metavar="CSVFILE",
         nargs="+",
         help=(
-            "CSV filename(s) containing columns for all required part parameters. "
-            "Each row is a separate part."
+            "CSV filename(s) containing columns for all required component parameters; "
+            "each row is a separate component"
         ),
     )
 
     group_add_duplicates = parser_add.add_argument_group(
         "duplicate handling",
-        "How to handle duplicate IPNs (default: skip adding the new component)",
+        "how to handle duplicate IPNs (default: skip adding the new component)",
     )
     exclusive_group_add_duplicates = group_add_duplicates.add_mutually_exclusive_group()
     exclusive_group_add_duplicates.add_argument(
@@ -220,8 +220,8 @@ def _parse_add_args(subparsers):
         "-i",
         action="store_true",
         help=(
-            "If specified part already exists in database, add a new part with "
-            "an incremented internal part number."
+            "give new component an incremented internal part number "
+            "if the original IPN already exists"
         ),
     )
     exclusive_group_add_duplicates.add_argument(
@@ -229,61 +229,62 @@ def _parse_add_args(subparsers):
         "-u",
         action="store_true",
         help=(
-            "If specified part already exists in database, update the existing "
-            "component instead of adding a new, unique part."
+            "update (replace) existing component "
+            "if new internal part number already exists in database"
         ),
     )
 
     parser_add.add_argument(
         "--no-db",
         action="store_true",
-        help=(
-            "Don't add part to database. This may be useful in combination "
-            "with another output format, such as CSV."
-        ),
+        help="create new component but do not it to the database",
     )
 
     group_add_output = parser_add.add_argument_group(
-        "component data display", "Output control for printing new part data to stdout"
+        "component data display",
+        "output control for printing new component data to stdout",
     )
     group_add_output.add_argument(
         "--show",
         action="store_true",
-        help="Show part data for all new parts, formatted as a single plaintext table.",
+        help=(
+            "show component data for all new components, "
+            "formatted as a single plaintext table",
+        ),
     )
     group_add_output.add_argument(
         "--show-csv",
         action="store_true",
         help=(
-            "Show part data for all new parts, formatted as a separate CSV "
-            "table for each part."
+            "show component data for all new components, "
+            "formatted as a separate CSV table for each component"
         ),
     )
     group_add_output.add_argument(
         "--show-api-response",
         action="store_true",
-        help="Show API response data, if any, for all new parts.",
+        help="show API response data, if any, for all new components",
     )
 
     return parser_add
 
 
 def _parse_rm_args(subparsers):
-    rm_help = "Remove part(s) from the part database."
+    rm_help = "remove component(s) from the part database"
     parser_rm = subparsers.add_parser("rm", description=rm_help, help=rm_help)
     parser_rm.set_defaults(func=subcommand_rm)
     parser_rm.add_argument(
         "rm_part_number",
         metavar="PART_NUMBER",
         nargs="+",
-        help="Part number(s) for part(s) to remove. Can be IPN, DPN1, or DPN2.",
+        help="part number(s) for component(s) to remove (IPN, MPN, DPN1, or DPN2)",
     )
 
     return parser_rm
 
 
 def _parse_show_args(subparsers):
-    show_help = "Show contents of part database."
+    show_help = "show contents of part database"
     parser_show = subparsers.add_parser("show", description=show_help, help=show_help)
     parser_show.set_defaults(func=subcommand_show)
     parser_show.add_argument(
@@ -291,12 +292,12 @@ def _parse_show_args(subparsers):
         metavar="TABLE_NAME",
         nargs="+",
         help=(
-            "Display the specified table(s). "
-            "If this argument is not given, all tables are shown."
+            "display the specified table(s); "
+            "if this argument is not given, all tables are shown"
         ),
     )
     group_show_column_filters = parser_show.add_argument_group(
-        "output columns", "Database columns to show"
+        "output columns", "database columns to show"
     )
     exclusive_group_show_column_filters = (
         group_show_column_filters.add_mutually_exclusive_group()
@@ -304,33 +305,32 @@ def _parse_show_args(subparsers):
     exclusive_group_show_column_filters.add_argument(
         "--all-columns",
         action="store_true",
-        help="Display all columns for all parts being printed (default).",
+        help="display all columns for all components being printed (default).",
     )
     exclusive_group_show_column_filters.add_argument(
         "--minimal-columns",
         action="store_true",
         help=(
-            "Display a minimal set of columns: "
-            "distributor1, DPN1, distributor2, DPN2, kicad_symbol, and kicad_footprint."
+            "display a minimal set of columns: "
+            "distributor1, DPN1, distributor2, DPN2, kicad_symbol, and kicad_footprint"
         ),
     )
     exclusive_group_show_column_filters.add_argument(
         "--columns",
         metavar="COLUMN_NAME",
         nargs="+",
-        help="Display the specified column(s).",
+        help="display the specified column(s)",
     )
     exclusive_group_show_column_filters.add_argument(
         "--table-names-only",
         action="store_true",
         help=(
-            "Only display table names, not the parts or columns in each table. "
-            "Each table name is printed on its own line. "
-            "The output format argument is ignored."
+            "only display table names, not the components or columns in each table "
+            "(the output format argument is ignored)"
         ),
     )
     group_show_format = parser_show.add_argument_group(
-        "output format", "Format of printed output"
+        "output format", "format of printed output"
     )
     exclusive_group_show_format = group_show_format.add_mutually_exclusive_group()
     exclusive_group_show_format.add_argument(
@@ -351,13 +351,13 @@ def parse_args(argv=None):
 
     parser = argparse.ArgumentParser(
         description=(
-            "Manage parts in the parts database. "
-            "Parts can be added, removed, edited, updated, and displayed."
+            "Manage components in the parts database. "
+            "Components can be added, updated, removed, and displayed."
         )
     )
     parser.set_defaults(func=lambda _1, _2: parser.print_help())
     subparsers = parser.add_subparsers(
-        title="subcommands", description="Commands for interacting with the database."
+        title="subcommands", description="edit and explore the parts database"
     )
 
     parser_add = _parse_add_args(subparsers)
@@ -365,17 +365,17 @@ def parse_args(argv=None):
     parser_show = _parse_show_args(subparsers)
 
     parser.add_argument(
-        "--verbose", "-v", action="store_true", help="Print informational messages."
+        "--verbose", "-v", action="store_true", help="print informational messages"
     )
     parser.add_argument(
-        "--initialize-db", action="store_true", help="Initialize new, empty database."
+        "--initialize-db", action="store_true", help="initialize new, empty database"
     )
     parser.add_argument(
         "--database",
         metavar="DATABASE_PATH",
         help=(
-            "Use DATABASE_PATH instead of the database specified by "
-            "user configuration."
+            "use DATABASE_PATH instead of the database specified by "
+            "user configuration"
         ),
     )
 

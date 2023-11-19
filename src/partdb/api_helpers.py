@@ -45,7 +45,7 @@ def create_component_from_digikey_pn(digikey_pn, dump_api_response=False):
     """
     part = digikey.product_details(digikey_pn)
     if not part:
-        print_error(f"Could not get info for part {digikey_pn}")
+        print_error(f"could not get info for part {digikey_pn}")
         return None
     if dump_api_response:
         print(part)
