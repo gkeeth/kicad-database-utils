@@ -16,6 +16,8 @@ python -m venv /path/to/new/virtual/environment
 source /path/to/new/virtual/environment/bin/activate
 # install requirements
 python -m pip install -r requirements.txt
+# install this module in editable mode
+python -m pip install -e .
 ```
 
 
