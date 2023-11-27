@@ -346,6 +346,8 @@ def _parse_show_args(subparsers):
 def parse_args(argv=None):
     """Set up CLI args and return the parsed arguments."""
     # TODO:
+    # - make an init subcommand, to replace --init-db
+    # - preview argument (synonym for --no-db --show)
     # - mode/argument to import a minimal CSV
     # - filter show by IPN (or arbitrary fields, key-value pairs)?
 
