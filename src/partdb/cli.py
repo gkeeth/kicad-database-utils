@@ -204,10 +204,13 @@ def _parse_init_args(subparsers):
     group_init_files.add_argument(
         "--config",
         metavar="CONFIG_FILE_PATH",
+        nargs="?",
+        const=config.DEFAULT_CONFIG_PATH,
         help=(
-            "create a template configuration file at the specified path. "
-            "Database path is taken from --database arg, if given. "
-            "Some config values must be filled in after creation"
+            "create a template configuration file at the specified path, "
+            "or the default if no path is given. "
+            "Database path is taken from --database arg, if provided. "
+            "Some config values must be filled in manually"
         ),
     )
     group_init_files.add_argument(
