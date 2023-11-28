@@ -12,6 +12,7 @@ from tests import digikey_mocks
 
 
 class TestCLI(unittest.TestCase):
+    config_path = "test_config.json"
     db_path = "unittests.db"
     DPN_to_IPN = {
         "YAG2320CT-ND": "R_100_0603_1%_0.1W_ThinFilm",
@@ -19,17 +20,24 @@ class TestCLI(unittest.TestCase):
     }
     DPNs = list(DPN_to_IPN.keys())
 
-    def setUp(self):
+    def _cleanup_temp_files(self):
         if os.path.exists(self.db_path):
             os.remove(self.db_path)
+        if os.path.exists(self.config_path):
+            os.remove(self.config_path)
+
+    def setUp(self):
+        self._cleanup_temp_files()
+        cli.main(["init", "--config", self.config_path, "--database", self.db_path])
 
     def tearDown(self):
-        if os.path.exists(self.db_path):
-            os.remove(self.db_path)
+        self._cleanup_temp_files()
 
     def add_diode_to_db(self):
         cli.main(
             [
+                "--config",
+                self.config_path,
                 "--database",
                 self.db_path,
                 "add",
@@ -65,7 +73,8 @@ class TestAdd(TestCLI):
     def test_add_from_digikey(self, resistor_mock):
         cli.main(
             [
-                "--initialize-db",
+                "--config",
+                self.config_path,
                 "--database",
                 self.db_path,
                 "add",
@@ -79,7 +88,8 @@ class TestAdd(TestCLI):
     def test_add_increment(self, resistor_mock):
         cli.main(
             [
-                "--initialize-db",
+                "--config",
+                self.config_path,
                 "--database",
                 self.db_path,
                 "add",
@@ -100,7 +110,8 @@ class TestAdd(TestCLI):
     def test_add_update(self, resistor_mock):
         cli.main(
             [
-                "--initialize-db",
+                "--config",
+                self.config_path,
                 "--database",
                 self.db_path,
                 "add",
@@ -118,7 +129,8 @@ class TestAdd(TestCLI):
     def test_add_from_csv(self):
         cli.main(
             [
-                "--initialize-db",
+                "--config",
+                self.config_path,
                 "--database",
                 self.db_path,
                 "add",
@@ -132,7 +144,8 @@ class TestAdd(TestCLI):
     def test_add_verbose(self, stdout_mock):
         cli.main(
             [
-                "--initialize-db",
+                "--config",
+                self.config_path,
                 "--verbose",
                 "--database",
                 self.db_path,
@@ -150,7 +163,8 @@ class TestAdd(TestCLI):
     def test_add_multiple(self):
         cli.main(
             [
-                "--initialize-db",
+                "--config",
+                self.config_path,
                 "--database",
                 self.db_path,
                 "add",
@@ -164,7 +178,8 @@ class TestAdd(TestCLI):
     def test_add_multiple_in_one_csv(self):
         cli.main(
             [
-                "--initialize-db",
+                "--config",
+                self.config_path,
                 "--database",
                 self.db_path,
                 "add",
@@ -182,7 +197,8 @@ class TestAdd(TestCLI):
     def test_add_show(self, part_mock, stdout_mock):
         cli.main(
             [
-                "--initialize-db",
+                "--config",
+                self.config_path,
                 "--database",
                 self.db_path,
                 "add",
@@ -209,7 +225,8 @@ class TestAdd(TestCLI):
     def test_add_show_csv(self, resistor_mock, stdout_mock):
         cli.main(
             [
-                "--initialize-db",
+                "--config",
+                self.config_path,
                 "--database",
                 self.db_path,
                 "add",
@@ -229,7 +246,8 @@ class TestAdd(TestCLI):
     def test_add_show_api_response(self, resistor_mock, print_mock):
         cli.main(
             [
-                "--initialize-db",
+                "--config",
+                self.config_path,
                 "--database",
                 self.db_path,
                 "add",
@@ -246,7 +264,8 @@ class TestRm(TestCLI):
         super().setUp()
         cli.main(
             [
-                "--initialize-db",
+                "--config",
+                self.config_path,
                 "--database",
                 self.db_path,
                 "add",
@@ -259,6 +278,8 @@ class TestRm(TestCLI):
     def test_remove_one(self):
         cli.main(
             [
+                "--config",
+                self.config_path,
                 "--database",
                 self.db_path,
                 "rm",
@@ -270,6 +291,8 @@ class TestRm(TestCLI):
     def test_remove_multiple(self):
         cli.main(
             [
+                "--config",
+                self.config_path,
                 "--database",
                 self.db_path,
                 "rm",
@@ -283,6 +306,8 @@ class TestRm(TestCLI):
     def test_remove_verbose(self, stdout_mock):
         cli.main(
             [
+                "--config",
+                self.config_path,
                 "--verbose",
                 "--database",
                 self.db_path,
@@ -302,7 +327,8 @@ class TestShow(TestCLI):
         super().setUp()
         cli.main(
             [
-                "--initialize-db",
+                "--config",
+                self.config_path,
                 "--database",
                 self.db_path,
                 "add",
@@ -317,6 +343,8 @@ class TestShow(TestCLI):
         self.add_diode_to_db()
         cli.main(
             [
+                "--config",
+                self.config_path,
                 "--database",
                 self.db_path,
                 "show",
@@ -332,6 +360,8 @@ class TestShow(TestCLI):
         self.add_diode_to_db()
         cli.main(
             [
+                "--config",
+                self.config_path,
                 "--database",
                 self.db_path,
                 "show",
@@ -356,6 +386,8 @@ class TestShow(TestCLI):
         self.add_diode_to_db()
         cli.main(
             [
+                "--config",
+                self.config_path,
                 "--database",
                 self.db_path,
                 "show",
@@ -379,6 +411,8 @@ class TestShow(TestCLI):
     def test_show_csv_full(self, stdout_mock):
         cli.main(
             [
+                "--config",
+                self.config_path,
                 "--database",
                 self.db_path,
                 "show",
@@ -411,6 +445,8 @@ class TestShow(TestCLI):
         self.add_diode_to_db()
         cli.main(
             [
+                "--config",
+                self.config_path,
                 "--database",
                 self.db_path,
                 "show",

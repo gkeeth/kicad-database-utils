@@ -110,13 +110,25 @@ def remove_components_from_list_from_db(db_path, part_numbers, no_db=False):
     con.close()
 
 
-def subcommand_add(args, db_path):
+def subcommand_init(args):
+    if not args.database:
+        args.database = ""
+    if args.config:
+        config.make_config_file(config_path=args.config, db_path=args.database)
+    if args.database:
+        db.initialize_database(args.database)
+
+
+def subcommand_add(args):
     components = []
 
     if not (args.digikey or args.mouser or args.csv):
         args.add_parser.error(
             "no component information source provided (--digikey/--mouser/--csv)"
         )
+
+    config.load_config(args.config)
+    db_path = get_database_path(args, config.config_data)
 
     if args.digikey:
         setup_digikey(config.config_data)
@@ -147,12 +159,16 @@ def subcommand_add(args, db_path):
     )
 
 
-def subcommand_rm(args, db_path):
+def subcommand_rm(args):
+    config.load_config(args.config)
+    db_path = get_database_path(args, config.config_data)
     part_numbers = [pn.strip() for pn in args.rm_part_number]
     remove_components_from_list_from_db(db_path, part_numbers, no_db=False)
 
 
-def subcommand_show(args, db_path):
+def subcommand_show(args):
+    config.load_config(args.config)
+    db_path = get_database_path(args, config.config_data)
     con = db.connect_to_database(db_path)
     if not con:
         return
@@ -176,6 +192,29 @@ def subcommand_show(args, db_path):
             print(dump)
 
     con.close()
+
+
+def _parse_init_args(subparsers):
+    init_help = "initialize part database and/or configuration file"
+    parser_init = subparsers.add_parser("init", description=init_help, help=init_help)
+    parser_init.set_defaults(func=subcommand_init)
+    group_init_files = parser_init.add_argument_group(
+        "initialization targets", "files to initialize; at least one must be provided"
+    )
+    group_init_files.add_argument(
+        "--config",
+        metavar="CONFIG_FILE_PATH",
+        help=(
+            "create a template configuration file at the specified path. "
+            "Database path is taken from --database arg, if given. "
+            "Some config values must be filled in after creation"
+        ),
+    )
+    group_init_files.add_argument(
+        "--database",
+        metavar="DATABASE_FILE_PATH",
+        help="create a new, empty database at the specified path",
+    )
 
 
 def _parse_add_args(subparsers):
@@ -346,7 +385,6 @@ def _parse_show_args(subparsers):
 def parse_args(argv=None):
     """Set up CLI args and return the parsed arguments."""
     # TODO:
-    # - make an init subcommand, to replace --init-db
     # - preview argument (synonym for --no-db --show)
     # - mode/argument to import a minimal CSV
     # - filter show by IPN (or arbitrary fields, key-value pairs)?
@@ -357,11 +395,12 @@ def parse_args(argv=None):
             "Components can be added, updated, removed, and displayed."
         )
     )
-    parser.set_defaults(func=lambda _1, _2: parser.print_help())
+    parser.set_defaults(func=lambda _: parser.print_help())
     subparsers = parser.add_subparsers(
         title="subcommands", description="edit and explore the parts database"
     )
 
+    parser_init = _parse_init_args(subparsers)
     parser_add = _parse_add_args(subparsers)
     parser_rm = _parse_rm_args(subparsers)
     parser_show = _parse_show_args(subparsers)
@@ -370,7 +409,9 @@ def parse_args(argv=None):
         "--verbose", "-v", action="store_true", help="print informational messages"
     )
     parser.add_argument(
-        "--initialize-db", action="store_true", help="initialize new, empty database"
+        "--config",
+        metavar="CONFIG_PATH",
+        help="use configuration file at CONFIG_PATH instead of default location",
     )
     parser.add_argument(
         "--database",
@@ -388,6 +429,7 @@ def parse_args(argv=None):
         add_parser = parser_add
         rm_parser = parser_rm
         show_parser = parser_show
+        init_parser = parser_init
 
     arg_context = ArgContext()
 
@@ -397,13 +439,7 @@ def parse_args(argv=None):
 def main(argv=None):
     args = parse_args(argv)
     set_verbose(args.verbose)
-    config.load_config()
-    db_path = get_database_path(args, config.config_data)
-
-    if args.initialize_db:
-        db.initialize_database(db_path)
-
-    args.func(args, db_path)
+    args.func(args)
 
 
 if __name__ == "__main__":

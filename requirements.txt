@@ -1,3 +1,4 @@
 digikey-api
 mouser
 tabulate
+platformdirs
