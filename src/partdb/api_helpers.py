@@ -11,6 +11,7 @@ from partdb.component import (
 
 DIGIKEY_DEFAULT_CACHE_DIR = os.path.join(user_cache_dir(), ".partdb_digikey_cache")
 
+
 def setup_digikey(config_data):
     """Set up environment variables and cache for digikey API calls.
 
