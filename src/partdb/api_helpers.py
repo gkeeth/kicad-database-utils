@@ -1,6 +1,7 @@
 import csv
 import digikey
 import os
+from platformdirs import user_cache_dir
 
 from partdb.print_utils import print_error
 from partdb.component import (
@@ -8,6 +9,7 @@ from partdb.component import (
     create_component_from_dict,
 )
 
+DIGIKEY_DEFAULT_CACHE_DIR = os.path.join(user_cache_dir(), ".partdb_digikey_cache")
 
 def setup_digikey(config_data):
     """Set up environment variables and cache for digikey API calls.
@@ -15,7 +17,6 @@ def setup_digikey(config_data):
     Args:
         config_data: dict of configuration data from config file.
     """
-    DIGIKEY_DEFAULT_CACHE_DIR = os.path.expanduser("~/.dblib_utils_digikey_cache")
 
     dk_config = config_data["digikey"]
     os.environ["DIGIKEY_CLIENT_ID"] = dk_config["client_id"]
