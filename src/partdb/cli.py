@@ -111,6 +111,8 @@ def remove_components_from_list_from_db(db_path, part_numbers, no_db=False):
 
 
 def subcommand_init(args):
+    if not (args.config or args.database):
+        args.add_parser.error("no initialization target provided (--config/--database)")
     if not args.database:
         args.database = ""
     if args.config:

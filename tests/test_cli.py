@@ -6,7 +6,7 @@ import re
 import unittest
 from unittest.mock import patch
 
-from partdb import cli, db
+from partdb import config, cli, db
 
 from tests import digikey_mocks
 
@@ -63,6 +63,46 @@ class TestCLI(unittest.TestCase):
             res = cur.execute(f"SELECT {col} from {table}").fetchall()
             self.assertEqual([(additional_checks[col],)], res)
         con.close()
+
+
+class TestInit(TestCLI):
+    def setUp(self):
+        self._cleanup_temp_files()
+
+    def test_init_config_no_database(self):
+        cli.main(
+            [
+                "init",
+                "--config",
+                self.config_path,
+            ]
+        )
+        self.assertEqual("", config.load_config(self.config_path)["db"]["path"])
+
+    def test_init_config_with_database(self):
+        cli.main(
+            [
+                "init",
+                "--config",
+                self.config_path,
+                "--database",
+                self.db_path,
+            ]
+        )
+        self.assertEqual(
+            self.db_path, config.load_config(self.config_path)["db"]["path"]
+        )
+        self.assertTrue(os.path.exists(self.db_path))
+
+    @patch("sys.stderr", new_callable=io.StringIO)
+    def test_init_no_target(self, stderr_mock):
+        with self.assertRaises(SystemExit) as cm:
+            cli.main(
+                [
+                    "init",
+                ]
+            )
+        self.assertEqual(2, cm.exception.code)
 
 
 class TestAdd(TestCLI):
@@ -257,6 +297,16 @@ class TestAdd(TestCLI):
             ]
         )
         print_mock.assert_called_with(resistor_mock.return_value)
+
+    @patch("sys.stderr", new_callable=io.StringIO)
+    def test_add_no_source(self, stderr_mock):
+        with self.assertRaises(SystemExit) as cm:
+            cli.main(
+                [
+                    "add",
+                ]
+            )
+        self.assertEqual(2, cm.exception.code)
 
 
 class TestRm(TestCLI):
