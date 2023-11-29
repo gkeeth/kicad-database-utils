@@ -234,14 +234,14 @@ def _parse_add_args(subparsers):
         "-d",
         metavar="DIGIKEY_PN",
         nargs="+",
-        help=("Digikey part number(s) for component(s) to add to database"),
+        help="Digikey part number(s) for component(s) to add to database",
     )
     group_add_source.add_argument(
         "--mouser",
         "-m",
         metavar="MOUSER_PN",
         nargs="+",
-        help=("Mouser part number(s) for component(s) to add to database."),
+        help="Mouser part number(s) for component(s) to add to database.",
     )
     group_add_source.add_argument(
         "--csv",
