@@ -293,7 +293,7 @@ def _parse_add_args(subparsers):
         action="store_true",
         help=(
             "show component data for all new components, "
-            "formatted as a single plaintext table",
+            "formatted as a single plaintext table"
         ),
     )
     group_add_output.add_argument(
