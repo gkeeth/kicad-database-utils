@@ -1118,7 +1118,7 @@ class BJT(Component):
         for p in digikey_part.parameters:
             if p.parameter == "Transistor Type":
                 data["bjt_type"], array = cls.process_transistor_type(p.value)
-                npn_or_bjt = "npn" if "NPN" in p.value else "pnp"
+                npn_or_pnp = "npn" if "NPN" in p.value else "pnp"
             elif p.parameter == "Voltage - Collector Emitter Breakdown (Max)":
                 data["vce_max"] = cls.process_value_with_unit(p.value)
             elif p.parameter == "Current - Collector (Ic) (Max)":
@@ -1131,7 +1131,7 @@ class BJT(Component):
                 data["package"] = p.value
 
         data["value"] = "${MPN}"
-        data["keywords"] = f"bjt transistor {npn_or_bjt}"
+        data["keywords"] = f"bjt transistor {npn_or_pnp}"
         mfg = re.sub(r"[\.,\s]", "", data["manufacturer"])
         data["IPN"] = f"{cls.IPN_prefix}{data['bjt_type']}_{mfg}_{data['MPN']}"
         array_string = " array" if array else ""
