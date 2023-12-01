@@ -1,3 +1,3 @@
 IPN,datasheet,description,keywords,value,package,exclude_from_bom,exclude_from_board,kicad_symbol,kicad_footprint,manufacturer,MPN,distributor1,DPN1,distributor2,DPN2,core,speed
-MCU_STMicroelectronics_STM32F042K4T6TR,https://www.st.com/resource/en/datasheet/stm32f042k4.pdf,"32 pin ARM Cortex-M0 MCU, 48MHz, 32-LQFP (7x7)",mcu microcontroller uc,${MPN},32-LQFP (7x7),0,0,MCU_ST_STM32F0:STM32F042K4Tx,Package_QFP:LQFP-32_7x7mm_P0.8mm,STMicroelectronics,STM32F042K4T6TR,Digikey,STM32F042K4T6TR-ND,,,ARM Cortex-M0,48MHz
+MCU,https://www.st.com/resource/en/datasheet/stm32f042k4.pdf,"32 pin ARM Cortex-M0 MCU, 48MHz, 32-LQFP (7x7)",mcu microcontroller uc,${MPN},32-LQFP (7x7),0,0,MCU_ST_STM32F0:STM32F042K4Tx,Package_QFP:LQFP-32_7x7mm_P0.8mm,STMicroelectronics,STM32F042K4T6TR,Digikey,STM32F042K4T6TR-ND,,,ARM Cortex-M0,48MHz
 
