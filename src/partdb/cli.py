@@ -12,7 +12,7 @@ from partdb.api_helpers import (
 )
 from partdb import config
 from partdb import db
-from partdb.print_utils import print_error, set_verbose
+from partdb.print_utils import set_verbose
 
 
 def get_database_path(args, config_data):
@@ -55,20 +55,15 @@ def print_components_from_list_as_csv(components):
         print(comp.to_csv())
 
 
-def add_components_from_list_to_db(
-    db_path, components, update=False, increment=False, no_db=False
-):
+def add_components_from_list_to_db(db_path, components, no_db=False):
     """Add all components in a list to the database.
+
+    Each component is updated so that its IPN matches the one assigned to it in
+    the database.
 
     Args:
         db_path: Database file path.
         components: list of components to add to database.
-        update: if True, when duplicate components are encountered, update
-            existing components instead of attempting to create a unique
-            component.
-        increment: if True, when duplicate components are encountered (and if
-            `update` is False), append a numeric suffix to IPN to create a
-            unique IPN.
         no_db: if True, skip database operations.
     """
     if no_db:
@@ -77,13 +72,8 @@ def add_components_from_list_to_db(
     if not con:
         return
     for comp in components:
-        try:
-            db.add_component_to_db(con, comp, update, increment)
-        except db.TooManyDuplicateIPNsInTableError as e:
-            print_error(
-                f"too many components with IPN '{e.IPN}' already in table "
-                f"'{e.table}'; skipped"
-            )
+        IPN = db.add_component_to_db(con, comp)
+        comp.columns["IPN"] = IPN
     con.close()
 
 
@@ -146,19 +136,13 @@ def subcommand_add(args):
         for csvfile in args.csv:
             components += create_component_list_from_csv(csvfile.strip())
 
+    add_components_from_list_to_db(db_path, components, no_db=args.no_db)
+
     if args.show:
         print_components_from_list_as_table(components)
 
     if args.show_csv:
         print_components_from_list_as_csv(components)
-
-    add_components_from_list_to_db(
-        db_path,
-        components,
-        update=args.update_existing,
-        increment=args.increment_duplicates,
-        no_db=args.no_db,
-    )
 
 
 def subcommand_rm(args):
@@ -251,30 +235,6 @@ def _parse_add_args(subparsers):
         help=(
             "CSV filename(s) containing columns for all required component parameters; "
             "each row is a separate component"
-        ),
-    )
-
-    group_add_duplicates = parser_add.add_argument_group(
-        "duplicate handling",
-        "how to handle duplicate IPNs (default: skip adding the new component)",
-    )
-    exclusive_group_add_duplicates = group_add_duplicates.add_mutually_exclusive_group()
-    exclusive_group_add_duplicates.add_argument(
-        "--increment-duplicates",
-        "-i",
-        action="store_true",
-        help=(
-            "give new component an incremented internal part number "
-            "if the original IPN already exists"
-        ),
-    )
-    exclusive_group_add_duplicates.add_argument(
-        "--update-existing",
-        "-u",
-        action="store_true",
-        help=(
-            "update (replace) existing component "
-            "if new internal part number already exists in database"
         ),
     )
 

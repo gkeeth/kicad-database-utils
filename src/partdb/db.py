@@ -2,13 +2,12 @@ from collections import defaultdict
 import csv
 import io
 import os
+import re
 import sqlite3
 import sys
 from tabulate import tabulate
 
 from partdb.print_utils import print_message, print_error
-
-IPN_DUPLICATE_LIMIT = 10
 
 minimal_columns = [
     "distributor1",
@@ -18,12 +17,6 @@ minimal_columns = [
     "kicad_symbol",
     "kicad_footprint",
 ]
-
-
-class TooManyDuplicateIPNsInTableError(Exception):
-    def __init__(self, IPN, table):
-        self.IPN = IPN
-        self.table = table
 
 
 def initialize_database(db_path):
@@ -48,7 +41,7 @@ def connect_to_database(db_path):
     return con
 
 
-def add_component_to_db(con, comp, update=False, increment=False):
+def add_component_to_db(con, comp, update=False):
     """Add the given component object to a database.
 
     Uses the existing connection `con`. The appropriate table is selected
@@ -57,24 +50,7 @@ def add_component_to_db(con, comp, update=False, increment=False):
     Args:
         con: database connection object.
         comp: Component object to add to database.
-        update: When True, an existing component in the database with the
-            same IPN as the new component will be updated (REPLACE'd) by the
-            new component. When False, duplicate IPNs will not be added; the
-            behavior in the case of duplicates depends on the value of
-            `increment`.
-        increment: When True, if a duplicate component (keyed by IPN) is added,
-            the IPN of the new component will have a numeric suffix ('_1')
-            added to avoid overwriting the existing component. If the modified
-            IPN is still not unique, the suffix will be incremented (up to a
-            maximum defined by IPN_DUPLICATE_LIMIT) in an attempt to create a
-            unique IPN. After IPN_DUPLICATE_LIMIT unsuccessful attempts, the
-            component will be skipped. When False, the IPN will not be
-            incremented and any duplicate IPNs will be skipped. This argument
-            is ignored when `update` is True.
-
-    Raises:
-        TooManyDuplicateIPNsInTableError if there are too many duplicate IPNs
-        already in the table.
+    Returns: the IPN assigned to the component in the database.
     """
     insert_string, values = comp.to_sql(update)
 
@@ -91,40 +67,29 @@ def add_component_to_db(con, comp, update=False, increment=False):
             print_message(f"Creating table '{comp.table}'")
             cur.execute(comp.get_create_table_string())
 
-        # Before adding the part to the table, check if a part with the same
-        # IPN is already in the table.
+        # Before adding the part to the table, we need to find the next IPN
+        # TODO: need a way to specify an existing IPN (for an update) rather
+        # than auto-create a new higher IPN. This could be with an optional IPN
+        # arg to this function
+        # TODO: need to check for existing parts in the database
+        # TODO: figure out how to extract prefix when the IPN is not the pure prefix
+        # TODO: this might assign the wrong IPN to parts that have multiple valid
+        # IPN prefixes (C, CP), because it will select the highest sorted IPN
+        # without regard to whether the prefix matches exactly
+        prefix = values["IPN"]
         res = cur.execute(f"SELECT IPN from {comp.table}")
-        ipns = [t[0] for t in res.fetchall()]
-        test_ipn = values["IPN"]
+        ipns = sorted([t[0] for t in res.fetchall()])
+        if ipns:
+            highest_ipn = ipns[-1]
+            highest_number = re.match(rf"{prefix}(\d+)", highest_ipn).group(1)
+        else:
+            highest_number = 0
+        values["IPN"] = f"{prefix}{int(highest_number) + 1:0>4}"
 
-        if test_ipn in ipns:
-            if update:
-                # we're going to overwrite the existing part. This is handled
-                # for us because the sql command is INSERT OR REPLACE
-                print_message(
-                    f"Updating existing component '{test_ipn}' in "
-                    f"table '{comp.table}'"
-                )
-            elif increment:
-                # we need to try to create a unique IPN
-                for i in range(1, IPN_DUPLICATE_LIMIT):
-                    test_ipn = f"{values['IPN']}_{i}"
-                    if test_ipn not in ipns:
-                        values["IPN"] = test_ipn
-                        break
-                if test_ipn != values["IPN"]:
-                    # we didn't find a unique IPN
-                    raise TooManyDuplicateIPNsInTableError(values["IPN"], comp.table)
-            else:
-                raise TooManyDuplicateIPNsInTableError(values["IPN"], comp.table)
-
-        # add part to table, whether this is:
-        # 1) The base IPN (no duplicates)
-        # 2) The base IPN (duplicate, but we're replacing an existing part)
-        # 3) A modified IPN with a suffix to make it unique
         cur.execute(insert_string, values)
 
         print_message(f"Adding component '{values['IPN']}' to table '{comp.table}'")
+        return values["IPN"]
 
 
 def get_table_names(con):

@@ -283,7 +283,10 @@ class TestParameterUtils(unittest.TestCase):
 
 class TestComponentFromDict(unittest.TestCase):
     def setUp(self):
-        self.base_dict = {
+        self.base_dict = self.get_base_dict()
+
+    def get_base_dict(self):
+        return {
             "IPN": "dummy",
             "datasheet": "ds",
             "description": "desc",
@@ -300,11 +303,19 @@ class TestComponentFromDict(unittest.TestCase):
         }
 
     def _setup_resistor(self):
-        self.base_dict["IPN"] = "R_test"
+        self.base_dict["IPN"] = "R"
         self.base_dict["resistance"] = "10k"
         self.base_dict["tolerance"] = "1%"
         self.base_dict["power"] = "0.125W"
         self.base_dict["composition"] = "ThinFilm"
+        self.base_dict["package"] = "0603"
+
+    def _setup_capacitor(self):
+        self.base_dict["IPN"] = "C"
+        self.base_dict["capacitance"] = "100n"
+        self.base_dict["tolerance"] = "20%"
+        self.base_dict["dielectric"] = "X7R"
+        self.base_dict["voltage"] = "50V"
         self.base_dict["package"] = "0603"
 
     def test_unknown_not_detected(self):
@@ -324,6 +335,26 @@ class TestComponentFromDict(unittest.TestCase):
         resistor = component.create_component_from_dict(self.base_dict)
         for k in self.base_dict.keys():
             self.assertEqual(self.base_dict[k], resistor.columns[k])
+
+    def test_component_eq(self):
+        self._setup_resistor()
+        resistor1 = component.create_component_from_dict(self.base_dict)
+        resistor2 = component.create_component_from_dict(self.base_dict)
+        self.assertEqual(resistor1, resistor2)
+
+    def test_component_eq_not_equal(self):
+        self._setup_resistor()
+        resistor1 = component.create_component_from_dict(self.base_dict)
+        self.base_dict["resistance"] = "1k"
+        resistor2 = component.create_component_from_dict(self.base_dict)
+        self.assertNotEqual(resistor1, resistor2)
+
+    def test_component_eq_different_types(self):
+        self._setup_resistor()
+        resistor = component.create_component_from_dict(self.base_dict)
+        self._setup_capacitor()
+        capacitor = component.create_component_from_dict(self.base_dict)
+        self.assertNotEqual(resistor, capacitor)
 
 
 class TestFromDigikeyPart(unittest.TestCase):
@@ -363,7 +394,7 @@ class TestFromDigikeyPart(unittest.TestCase):
         digikey_pn = mock_part.digi_key_part_number
         csv_name = re.sub(r"/", "_", f"{digikey_pn}.csv")
         expected = expected_component_from_csv(f"sample_parts_csv/{csv_name}")
-        self.assertEqual(expected.to_csv(), actual.to_csv())
+        self.assertEqual(expected, actual)
 
 
 class TestResistorFromDigikeyPart(TestFromDigikeyPart):

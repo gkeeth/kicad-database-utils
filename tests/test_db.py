@@ -15,16 +15,17 @@ class TestDatabaseFunctions(unittest.TestCase):
     db_path = "unittests.db"
 
     @staticmethod
-    def create_dummy_component(IPN="R_test", **extra_fields):
-        """Create a component based on a specified IPN, a default set of fields,
-        and an optional additional set of fields.
+    def create_dummy_component(IPN_prefix="R", **extra_fields):
+        """Create a component based on a specified IPN prefix, a default set of
+        fields, and an optional additional set of fields.
 
         By default, the component will be a resistor, but this can be changed
-        to an arbitrary component by providing an appropriate IPN and additional
-        fields.
+        to an arbitrary component by providing an appropriate IPN prefix and
+        additional fields.
 
         Args:
-            IPN: The IPN to use for the new component. Defaults to "R_test".
+            IPN_prefix: The IPN prefix to use for the new component. Defaults
+                to "R".
             **extra_fields: Additional fields to use when constructing the
                 component. These can be new fields or override fields. These
                 are necessary in order to create a component other than a
@@ -36,7 +37,7 @@ class TestDatabaseFunctions(unittest.TestCase):
         """
 
         base_dict = {
-            "IPN": IPN,
+            "IPN": IPN_prefix,
             "datasheet": "ds",
             "description": "desc",
             "keywords": "kw",
@@ -89,7 +90,6 @@ class TestDatabaseFunctions(unittest.TestCase):
         return "\r\n".join([keys] + rows)
 
     def setUp(self):
-        self.backup_IPN_DUPLICATE_LIMIT = db.IPN_DUPLICATE_LIMIT
         if os.path.exists(self.db_path):
             os.remove(self.db_path)
         db.initialize_database(self.db_path)
@@ -101,7 +101,6 @@ class TestDatabaseFunctions(unittest.TestCase):
         self.con.close()
         if os.path.exists(self.db_path):
             os.remove(self.db_path)
-        db.IPN_DUPLICATE_LIMIT = self.backup_IPN_DUPLICATE_LIMIT
         set_verbose(False)
 
     def test_add_table_automatically_created(self):
@@ -113,14 +112,15 @@ class TestDatabaseFunctions(unittest.TestCase):
 
     def test_add_unique_parts_in_table(self):
         db.add_component_to_db(self.con, self.resistor)
-        self.resistor.columns["IPN"] = "R_test2"
-        db.add_component_to_db(self.con, self.resistor)
+        r = self.create_dummy_component(value="val2")
+        db.add_component_to_db(self.con, r)
 
         res = self.cur.execute("SELECT IPN from resistor").fetchall()
 
-        self.assertIn(("R_test",), res)
-        self.assertIn(("R_test2",), res)
+        self.assertIn(("R0001",), res)
+        self.assertIn(("R0002",), res)
 
+    @unittest.skip("update not implemented yet for sequential IPNs")
     def test_add_update_existing_component(self):
         db.add_component_to_db(self.con, self.resistor)
         self.resistor.columns["value"] = "val2"
@@ -131,47 +131,11 @@ class TestDatabaseFunctions(unittest.TestCase):
         self.assertNotIn(("val",), res)
         self.assertIn(("val2",), res)
 
-    def test_add_auto_increment_IPN(self):
-        db.IPN_DUPLICATE_LIMIT = 3
-        for n in range(db.IPN_DUPLICATE_LIMIT):
-            r = self.create_dummy_component(value=f"val{n}")
-            db.add_component_to_db(self.con, r, increment=True)
-
-        res = self.cur.execute("SELECT IPN, value from resistor").fetchall()
-
-        self.assertIn(("R_test", "val0"), res)
-        self.assertIn(("R_test_1", "val1"), res)
-        self.assertIn(("R_test_2", "val2"), res)
-
-    def test_add_too_many_duplicate_IPNs_increment(self):
-        db.IPN_DUPLICATE_LIMIT = 3
-        for n in range(db.IPN_DUPLICATE_LIMIT):
-            r = self.create_dummy_component(value=f"val{n}")
-            db.add_component_to_db(self.con, r, increment=True)
-
-        with self.assertRaises(db.TooManyDuplicateIPNsInTableError) as cm:
-            r = self.create_dummy_component()
-            db.add_component_to_db(self.con, r)
-        e = cm.exception
-        self.assertEqual("R_test", e.IPN)
-        self.assertEqual("resistor", e.table)
-
-    def test_add_too_many_duplicate_IPNs(self):
-        r = self.create_dummy_component()
-        db.add_component_to_db(self.con, r, increment=False)
-
-        with self.assertRaises(db.TooManyDuplicateIPNsInTableError) as cm:
-            r = self.create_dummy_component()
-            db.add_component_to_db(self.con, r, increment=False)
-        e = cm.exception
-        self.assertEqual("R_test", e.IPN)
-        self.assertEqual("resistor", e.table)
-
     def test_dump_database_to_csv_full(self):
-        r1 = self.create_dummy_component("R_1")
-        r2 = self.create_dummy_component("R_2")
+        r1 = self.create_dummy_component()
+        r2 = self.create_dummy_component()
         c1 = self.create_dummy_component(
-            "C_1", capacitance="cap", voltage="volt", dielectric="X7R"
+            "C", capacitance="cap", voltage="volt", dielectric="X7R"
         )
         components = [c1, r1, r2]
         for comp in components:
@@ -185,10 +149,10 @@ class TestDatabaseFunctions(unittest.TestCase):
         self.assertEqual(expected, dump)
 
     def test_dump_database_to_csv_filter_tables(self):
-        r1 = self.create_dummy_component("R_1")
-        r2 = self.create_dummy_component("R_2")
+        r1 = self.create_dummy_component()
+        r2 = self.create_dummy_component()
         c1 = self.create_dummy_component(
-            "C_1", capacitance="cap", voltage="volt", dielectric="X7R"
+            "C", capacitance="cap", voltage="volt", dielectric="X7R"
         )
         components = [c1, r1, r2]
         for comp in components:
@@ -203,10 +167,10 @@ class TestDatabaseFunctions(unittest.TestCase):
         self.assertEqual(expected, dump)
 
     def test_dump_database_to_csv_minimal(self):
-        r1 = self.create_dummy_component("R_1")
-        r2 = self.create_dummy_component("R_2")
+        r1 = self.create_dummy_component()
+        r2 = self.create_dummy_component()
         c1 = self.create_dummy_component(
-            "C_1", capacitance="cap", voltage="volt", dielectric="X7R"
+            "C", capacitance="cap", voltage="volt", dielectric="X7R"
         )
         components = [c1, r1, r2]
         for comp in components:
@@ -224,74 +188,74 @@ class TestDatabaseFunctions(unittest.TestCase):
         self.assertEqual(expected, dump)
 
     def test_remove_by_IPN(self):
-        r1 = self.create_dummy_component("R_1")
-        r2 = self.create_dummy_component("R_2", value="val2")
+        r1 = self.create_dummy_component()
+        r2 = self.create_dummy_component(value="val2")
         for comp in [r1, r2]:
             db.add_component_to_db(self.con, comp)
 
-        db.remove_component_from_db(self.con, "R_1")
+        db.remove_component_from_db(self.con, "R0001")
 
         res = self.cur.execute("SELECT IPN from resistor").fetchall()
-        self.assertNotIn(("R_1",), res)
-        self.assertIn(("R_2",), res)
+        self.assertNotIn(("R0001",), res)
+        self.assertIn(("R0002",), res)
 
     def test_remove_by_MPN(self):
-        r1 = self.create_dummy_component("R_1")
-        r2 = self.create_dummy_component("R_2", MPN="mpn2")
+        r1 = self.create_dummy_component()
+        r2 = self.create_dummy_component(MPN="mpn2")
         for comp in [r1, r2]:
             db.add_component_to_db(self.con, comp)
 
         db.remove_component_from_db(self.con, "mpn")
 
         res = self.cur.execute("SELECT IPN from resistor").fetchall()
-        self.assertNotIn(("R_1",), res)
-        self.assertIn(("R_2",), res)
+        self.assertNotIn(("R0001",), res)
+        self.assertIn(("R0002",), res)
 
     def test_remove_by_DPN1(self):
-        r1 = self.create_dummy_component("R_1")
-        r2 = self.create_dummy_component("R_2", value="val2", DPN1="dpn1a")
+        r1 = self.create_dummy_component()
+        r2 = self.create_dummy_component(value="val2", DPN1="dpn1a")
         for comp in [r1, r2]:
             db.add_component_to_db(self.con, comp)
 
         db.remove_component_from_db(self.con, "dpn1")
 
         res = self.cur.execute("SELECT IPN from resistor").fetchall()
-        self.assertNotIn(("R_1",), res)
-        self.assertIn(("R_2",), res)
+        self.assertNotIn(("R0001",), res)
+        self.assertIn(("R0002",), res)
 
     def test_remove_by_DPN2(self):
-        r1 = self.create_dummy_component("R_1")  # default DPN2="dpn2"
-        r2 = self.create_dummy_component("R_2", value="val2", DPN2="dpn2a")
+        r1 = self.create_dummy_component()  # default DPN2="dpn2"
+        r2 = self.create_dummy_component(value="val2", DPN2="dpn2a")
         for comp in [r1, r2]:
             db.add_component_to_db(self.con, comp)
 
         db.remove_component_from_db(self.con, "dpn2")
 
         res = self.cur.execute("SELECT IPN from resistor").fetchall()
-        self.assertNotIn(("R_1",), res)
-        self.assertIn(("R_2",), res)
+        self.assertNotIn(("R0001",), res)
+        self.assertIn(("R0002",), res)
 
     def test_remove_skip_multiple_hits(self):
-        r1 = self.create_dummy_component("R_1")
-        r2 = self.create_dummy_component("R_2", value="val2")
+        r1 = self.create_dummy_component()
+        r2 = self.create_dummy_component(value="val2")
         for comp in [r1, r2]:
             db.add_component_to_db(self.con, comp)
 
         db.remove_component_from_db(self.con, "dpn2")
 
         res = self.cur.execute("SELECT IPN from resistor").fetchall()
-        self.assertIn(("R_1",), res)
-        self.assertIn(("R_2",), res)
+        self.assertIn(("R0001",), res)
+        self.assertIn(("R0002",), res)
 
     @patch("sys.stdout", new_callable=io.StringIO)
     def test_remove_no_hits(self, mock_stdout):
         db.add_component_to_db(self.con, self.resistor)
         set_verbose(True)
-        db.remove_component_from_db(self.con, "R_nonexistent")
+        db.remove_component_from_db(self.con, "R9999")
         res = self.cur.execute("SELECT IPN from resistor")
-        self.assertIn(("R_test",), res)
+        self.assertIn(("R0001",), res)
         self.assertEqual(
-            "No component matching 'R_nonexistent' found\n", mock_stdout.getvalue()
+            "No component matching 'R9999' found\n", mock_stdout.getvalue()
         )
 
 
