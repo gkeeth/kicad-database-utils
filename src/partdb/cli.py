@@ -390,6 +390,7 @@ def _parse_show_args(subparsers):
 def parse_args(argv=None):
     """Set up CLI args and return the parsed arguments."""
     # TODO:
+    # - display shows parts that we skipped; we may not want to show skipped parts
     # - add --digikey/--mouser args can be filenames, not just part numbers
     # - preview argument (synonym for --no-db --show)
     # - mode/argument to import a minimal CSV
