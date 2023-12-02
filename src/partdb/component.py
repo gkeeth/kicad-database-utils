@@ -552,7 +552,7 @@ class Capacitor(Component):
         if package_dims:
             data["IPN"] += f"_{package_dims}"
         dielectric = data["dielectric"]
-        if "olarized" in dielectric:
+        if "olarized" in dielectric:  # don't lowercase dielectrics like X7R
             dielectric = dielectric.lower()
         data["description"] = (
             f"{data['capacitance']} "

@@ -120,6 +120,21 @@ class TestDatabaseFunctions(unittest.TestCase):
         self.assertIn(("R0001",), res)
         self.assertIn(("R0002",), res)
 
+    def test_add_parts_with_different_prefixes(self):
+        c = self.create_dummy_component(
+            "C", capacitance="cap", voltage="volt", dielectric="X7R"
+        )
+        cp = self.create_dummy_component(
+            "CP", capacitance="cap", voltage="volt", dielectric="Polarized Electrolytic"
+        )
+        db.add_component_to_db(self.con, c)
+        db.add_component_to_db(self.con, cp)
+
+        res = self.cur.execute("SELECT IPN from capacitor").fetchall()
+
+        self.assertIn(("C0001",), res)
+        self.assertIn(("CP0001",), res)
+
     @unittest.skip("update not implemented yet for sequential IPNs")
     def test_add_update_existing_component(self):
         db.add_component_to_db(self.con, self.resistor)

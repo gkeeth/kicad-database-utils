@@ -73,11 +73,8 @@ def add_component_to_db(con, comp, update=False):
         # arg to this function
         # TODO: need to check for existing parts in the database
         # TODO: figure out how to extract prefix when the IPN is not the pure prefix
-        # TODO: this might assign the wrong IPN to parts that have multiple valid
-        # IPN prefixes (C, CP), because it will select the highest sorted IPN
-        # without regard to whether the prefix matches exactly
         prefix = values["IPN"]
-        res = cur.execute(f"SELECT IPN from {comp.table}")
+        res = cur.execute(f"SELECT IPN from {comp.table} WHERE IPN LIKE '{prefix}%'")
         ipns = sorted([t[0] for t in res.fetchall()])
         if ipns:
             highest_ipn = ipns[-1]
