@@ -1,3 +1,5 @@
+import sys
+
 VERBOSE = False
 
 
@@ -16,4 +18,4 @@ def print_message(message, verbose=False):
 
 def print_error(message):
     """Print a message to stderr, with "ERROR: " prepended."""
-    print(f"Error: {message}")
+    print(f"Error: {message}", file=sys.stderr)

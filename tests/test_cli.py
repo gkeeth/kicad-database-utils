@@ -431,8 +431,9 @@ class TestShow(TestCLI):
             stdout_mock.getvalue(),
         )
 
+    @patch("sys.stderr", new_callable=io.StringIO)
     @patch("sys.stdout", new_callable=io.StringIO)
-    def test_show_csv_filter_tables(self, stdout_mock):
+    def test_show_csv_filter_tables(self, stdout_mock, stderr_mock):
         self.add_diode_to_db()
         cli.main(
             [
@@ -448,14 +449,15 @@ class TestShow(TestCLI):
                 "invalid_table",
             ]
         )
-        expected = (
-            "Error: skipping nonexistent tables: invalid_table\n"
+        expected_stderr = "Error: skipping nonexistent tables: invalid_table\n"
+        expected_stdout = (
             "distributor1,DPN1,distributor2,DPN2,kicad_symbol,kicad_footprint\r\n"
             "Digikey,YAG2320CT-ND,,,Device:R,Resistor_SMD:R_0603_1608Metric\r\n"
             "Digikey,311-0.0GRCT-ND,,,Device:R,Resistor_SMD:R_0603_1608Metric\n"
         )
 
-        self.assertEqual(expected, stdout_mock.getvalue())
+        self.assertEqual(expected_stdout, stdout_mock.getvalue())
+        self.assertEqual(expected_stderr, stderr_mock.getvalue())
 
     @patch("sys.stdout", new_callable=io.StringIO)
     def test_show_csv_full(self, stdout_mock):
@@ -490,8 +492,9 @@ class TestShow(TestCLI):
 
         self.assertEqual(expected, stdout_mock.getvalue())
 
+    @patch("sys.stderr", new_callable=io.StringIO)
     @patch("sys.stdout", new_callable=io.StringIO)
-    def test_show_table_filter_columns(self, stdout_mock):
+    def test_show_table_filter_columns(self, stdout_mock, stderr_mock):
         self.add_diode_to_db()
         cli.main(
             [
@@ -506,8 +509,8 @@ class TestShow(TestCLI):
                 "invalid_column",
             ]
         )
-        expected = (
-            "Error: skipping nonexistent columns: invalid_column\n"
+        expected_stderr = "Error: skipping nonexistent columns: invalid_column\n"
+        expected_stdout = (
             "IPN                               DPN1\n"
             "--------------------------------  ----------------\n"
             "D_DiodesIncorporated_BAT54WS-7-F  BAT54WS-FDICT-ND\n"
@@ -515,4 +518,5 @@ class TestShow(TestCLI):
             "R_0_Jumper_0603_ThickFilm         311-0.0GRCT-ND\n"
         )
 
-        self.assertEqual(expected, stdout_mock.getvalue())
+        self.assertEqual(expected_stderr, stderr_mock.getvalue())
+        self.assertEqual(expected_stdout, stdout_mock.getvalue())
