@@ -135,6 +135,15 @@ class TestDatabaseFunctions(unittest.TestCase):
         self.assertIn(("C0001",), res)
         self.assertIn(("CP0001",), res)
 
+    def test_add_part_with_full_IPN(self):
+        r = self.create_dummy_component("R9999")
+        db.add_component_to_db(self.con, r)
+
+        res = self.cur.execute("SELECT IPN from resistor").fetchall()
+
+        self.assertIn(("R0001",), res)
+        self.assertNotIn(("R9999",), res)
+
     @unittest.skip("update not implemented yet for sequential IPNs")
     def test_add_update_existing_component(self):
         db.add_component_to_db(self.con, self.resistor)

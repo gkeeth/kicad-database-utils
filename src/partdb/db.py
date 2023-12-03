@@ -72,8 +72,7 @@ def add_component_to_db(con, comp, update=False):
         # than auto-create a new higher IPN. This could be with an optional IPN
         # arg to this function
         # TODO: need to check for existing parts in the database
-        # TODO: figure out how to extract prefix when the IPN is not the pure prefix
-        prefix = values["IPN"]
+        prefix = re.match(r"([A-Z]+)\d*", values["IPN"]).group(1)
         res = cur.execute(f"SELECT IPN from {comp.table} WHERE IPN LIKE '{prefix}%'")
         ipns = sorted([t[0] for t in res.fetchall()])
         if ipns:
