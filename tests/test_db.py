@@ -144,6 +144,15 @@ class TestDatabaseFunctions(unittest.TestCase):
         self.assertIn(("R0001",), res)
         self.assertNotIn(("R9999",), res)
 
+    def test_add_duplicate_part(self):
+        db.add_component_to_db(self.con, self.resistor)
+        db.add_component_to_db(self.con, self.resistor)
+
+        res = self.cur.execute("SELECT IPN from resistor").fetchall()
+
+        self.assertIn(("R0001",), res)
+        self.assertNotIn(("R0002",), res)
+
     @unittest.skip("update not implemented yet for sequential IPNs")
     def test_add_update_existing_component(self):
         db.add_component_to_db(self.con, self.resistor)
@@ -157,7 +166,7 @@ class TestDatabaseFunctions(unittest.TestCase):
 
     def test_dump_database_to_csv_full(self):
         r1 = self.create_dummy_component()
-        r2 = self.create_dummy_component()
+        r2 = self.create_dummy_component(value="val2")
         c1 = self.create_dummy_component(
             "C", capacitance="cap", voltage="volt", dielectric="X7R"
         )
@@ -174,7 +183,7 @@ class TestDatabaseFunctions(unittest.TestCase):
 
     def test_dump_database_to_csv_filter_tables(self):
         r1 = self.create_dummy_component()
-        r2 = self.create_dummy_component()
+        r2 = self.create_dummy_component(value="val2")
         c1 = self.create_dummy_component(
             "C", capacitance="cap", voltage="volt", dielectric="X7R"
         )
@@ -192,7 +201,7 @@ class TestDatabaseFunctions(unittest.TestCase):
 
     def test_dump_database_to_csv_minimal(self):
         r1 = self.create_dummy_component()
-        r2 = self.create_dummy_component()
+        r2 = self.create_dummy_component(value="val2")
         c1 = self.create_dummy_component(
             "C", capacitance="cap", voltage="volt", dielectric="X7R"
         )

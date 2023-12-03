@@ -5,6 +5,7 @@ import readline  # noqa: F401
 from abc import ABC, abstractmethod
 from collections import OrderedDict
 
+from partdb import db
 from partdb.print_utils import print_error
 
 """
@@ -304,6 +305,25 @@ class Component(ABC):
                 csvwriter.writeheader()
             csvwriter.writerow(self.columns)
             return csv_string.getvalue()
+
+    def already_in_db(self, con):
+        """Return True if component is already in the database, or False otherwise.
+
+        A component is considered to be in the database if there is a record
+        with matching values in all fields except IPN.
+
+        Args:
+            con: database connection object.
+        Returns: True if comp is in database, otherwise False.
+        """
+        if self.table not in db.get_table_names(con):
+            return False
+        cols = [col for col in self.columns.keys() if col != self.primary_key]
+        conditions = " AND ".join([f"{col} = :{col}" for col in cols])
+        query = f"SELECT 1 FROM {self.table} WHERE {conditions}"
+        cur = con.cursor()
+        res = cur.execute(query, self.columns).fetchall()
+        return bool(res)
 
 
 @component

@@ -2,6 +2,7 @@
 
 import csv
 import re
+import sqlite3
 import unittest
 from unittest.mock import patch, MagicMock
 
@@ -88,6 +89,15 @@ class TestComponentOutputs(unittest.TestCase):
             "tolerance, power, composition)"
         )
         self.assertEqual(sql_expected, self.resistor.get_create_table_string())
+
+    def test_already_in_db(self):
+        con = sqlite3.connect(":memory:")
+        cur = con.cursor()
+        self.assertFalse(self.resistor.already_in_db(con))
+        cur.execute(self.resistor.get_create_table_string())
+        sql, vals = self.resistor.to_sql()
+        cur.execute(sql, vals)
+        self.assertTrue(self.resistor.already_in_db(con))
 
 
 class TestParameterUtils(unittest.TestCase):

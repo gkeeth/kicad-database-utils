@@ -42,7 +42,8 @@ def connect_to_database(db_path):
 
 
 def add_component_to_db(con, comp, update=False):
-    """Add the given component object to a database.
+    """Add the given component object to a database if it is not already in
+    the database.
 
     Uses the existing connection `con`. The appropriate table is selected
     automatically, and created if it does not already exist.
@@ -50,9 +51,12 @@ def add_component_to_db(con, comp, update=False):
     Args:
         con: database connection object.
         comp: Component object to add to database.
-    Returns: the IPN assigned to the component in the database.
+    Returns:
+        the IPN assigned to the component in the database, or None if the
+        component was not added.
     """
     insert_string, values = comp.to_sql(update)
+    tables = get_table_names(con)
 
     with con:
         cur = con.cursor()
@@ -61,17 +65,16 @@ def add_component_to_db(con, comp, update=False):
         # We check explicitly, even though the create table string uses
         # IF NOT EXISTS, because it's nice to know when we're creating a new
         # table so we can print an info message if needed.
-        res = cur.execute("SELECT name from sqlite_master")
-        tables = [t[0] for t in res.fetchall()]
         if comp.table not in tables:
             print_message(f"Creating table '{comp.table}'")
             cur.execute(comp.get_create_table_string())
 
-        # Before adding the part to the table, we need to find the next IPN
+        if comp.already_in_db(con):
+            return None
+        # Before adding the part to the table, we need to choose an IPN for it
         # TODO: need a way to specify an existing IPN (for an update) rather
         # than auto-create a new higher IPN. This could be with an optional IPN
         # arg to this function
-        # TODO: need to check for existing parts in the database
         prefix = re.match(r"([A-Z]+)\d*", values["IPN"]).group(1)
         res = cur.execute(f"SELECT IPN from {comp.table} WHERE IPN LIKE '{prefix}%'")
         ipns = sorted([t[0] for t in res.fetchall()])
