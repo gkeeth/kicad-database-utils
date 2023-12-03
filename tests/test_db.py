@@ -144,7 +144,8 @@ class TestDatabaseFunctions(unittest.TestCase):
         self.assertIn(("R0001",), res)
         self.assertNotIn(("R9999",), res)
 
-    def test_add_duplicate_part(self):
+    @patch("sys.stderr", new_callable=io.StringIO)
+    def test_add_duplicate_part(self, stderr_mock):
         db.add_component_to_db(self.con, self.resistor)
         db.add_component_to_db(self.con, self.resistor)
 
@@ -152,17 +153,33 @@ class TestDatabaseFunctions(unittest.TestCase):
 
         self.assertIn(("R0001",), res)
         self.assertNotIn(("R0002",), res)
+        self.assertEqual(
+            "Error: component already in table 'resistor'\n", stderr_mock.getvalue()
+        )
 
-    @unittest.skip("update not implemented yet for sequential IPNs")
     def test_add_update_existing_component(self):
         db.add_component_to_db(self.con, self.resistor)
         self.resistor.columns["value"] = "val2"
-        db.add_component_to_db(self.con, self.resistor, update=True)
+        db.add_component_to_db(self.con, self.resistor, update="R0001")
 
         res = self.cur.execute("SELECT value from resistor").fetchall()
 
         self.assertNotIn(("val",), res)
         self.assertIn(("val2",), res)
+
+    @patch("sys.stderr", new_callable=io.StringIO)
+    def test_add_update_nonexistent_component(self, stderr_mock):
+        db.add_component_to_db(self.con, self.resistor)
+        self.resistor.columns["value"] = "val2"
+        db.add_component_to_db(self.con, self.resistor, update="R0002")
+
+        res = self.cur.execute("SELECT value from resistor").fetchall()
+
+        self.assertIn(("val",), res)
+        self.assertNotIn(("val2",), res)
+        self.assertEqual(
+            "Error: component 'R0002' not in table 'resistor'\n", stderr_mock.getvalue()
+        )
 
     def test_dump_database_to_csv_full(self):
         r1 = self.create_dummy_component()
@@ -281,14 +298,14 @@ class TestDatabaseFunctions(unittest.TestCase):
         self.assertIn(("R0002",), res)
 
     @patch("sys.stdout", new_callable=io.StringIO)
-    def test_remove_no_hits(self, mock_stdout):
+    def test_remove_no_hits(self, stdout_mock):
         db.add_component_to_db(self.con, self.resistor)
         set_verbose(True)
         db.remove_component_from_db(self.con, "R9999")
         res = self.cur.execute("SELECT IPN from resistor")
         self.assertIn(("R0001",), res)
         self.assertEqual(
-            "No component matching 'R9999' found\n", mock_stdout.getvalue()
+            "No component matching 'R9999' found\n", stdout_mock.getvalue()
         )
 
 

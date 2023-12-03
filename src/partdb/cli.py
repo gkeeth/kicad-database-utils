@@ -55,7 +55,7 @@ def print_components_from_list_as_csv(components):
         print(comp.to_csv())
 
 
-def add_components_from_list_to_db(db_path, components, no_db=False):
+def add_components_from_list_to_db(db_path, components, no_db=False, update=None):
     """Add all components in a list to the database.
 
     Each component is updated so that its IPN matches the one assigned to it in
@@ -65,6 +65,10 @@ def add_components_from_list_to_db(db_path, components, no_db=False):
         db_path: Database file path.
         components: list of components to add to database.
         no_db: if True, skip database operations.
+        update:
+            if None, a new component is added to the database. If a valid IPN,
+                that component is updated instead of adding a new component. If
+                an invalid IPN (IPN not in database), return with an error.
     """
     if no_db:
         return
@@ -72,7 +76,7 @@ def add_components_from_list_to_db(db_path, components, no_db=False):
     if not con:
         return
     for comp in components:
-        IPN = db.add_component_to_db(con, comp)
+        IPN = db.add_component_to_db(con, comp, update)
         comp.columns["IPN"] = IPN
     con.close()
 
@@ -136,7 +140,9 @@ def subcommand_add(args):
         for csvfile in args.csv:
             components += create_component_list_from_csv(csvfile.strip())
 
-    add_components_from_list_to_db(db_path, components, no_db=args.no_db)
+    add_components_from_list_to_db(
+        db_path, components, no_db=args.no_db, update=args.update
+    )
 
     if args.show:
         print_components_from_list_as_table(components)
@@ -242,6 +248,11 @@ def _parse_add_args(subparsers):
         "--no-db",
         action="store_true",
         help="create new component but do not it to the database",
+    )
+    parser_add.add_argument(
+        "--update",
+        metavar="IPN",
+        help="update existing component IPN instead of adding a new component",
     )
 
     group_add_output = parser_add.add_argument_group(

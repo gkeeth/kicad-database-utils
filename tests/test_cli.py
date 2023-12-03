@@ -124,7 +124,6 @@ class TestAdd(TestCLI):
         )
         self.check_table_and_IPN()
 
-    @unittest.skip("update not implemented yet for sequential IPNs")
     @patch(
         "digikey.product_details",
         side_effect=[digikey_mocks.mock_resistor, mock_resistor_updated],
@@ -139,12 +138,23 @@ class TestAdd(TestCLI):
                 "add",
                 "--digikey",
                 self.DPNs[0],
+            ]
+        )
+        cli.main(
+            [
+                "--config",
+                self.config_path,
+                "--database",
+                self.db_path,
+                "add",
+                "--digikey",
                 self.DPNs[0],
-                "--update-existing",
+                "--update",
+                "R0001",
             ]
         )
         self.check_table_and_IPN(
-            IPNs=["R_100_0603_1%_0.1W_ThinFilm"],
+            IPNs=[self.DPN_to_IPN[self.DPNs[0]]],
             additional_checks={"datasheet": "new_datasheet"},
         )
 

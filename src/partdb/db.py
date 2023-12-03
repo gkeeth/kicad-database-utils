@@ -41,7 +41,7 @@ def connect_to_database(db_path):
     return con
 
 
-def add_component_to_db(con, comp, update=False):
+def add_component_to_db(con, comp, update=None):
     """Add the given component object to a database if it is not already in
     the database.
 
@@ -51,6 +51,10 @@ def add_component_to_db(con, comp, update=False):
     Args:
         con: database connection object.
         comp: Component object to add to database.
+        update:
+            if None, a new component is added to the database. If a valid IPN,
+                that component is updated instead of adding a new component. If
+                an invalid IPN (IPN not in database), return with an error.
     Returns:
         the IPN assigned to the component in the database, or None if the
         component was not added.
@@ -69,21 +73,30 @@ def add_component_to_db(con, comp, update=False):
             print_message(f"Creating table '{comp.table}'")
             cur.execute(comp.get_create_table_string())
 
-        if comp.already_in_db(con):
-            return None
         # Before adding the part to the table, we need to choose an IPN for it
-        # TODO: need a way to specify an existing IPN (for an update) rather
-        # than auto-create a new higher IPN. This could be with an optional IPN
-        # arg to this function
-        prefix = re.match(r"([A-Z]+)\d*", values["IPN"]).group(1)
-        res = cur.execute(f"SELECT IPN from {comp.table} WHERE IPN LIKE '{prefix}%'")
-        ipns = sorted([t[0] for t in res.fetchall()])
-        if ipns:
-            highest_ipn = ipns[-1]
-            highest_number = re.match(rf"{prefix}(\d+)", highest_ipn).group(1)
+        if not update:
+            if comp.already_in_db(con):
+                print_error(f"component already in table '{comp.table}'")
+                return None
+            prefix = re.match(r"([A-Z]+)\d*", values["IPN"]).group(1)
+            res = cur.execute(
+                f"SELECT IPN FROM {comp.table} WHERE IPN LIKE '{prefix}%'"
+            )
+            ipns = sorted([t[0] for t in res.fetchall()])
+            if ipns:
+                highest_ipn = ipns[-1]
+                highest_number = re.match(rf"{prefix}(\d+)", highest_ipn).group(1)
+            else:
+                highest_number = 0
+            values["IPN"] = f"{prefix}{int(highest_number) + 1:0>4}"
         else:
-            highest_number = 0
-        values["IPN"] = f"{prefix}{int(highest_number) + 1:0>4}"
+            res = cur.execute(
+                f"SELECT IPN FROM {comp.table} WHERE IPN = ?", (update,)
+            ).fetchall()
+            if not res:
+                print_error(f"component '{update}' not in table '{comp.table}'")
+                return None
+            values["IPN"] = update
 
         cur.execute(insert_string, values)
 
