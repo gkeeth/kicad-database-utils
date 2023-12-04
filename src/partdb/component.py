@@ -415,7 +415,7 @@ class Resistor(Component):
 @component
 class Capacitor(Component):
     table = "capacitor"
-    IPN_prefix = ["C", "CP"]
+    IPN_prefix = ["C"]
     kicad_footprint_map = {
         "0201": "Capacitor_SMD:C_0201_0603Metric",
         "0402": "Capacitor_SMD:C_0402_1005Metric",
@@ -565,10 +565,7 @@ class Capacitor(Component):
                 short dimension string of package, which can be blank, e.g.
                 "" or "D5.00mm_H10.0mm_P2.00mm".
         """
-        if polarization == "Unpolarized":
-            data["IPN"] = cls.IPN_prefix[0]
-        else:
-            data["IPN"] = cls.IPN_prefix[1]
+        data["IPN"] = cls.IPN_prefix[0]
         dielectric = data["dielectric"]
         if "olarized" in dielectric:  # don't lowercase dielectrics like X7R
             dielectric = dielectric.lower()
