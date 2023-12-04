@@ -569,8 +569,6 @@ class Capacitor(Component):
             data["IPN"] = cls.IPN_prefix[0]
         else:
             data["IPN"] = cls.IPN_prefix[1]
-        if package_dims:
-            data["IPN"] += f"_{package_dims}"
         dielectric = data["dielectric"]
         if "olarized" in dielectric:  # don't lowercase dielectrics like X7R
             dielectric = dielectric.lower()
@@ -1045,13 +1043,10 @@ class LED(Component):
         data["description"] = f"{data['color']} "
         if addressable:
             data["description"] += "addressable "
-            data["IPN"] += "Addressable_"
         data["description"] += "LED, "
         if data["diode_configuration"]:
             data["description"] += f"{data['diode_configuration'].lower()}, "
         data["description"] += f"{data['package']}"
-        mfg = re.sub(r"[\.,\s]", "", data["manufacturer"])
-        data["IPN"] += f"{data['package']}_{mfg}_{data['MPN']}"
 
         if data["diode_configuration"] == "" and not addressable:
             data["kicad_symbol"] = "Device:LED"
