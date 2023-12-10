@@ -48,16 +48,25 @@ def make_config_file(
 def load_config(config_path=None):
     """Load configuration file into `config_data` dict and return it.
 
+    Also sets the module-level config_data to the data in the config file. Sets
+    a valid (empty) configuration even if the config file cannot be loaded.
+
     Args:
         config_path: path to configuration file. If None, the default path is used.
 
-    Returns: configuration data dict
+    Returns: the configuration configuration data dict, if the config file was
+        loaded successfully.
     """
     if not config_path:
         config_path = DEFAULT_CONFIG_PATH
 
+    global config_data
+    config_data = {
+        "db": {"path": ""},
+        "digikey": {"client_id": "", "client_secret": ""},
+    }
+
     with open(config_path, "r") as f:
-        global config_data
-        config_data = json.load(f)
+        config_data.update(json.load(f))
 
     return config_data
