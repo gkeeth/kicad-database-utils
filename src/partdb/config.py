@@ -11,7 +11,11 @@ config_data = None
 
 
 def make_config_file(
-    config_path, digikey_client_id="", digikey_client_secret="", db_path=""
+    config_path,
+    overwrite=False,
+    digikey_client_id="",
+    digikey_client_secret="",
+    db_path="",
 ):
     """Create a configuration file, optionally filled with valid data.
 
@@ -20,6 +24,7 @@ def make_config_file(
 
     Args:
         config_path: path to configuration file.
+        overwrite: if True, overwrite the existing configuration file.
         digikey_client_id: digikey client ID to include in the config file.
         digikey_client_secret: digikey client secret to include in the config file.
         db_path: path to part database to include in the config file.
@@ -34,7 +39,7 @@ def make_config_file(
         },
     }
 
-    if os.path.exists(config_path):
+    if not overwrite and os.path.exists(config_path):
         print_error(f"config file already exists at {config_path}; skipping")
         return
     with open(config_path, "w") as config_file:
