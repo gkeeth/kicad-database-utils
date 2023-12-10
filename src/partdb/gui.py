@@ -1,24 +1,360 @@
 #!/usr/bin/env python
 
 import dearpygui.dearpygui as dpg
+import os
+
+from partdb import config, db
 
 dpg.create_context()
 dpg.create_viewport(title="KiCad Part Database")
 
-# import dearpygui.demo as demo
-# demo.show_demo()
 
-# with dpg.window(label="example window", width=600, height=300):
-with dpg.window(tag="Primary Window"):
-    dpg.add_text("Hello, world")
-    dpg.add_button(label="Save")
-    dpg.add_input_text(label="string", default_value="Quick Brown Fox")
-    dpg.add_slider_float(label="float", default_value=0.273, max_value=1)
+class Partdb_Model:
+    def __init__(self):
+        self.init_errors = []
+        self.config_file_error = True
+        self.config_db_path_error = True
+        self.config_data = {}
+        self.config_path = config.DEFAULT_CONFIG_PATH
+        self.config_db_path = ""
+        self.load_config()
+        self.selected_db_path = self.config_db_path
+        self.load_table_names_from_database()
+        self.load_components_from_selected_tables()
+
+    def load_config(self, override_config_path=None):
+        if override_config_path:
+            config_path = os.path.abspath(os.path.expanduser(override_config_path))
+        else:
+            config_path = self.config_path
+
+        try:
+            config.load_config(config_path)
+            # only set if config_path is valid
+            self.config_path = config_path
+            self.config_file_error = False
+        except FileNotFoundError:
+            print(f"invalid config file specified: '{self.config_path}'")
+            self.config_file_error = True
+
+        self.config_data = config.config_data
+        path = self.config_data["db"]["path"]
+        if path:
+            # only do this if we have a non-empty path, because it's useful
+            # to maintain the empty path for error messages, etc.
+            path = os.path.abspath(os.path.expanduser(self.config_data["db"]["path"]))
+            con = db.connect_to_database(path)
+            if con:
+                print(f"valid db path in config: '{path}'")
+                print(con)
+                self.config_db_path = path
+                self.config_db_path_error = False
+                return
+        self.config_db_path_error = True
+        print(f"invalid database specified in config: '{path}'")
+
+    def load_table_names_from_database(self):
+        con = db.connect_to_database(self.selected_db_path)
+        self.tables = []
+        if con:
+            self.tables = db.get_table_names(con)
+        self.selected_table = []
+        if self.tables:
+            self.selected_table = [self.tables[0]]
+
+    def load_components_from_selected_tables(self):
+        con = db.connect_to_database(self.selected_db_path)
+        self.components_in_selected_tables = []
+        if con:
+            self.components_in_selected_tables = db.dump_database_to_dict_list(
+                con, self.selected_table
+            )
+
+
+model = Partdb_Model()
+
+
+def update_component_type_display():
+    dpg.configure_item(
+        "component_type_list", items=model.tables, num_items=max(2, len(model.tables))
+    )
+
+
+def update_component_display():
+    # TODO: change this to only show the priority cols, but selecting a row
+    # will display a new form with the rest of the columns as fields
+    priority_cols = ["IPN", "description", "MPN"]
+    dpg.delete_item("components_table", children_only=True)
+    components = model.components_in_selected_tables
+    if components:
+        for col in priority_cols:
+            dpg.add_table_column(label=col, parent="components_table")
+        for col in components[0].keys():
+            if col not in priority_cols:
+                dpg.add_table_column(label=col, parent="components_table")
+    for comp in components:
+        with dpg.table_row(parent="components_table"):
+            for col in priority_cols:
+                dpg.add_text(comp[col])
+            for col in comp.keys():
+                if col not in priority_cols:
+                    dpg.add_text(comp[col])
+    # TODO: resize cols
+    dpg.configure_item("components_table", policy=dpg.mvTable_SizingFixedFit)
+
+
+def load_database():
+    model.load_table_names_from_database()
+    update_component_type_display()
+    model.load_components_from_selected_tables()
+    update_component_display()
+
+
+def default_database_callback(sender, app_data):
+    dpg.set_value(value=model.config_db_path, item="override_db_path")
+    model.selected_db_path = dpg.get_value("override_db_path")
+    load_database()
+
+
+def choose_database_callback(sender, app_data, user_data):
+    for file in app_data["selections"]:
+        filepath = app_data["selections"][file]
+        dpg.set_value(value=filepath, item=user_data)
+        model.selected_db_path = dpg.get_value(user_data)
+    load_database()
+
+
+def component_type_selection_callback(sender, app_data):
+    # load components from selected tables and populate table grid
+    model.selected_table = [app_data]
+    model.load_components_from_selected_tables()
+    update_component_display()
+
+
+def show_demo_callback():
+    import dearpygui.demo as demo
+
+    demo.show_demo()
+
+
+def config_setup_ok_callback(sender, app_data):
+    # write values from dialog to config file, then reload the config
+    config_path = dpg.get_value("config_path")
+    config.make_config_file(
+        config_path=config_path,
+        overwrite=True,
+        digikey_client_id=dpg.get_value("config_digikey_client_id"),
+        digikey_client_secret=dpg.get_value("config_digikey_client_secret"),
+    )
+    model.load_config(config_path)
+
+    dpg.hide_item("config_setup_window")
+
+
+def config_setup_cancel_callback(sender, app_data):
+    # reset values in dialog/registry to model values
+    dpg.set_value(value=model.config_path, item="config_path")
+    dpg.set_value(value=model.config_db_path, item="config_db_path")
+    dpg.set_value(
+        value=model.config_data["digikey"]["client_id"],
+        item="config_digikey_client_id",
+    )
+    dpg.set_value(
+        value=model.config_data["digikey"]["client_secret"],
+        item="config_digikey_client_secret",
+    )
+    dpg.hide_item("config_setup_window")
+
+
+def create_file_dialog(tag, extensions, target_variable, callback=None):
+    def file_selection_callback(sender, app_data, user_data):
+        for file in app_data["selections"]:
+            filepath = app_data["selections"][file]
+            dpg.set_value(value=filepath, item=user_data)
+
+    if not callback:
+        callback = file_selection_callback
+
+    with dpg.file_dialog(
+        directory_selector=False,
+        height=400,
+        show=False,
+        file_count=1,
+        callback=callback,
+        user_data=target_variable,
+        tag=tag,
+    ):
+        for ext in extensions:
+            dpg.add_file_extension(ext)
+
+
+database_file_extensions = [".db", ".*"]
+create_file_dialog(
+    "override_database_file_dialog",
+    database_file_extensions,
+    "override_db_path",
+    callback=choose_database_callback,
+)
+create_file_dialog(
+    "config_database_file_dialog",
+    database_file_extensions,
+    "config_db_path",
+)
+create_file_dialog(
+    "config_file_dialog",
+    [".json", ".*"],
+    "config_path",
+)
+
+with dpg.window(
+    label="Configuration File Editor",
+    modal=False,
+    show=False,
+    width=700,
+    # autosize=True,
+    # no_resize=False,
+    pos=(100, 100),
+    on_close=config_setup_cancel_callback,
+    tag="config_setup_window",
+):
+    # TODO: when this changes, reload from the specified config file?
+    with dpg.group(horizontal=True):
+        dpg.add_input_text(
+            tag="config_path",
+            default_value=model.config_path,
+        )
+        dpg.add_button(
+            label="Choose Configuration File",
+            callback=lambda: dpg.show_item("config_file_dialog"),
+        )
+    dpg.add_separator()
+    with dpg.group(horizontal=True):
+        dpg.add_input_text(
+            tag="config_db_path",
+            default_value=model.config_db_path,
+        )
+        dpg.add_button(
+            label="Choose Database",
+            callback=lambda: dpg.show_item("config_database_file_dialog"),
+        )
+    dpg.add_separator()
+    dpg.add_text("Digikey API Settings")
+    dpg.add_input_text(
+        label="Client ID",
+        tag="config_digikey_client_id",
+        default_value=model.config_data["digikey"]["client_id"],
+    )
+    dpg.add_input_text(
+        label="Client Secret",
+        tag="config_digikey_client_secret",
+        default_value=model.config_data["digikey"]["client_secret"],
+    )
+    dpg.add_separator()
+    with dpg.group(horizontal=True):
+        dpg.add_button(label="Save", callback=config_setup_ok_callback)
+        dpg.add_button(label="Cancel", callback=config_setup_cancel_callback)
+
+with dpg.window(tag="primary_window"):
+    with dpg.menu_bar():
+        with dpg.menu(label="Setup"):
+            dpg.add_menu_item(label="New Database...")  # TODO: callback
+            dpg.add_menu_item(label="Load Database...")  # TODO: callback
+            dpg.add_menu_item(
+                label="Edit Configuration...",
+                callback=lambda: dpg.show_item("config_setup_window"),
+            )
+            dpg.add_menu_item(label="Show Demo...", callback=show_demo_callback)
+
+    with dpg.group(horizontal=True):
+        dpg.add_input_text(
+            default_value=model.config_db_path,
+            tag="override_db_path",
+        )
+        dpg.add_button(
+            label="Choose Database",
+            callback=lambda: dpg.show_item("override_database_file_dialog"),
+        )
+        dpg.add_button(label="Default Database", callback=default_database_callback)
+
+    # TODO: multiselect, or try a dropdown
+    # see https://github.com/hoffstadt/DearPyGui/issues/380
+    # dpg.add_combo(
+    #     model.tables,
+    #     label="Component Types",
+    #     callback=component_type_selection_callback,
+    #     tag="component_type_list",
+    # )
+    dpg.add_listbox(
+        model.tables,
+        label="Component Types",
+        callback=component_type_selection_callback,
+        tag="component_type_list",
+    )
+    update_component_type_display()
+
+    dpg.add_text("Components in Selected Tables")
+    dpg.add_table(
+        label="Components in Selected Tables",
+        policy=dpg.mvTable_SizingFixedFit,
+        resizable=True,
+        hideable=True,
+        scrollX=True,
+        scrollY=True,
+        borders_innerH=False,
+        borders_innerV=False,
+        borders_outerH=True,
+        borders_outerV=True,
+        row_background=True,
+        tag="components_table",
+    )
+    update_component_display()
+
+    # for n, error in enumerate(model.init_errors):
+    #     print(error)
+    #     tag = f"partdb_error_popup{n}"
+    #     with dpg.window(
+    #         label="Partdb Error",
+    #         modal=True,
+    #         autosize=True,
+    #         pos=(200,200),
+    #         tag=tag,
+    #     ):
+    #         dpg.add_text(error)
+    #         dpg.add_separator()
+    #         with dpg.group(horizontal=True):
+    #             def close_callback():
+    #                 dpg.configure_item(tag, show=False)
+    #             dpg.add_button(label="OK", callback=close_callback)
+    #             dpg.add_button(label="Cancel", callback=close_callback)
+
+    if model.config_file_error:
+        dpg.show_item("config_setup_window")
+        dpg.focus_item("config_setup_window")
+
+    with dpg.window(
+        label="Partdb Error",
+        autosize=True,
+        pos=(200, 200),
+        show=False,
+        tag="error_popup",
+    ):
+        dpg.add_text(
+            f"Invalid database path in configuration file: '{model.config_db_path}'"
+        )
+        dpg.add_separator()
+        with dpg.group(horizontal=True):
+
+            def close_callback():
+                dpg.configure_item("error_popup", show=False)
+
+            dpg.add_button(label="OK", callback=close_callback)
+            dpg.add_button(label="Cancel", callback=close_callback)
+    if model.config_db_path_error and not model.config_file_error:
+        dpg.show_item("error_popup")
+        dpg.focus_item("error_popup")
 
 dpg.setup_dearpygui()
 dpg.show_viewport()
-dpg.show_documentation()
-dpg.show_font_manager()
-dpg.set_primary_window("Primary Window", True)
+dpg.set_primary_window("primary_window", True)
 dpg.start_dearpygui()
 dpg.destroy_context()
