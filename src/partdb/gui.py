@@ -65,10 +65,18 @@ class Partdb_Model:
     def load_components_from_selected_tables(self):
         con = db.connect_to_database(self.selected_db_path)
         self.components_in_selected_tables = []
+        self.selected_component = {}
         if con:
             self.components_in_selected_tables = db.dump_database_to_dict_list(
                 con, self.selected_table
             )
+            if self.components_in_selected_tables:
+                self.selected_component = self.components_in_selected_tables[0]
+
+    def load_component_by_IPN(self, IPN):
+        self.selected_component = next(
+            (c for c in self.components_in_selected_tables if c.get("IPN") == IPN), {}
+        )
 
 
 model = Partdb_Model()
@@ -81,26 +89,47 @@ def update_component_type_display():
 
 
 def update_component_display():
-    # TODO: change this to only show the priority cols, but selecting a row
-    # will display a new form with the rest of the columns as fields
     priority_cols = ["IPN", "description", "MPN"]
     dpg.delete_item("components_table", children_only=True)
     components = model.components_in_selected_tables
-    if components:
-        for col in priority_cols:
-            dpg.add_table_column(label=col, parent="components_table")
-        for col in components[0].keys():
-            if col not in priority_cols:
-                dpg.add_table_column(label=col, parent="components_table")
+    for col in priority_cols:
+        dpg.add_table_column(label=col, parent="components_table")
     for comp in components:
         with dpg.table_row(parent="components_table"):
             for col in priority_cols:
-                dpg.add_text(comp[col])
-            for col in comp.keys():
-                if col not in priority_cols:
-                    dpg.add_text(comp[col])
-    # TODO: resize cols
-    dpg.configure_item("components_table", policy=dpg.mvTable_SizingFixedFit)
+                dpg.add_selectable(
+                    label=comp[col],
+                    span_columns=True,
+                    user_data=comp["IPN"],
+                    callback=component_selection_callback,
+                )
+                # TODO: hide component when we unselect?
+    dpg.configure_item("components_table", policy=dpg.mvTable_SizingStretchProp)
+
+
+def update_selected_component_display():
+    # TODO: add handler to text inputs to track modification
+    # TODO: make this auto-select first component on loading database
+    dpg.delete_item("selected_component_table", children_only=True)
+    dpg.add_table_column(label="Field", parent="selected_component_table")
+    dpg.add_table_column(label="Value", parent="selected_component_table")
+    priority_fields = [
+        "IPN",
+        "manufacturer",
+        "MPN",
+        "distributor1",
+        "DPN1",
+        "distributor2",
+        "DPN2",
+    ]
+    other_fields = sorted(set(model.selected_component.keys()) - set(priority_fields))
+    if model.selected_component:
+        for field in priority_fields + other_fields:
+            with dpg.table_row(parent="selected_component_table"):
+                dpg.add_text(field)
+                dpg.add_input_text(
+                    default_value=model.selected_component[field], width=-1
+                )
 
 
 def load_database():
@@ -129,6 +158,12 @@ def component_type_selection_callback(sender, app_data):
     model.selected_table = [app_data]
     model.load_components_from_selected_tables()
     update_component_display()
+
+
+def component_selection_callback(sender, app_data, user_data):
+    IPN = user_data
+    model.load_component_by_IPN(IPN)
+    update_selected_component_display()
 
 
 def show_demo_callback():
@@ -269,7 +304,7 @@ with dpg.window(tag="primary_window"):
             dpg.add_menu_item(label="New Database...")  # TODO: callback
             dpg.add_menu_item(
                 label="Load Database...",
-                callback=show_override_database_file_dialog_callback
+                callback=show_override_database_file_dialog_callback,
             )
             dpg.add_menu_item(
                 label="Edit Configuration...",
@@ -304,22 +339,39 @@ with dpg.window(tag="primary_window"):
     )
     update_component_type_display()
 
-    dpg.add_text("Components in Selected Tables")
-    dpg.add_table(
-        label="Components in Selected Tables",
-        policy=dpg.mvTable_SizingFixedFit,
-        resizable=True,
-        hideable=True,
-        scrollX=True,
-        scrollY=True,
-        borders_innerH=False,
-        borders_innerV=False,
-        borders_outerH=True,
-        borders_outerV=True,
-        row_background=True,
-        tag="components_table",
-    )
-    update_component_display()
+    with dpg.group(horizontal=True):
+        with dpg.child_window(autosize_x=False, width=500):
+            dpg.add_text("Components in Selected Tables")
+            dpg.add_table(
+                label="Components in Selected Tables",
+                header_row=True,
+                pad_outerX=True,
+                # policy=dpg.mvTable_SizingFixedFit,
+                resizable=True,
+                # hideable=True,
+                # scrollX=True,
+                # scrollY=True,
+                # borders_innerH=False,
+                # borders_innerV=False,
+                no_host_extendX=True,
+                borders_outerH=True,
+                borders_outerV=True,
+                # row_background=True,  # this makes it impossible to see the selection
+                tag="components_table",
+            )
+            update_component_display()
+        with dpg.child_window(autosize_x=True):
+            dpg.add_text("Selected Component")
+            dpg.add_table(
+                label="Selected Component",
+                header_row=True,
+                resizable=True,
+                scrollY=True,
+                borders_outerH=True,
+                borders_outerV=True,
+                tag="selected_component_table",
+            )
+            update_selected_component_display()
 
     # for n, error in enumerate(model.init_errors):
     #     print(error)
