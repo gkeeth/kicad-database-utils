@@ -110,12 +110,20 @@ def update_component_display():
 def update_selected_component_display():
     # TODO: add handler to text inputs to track modification
     # TODO: make this auto-select first component on loading database
+    # TODO: validators for any of these? e.g. exclude_from_* are 0/1 only
     dpg.delete_item("selected_component_table", children_only=True)
     dpg.add_table_column(label="Field", parent="selected_component_table")
     dpg.add_table_column(label="Value", parent="selected_component_table")
     priority_fields = [
         "IPN",
+        "description",
+        "keywords",
+        "datasheet",
+        "kicad_symbol",
+        "kicad_footprint",
         "manufacturer",
+        "exclude_from_bom",
+        "exclude_from_board",
         "MPN",
         "distributor1",
         "DPN1",
