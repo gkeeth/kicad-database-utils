@@ -166,7 +166,11 @@ def config_setup_cancel_callback(sender, app_data):
     dpg.hide_item("config_setup_window")
 
 
-def create_file_dialog(tag, extensions, target_variable, callback=None):
+def show_override_database_file_dialog_callback():
+    dpg.show_item("override_database_file_dialog")
+
+
+def create_file_dialog(tag, label, extensions, target_variable, callback=None):
     def file_selection_callback(sender, app_data, user_data):
         for file in app_data["selections"]:
             filepath = app_data["selections"][file]
@@ -176,6 +180,7 @@ def create_file_dialog(tag, extensions, target_variable, callback=None):
         callback = file_selection_callback
 
     with dpg.file_dialog(
+        label=label,
         directory_selector=False,
         height=400,
         show=False,
@@ -191,20 +196,24 @@ def create_file_dialog(tag, extensions, target_variable, callback=None):
 database_file_extensions = [".db", ".*"]
 create_file_dialog(
     "override_database_file_dialog",
+    "Choose Database",
     database_file_extensions,
     "override_db_path",
     callback=choose_database_callback,
 )
 create_file_dialog(
     "config_database_file_dialog",
+    "Choose Database",
     database_file_extensions,
     "config_db_path",
 )
 create_file_dialog(
     "config_file_dialog",
+    "Choose Configuration File",
     [".json", ".*"],
     "config_path",
 )
+
 
 with dpg.window(
     label="Configuration File Editor",
@@ -258,7 +267,10 @@ with dpg.window(tag="primary_window"):
     with dpg.menu_bar():
         with dpg.menu(label="Setup"):
             dpg.add_menu_item(label="New Database...")  # TODO: callback
-            dpg.add_menu_item(label="Load Database...")  # TODO: callback
+            dpg.add_menu_item(
+                label="Load Database...",
+                callback=show_override_database_file_dialog_callback
+            )
             dpg.add_menu_item(
                 label="Edit Configuration...",
                 callback=lambda: dpg.show_item("config_setup_window"),
@@ -338,6 +350,7 @@ with dpg.window(tag="primary_window"):
         show=False,
         tag="error_popup",
     ):
+        # TODO: make OK open configuration file editor?
         dpg.add_text(
             f"Invalid database path in configuration file: '{model.config_db_path}'"
         )
