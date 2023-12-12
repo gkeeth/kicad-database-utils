@@ -351,6 +351,9 @@ with dpg.window(tag="primary_window"):
     #     callback=component_type_selection_callback,
     #     tag="component_type_list",
     # )
+    # TODO: check if we need to update the selected component when the table
+    # changes, so that we aren't trying to update a component that has been
+    # unloaded by the model
     dpg.add_listbox(
         model.tables,
         label="Component Types",
