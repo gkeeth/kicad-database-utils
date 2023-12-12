@@ -383,6 +383,10 @@ with dpg.window(tag="primary_window"):
                 tag="selected_component_table",
             )
             update_selected_component_display()
+            with dpg.group(tag="button_group", horizontal=True):
+                dpg.add_button(label="Save Changes")
+                dpg.add_button(label="Discard Changes")
+                dpg.add_button(label="Add New Component")
 
     # for n, error in enumerate(model.init_errors):
     #     print(error)
