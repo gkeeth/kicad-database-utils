@@ -32,18 +32,21 @@ class Partdb_Model:
             self.config_file_error = True
 
         self.config_data = config.config_data
-        path = self.config_data["db"]["path"]
-        if path:
+        db_path = self.config_data["db"]["path"]
+        if db_path:
             # only do this if we have a non-empty path, because it's useful
             # to maintain the empty path for error messages, etc.
-            path = os.path.abspath(os.path.expanduser(self.config_data["db"]["path"]))
-            con = db.connect_to_database(path)
+            db_path = os.path.abspath(
+                os.path.expanduser(self.config_data["db"]["path"])
+            )
+            con = db.connect_to_database(db_path)
             if con:
-                self.config_db_path = path
+                self.config_db_path = db_path
                 self.config_db_path_error = False
                 return
+        self.config_db_path = db_path
         self.config_db_path_error = True
-        print(f"invalid database specified in config: '{path}'")
+        print(f"invalid database specified in config: '{db_path}'")
 
     def load_table_names_from_database(self):
         con = db.connect_to_database(self.selected_db_path)

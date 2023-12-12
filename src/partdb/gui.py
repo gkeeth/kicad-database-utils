@@ -126,6 +126,11 @@ def show_demo_callback():
     demo.show_demo()
 
 
+def show_config_editor():
+    dpg.show_item("config_setup_window")
+    dpg.focus_item("config_setup_window")
+
+
 def config_setup_ok_callback(sender, app_data):
     """Write values from dialog to config file, then reload the config and hide
     window.
@@ -136,11 +141,12 @@ def config_setup_ok_callback(sender, app_data):
         overwrite=True,
         digikey_client_id=dpg.get_value("config_digikey_client_id"),
         digikey_client_secret=dpg.get_value("config_digikey_client_secret"),
+        db_path=dpg.get_value("config_db_path")
     )
     model.load_config(config_path)
+    handle_model_errors()
 
     dpg.hide_item("config_setup_window")
-
 
 def config_setup_cancel_callback(sender, app_data):
     """reset values in dialog/registry to model values, then hide window. """
@@ -185,8 +191,6 @@ def create_file_dialog(tag, label, extensions, target_variable, callback=None):
 
 
 def create_config_editor_dialog():
-    # TODO: if specified database doesn't exist, the path gets replaced by ""
-    # TODO: clicking OK doesn't save the database path to the config file
     with dpg.window(
         label="Configuration File Editor",
         modal=False,
@@ -235,35 +239,37 @@ def create_config_editor_dialog():
             dpg.add_button(label="Save", callback=config_setup_ok_callback)
             dpg.add_button(label="Cancel", callback=config_setup_cancel_callback)
 
-def create_startup_error_dialog():
+def create_db_path_error_dialog():
         with dpg.window(
             label="Partdb Error",
             autosize=True,
             pos=(200, 200),
             show=False,
-            tag="error_popup",
+            tag="db_path_error_popup",
         ):
-            # TODO: make OK open configuration file editor?
             dpg.add_text(
                 f"Invalid database path in configuration file: '{model.config_db_path}'"
             )
+            dpg.add_text("Edit configuration file now?")
             dpg.add_separator()
             with dpg.group(horizontal=True):
 
                 def close_callback():
-                    dpg.configure_item("error_popup", show=False)
+                    dpg.configure_item("db_path_error_popup", show=False)
+                def ok_callback():
+                    show_config_editor()
+                    close_callback()
 
-                dpg.add_button(label="OK", callback=close_callback)
+                dpg.add_button(label="OK", callback=ok_callback)
                 dpg.add_button(label="Cancel", callback=close_callback)
 
 
-def handle_startup_errors():
+def handle_model_errors():
     if model.config_file_error:
-        dpg.show_item("config_setup_window")
-        dpg.focus_item("config_setup_window")
+        show_config_editor()
     if model.config_db_path_error and not model.config_file_error:
-        dpg.show_item("error_popup")
-        dpg.focus_item("error_popup")
+        dpg.show_item("db_path_error_popup")
+        dpg.focus_item("db_path_error_popup")
 
 
 def create_main_window():
@@ -277,7 +283,7 @@ def create_main_window():
                 )
                 dpg.add_menu_item(
                     label="Edit Configuration...",
-                    callback=lambda: dpg.show_item("config_setup_window"),
+                    callback=show_config_editor,
                 )
                 dpg.add_menu_item(label="Show Demo...", callback=show_demo_callback)
 
@@ -364,9 +370,9 @@ def build_gui():
     )
 
     create_config_editor_dialog()
-    create_startup_error_dialog()
+    create_db_path_error_dialog()
     create_main_window()
-    handle_startup_errors()
+    handle_model_errors()
 
 
 def main():
@@ -382,3 +388,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
