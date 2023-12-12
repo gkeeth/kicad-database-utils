@@ -11,6 +11,7 @@ repository = "https://github.com/gkeeth/kicad-database-utils"
 
 [project.scripts]
 partdb = "partdb.cli:main"
+partdb_gui = "partdb.gui:main"
 
 
 [tool.ruff.lint]

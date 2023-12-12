@@ -361,7 +361,7 @@ def build_gui():
     handle_startup_errors()
 
 
-def gui_main():
+def main():
     dpg.create_context()
     build_gui()
     dpg.create_viewport(title="KiCad Part Database")
@@ -373,4 +373,4 @@ def gui_main():
 
 
 if __name__ == "__main__":
-    gui_main()
+    main()
