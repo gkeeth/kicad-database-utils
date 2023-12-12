@@ -202,7 +202,6 @@ def create_config_editor_dialog():
         on_close=config_setup_cancel_callback,
         tag="config_setup_window",
     ):
-        # TODO: when this changes, reload from the specified config file?
         with dpg.group(horizontal=True):
             dpg.add_input_text(
                 tag="config_path",
