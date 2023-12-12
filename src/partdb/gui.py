@@ -145,7 +145,6 @@ def config_setup_ok_callback(sender, app_data):
     )
     model.load_config(config_path)
     handle_model_errors()
-
     dpg.hide_item("config_setup_window")
 
 
@@ -241,23 +240,15 @@ def create_config_editor_dialog():
             dpg.add_button(label="Cancel", callback=config_setup_cancel_callback)
 
 
-def create_db_path_error_dialog():
-    with dpg.window(
-        label="Partdb Error",
-        autosize=True,
-        pos=(200, 200),
-        show=False,
-        tag="db_path_error_popup",
-    ):
-        dpg.add_text(
-            f"Invalid database path in configuration file: '{model.config_db_path}'"
-        )
+def create_db_path_error_dialog(db_path):
+    with dpg.window(label="Partdb Error", autosize=True, pos=(200, 200)) as tag:
+        dpg.add_text(f"Invalid database path in configuration file: '{db_path}'")
         dpg.add_text("Edit configuration file now?")
         dpg.add_separator()
         with dpg.group(horizontal=True):
 
             def close_callback():
-                dpg.configure_item("db_path_error_popup", show=False)
+                dpg.configure_item(tag, show=False)
 
             def ok_callback():
                 show_config_editor()
@@ -271,8 +262,7 @@ def handle_model_errors():
     if model.config_file_error:
         show_config_editor()
     if model.config_db_path_error and not model.config_file_error:
-        dpg.show_item("db_path_error_popup")
-        dpg.focus_item("db_path_error_popup")
+        create_db_path_error_dialog(model.config_db_path)
 
 
 def create_main_window():
@@ -373,7 +363,6 @@ def build_gui():
     )
 
     create_config_editor_dialog()
-    create_db_path_error_dialog()
     create_main_window()
     handle_model_errors()
 
