@@ -45,8 +45,6 @@ class Partdb_Model:
             path = os.path.abspath(os.path.expanduser(self.config_data["db"]["path"]))
             con = db.connect_to_database(path)
             if con:
-                print(f"valid db path in config: '{path}'")
-                print(con)
                 self.config_db_path = path
                 self.config_db_path_error = False
                 return
