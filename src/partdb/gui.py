@@ -92,16 +92,25 @@ def update_component_display():
     components = model.components_in_selected_tables
     for col in priority_cols:
         dpg.add_table_column(label=col, parent="components_table")
+
+    rows = []
     for comp in components:
+        row_tag = None
         with dpg.table_row(parent="components_table"):
             for col in priority_cols:
-                dpg.add_selectable(
+                tag = dpg.add_selectable(
                     label=comp[col],
                     span_columns=True,
-                    user_data=comp["IPN"],
+                    user_data=rows,
                     callback=component_selection_callback,
                 )
-                # TODO: hide component when we unselect?
+                # each column's selectable gets assigned its own tag, but
+                # because we use span_columns, the overall row tag corresponds
+                # to the first tag.
+                if not row_tag:
+                    row_tag = tag
+        rows.append((comp["IPN"], row_tag))
+
     dpg.configure_item("components_table", policy=dpg.mvTable_SizingStretchProp)
 
 
@@ -167,8 +176,13 @@ def component_type_selection_callback(sender, app_data):
 
 
 def component_selection_callback(sender, app_data, user_data):
-    IPN = user_data
-    model.load_component_by_IPN(IPN)
+    for IPN, row in user_data:
+        if row != sender:
+            # deselect other rows in the table
+            dpg.set_value(row, False)
+        else:
+            desired_IPN = IPN
+    model.load_component_by_IPN(desired_IPN)
     update_selected_component_display()
 
 
