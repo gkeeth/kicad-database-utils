@@ -176,28 +176,9 @@ def create_file_dialog(tag, label, extensions, target_variable, callback=None):
             dpg.add_file_extension(ext)
 
 
-def build_gui():
-    database_file_extensions = [".db", ".*"]
-    create_file_dialog(
-        "override_database_file_dialog",
-        "Choose Database",
-        database_file_extensions,
-        "override_db_path",
-        callback=choose_database_callback,
-    )
-    create_file_dialog(
-        "config_database_file_dialog",
-        "Choose Database",
-        database_file_extensions,
-        "config_db_path",
-    )
-    create_file_dialog(
-        "config_file_dialog",
-        "Choose Configuration File",
-        [".json", ".*"],
-        "config_path",
-    )
-
+def create_config_editor_dialog():
+    # TODO: if specified database doesn't exist, the path gets replaced by ""
+    # TODO: clicking OK doesn't save the database path to the config file
     with dpg.window(
         label="Configuration File Editor",
         modal=False,
@@ -246,6 +227,38 @@ def build_gui():
             dpg.add_button(label="Save", callback=config_setup_ok_callback)
             dpg.add_button(label="Cancel", callback=config_setup_cancel_callback)
 
+def create_startup_error_dialog():
+        with dpg.window(
+            label="Partdb Error",
+            autosize=True,
+            pos=(200, 200),
+            show=False,
+            tag="error_popup",
+        ):
+            # TODO: make OK open configuration file editor?
+            dpg.add_text(
+                f"Invalid database path in configuration file: '{model.config_db_path}'"
+            )
+            dpg.add_separator()
+            with dpg.group(horizontal=True):
+
+                def close_callback():
+                    dpg.configure_item("error_popup", show=False)
+
+                dpg.add_button(label="OK", callback=close_callback)
+                dpg.add_button(label="Cancel", callback=close_callback)
+
+
+def handle_startup_errors():
+    if model.config_file_error:
+        dpg.show_item("config_setup_window")
+        dpg.focus_item("config_setup_window")
+    if model.config_db_path_error and not model.config_file_error:
+        dpg.show_item("error_popup")
+        dpg.focus_item("error_popup")
+
+
+def create_main_window():
     with dpg.window(tag="primary_window"):
         with dpg.menu_bar():
             with dpg.menu(label="Setup"):
@@ -319,50 +332,33 @@ def build_gui():
                     dpg.add_button(label="Discard Changes")
                     dpg.add_button(label="Add New Component")
 
-        # for n, error in enumerate(model.init_errors):
-        #     print(error)
-        #     tag = f"partdb_error_popup{n}"
-        #     with dpg.window(
-        #         label="Partdb Error",
-        #         modal=True,
-        #         autosize=True,
-        #         pos=(200,200),
-        #         tag=tag,
-        #     ):
-        #         dpg.add_text(error)
-        #         dpg.add_separator()
-        #         with dpg.group(horizontal=True):
-        #             def close_callback():
-        #                 dpg.configure_item(tag, show=False)
-        #             dpg.add_button(label="OK", callback=close_callback)
-        #             dpg.add_button(label="Cancel", callback=close_callback)
 
-        if model.config_file_error:
-            dpg.show_item("config_setup_window")
-            dpg.focus_item("config_setup_window")
+def build_gui():
+    database_file_extensions = [".db", ".*"]
+    create_file_dialog(
+        "override_database_file_dialog",
+        "Choose Database",
+        database_file_extensions,
+        "override_db_path",
+        callback=choose_database_callback,
+    )
+    create_file_dialog(
+        "config_database_file_dialog",
+        "Choose Database",
+        database_file_extensions,
+        "config_db_path",
+    )
+    create_file_dialog(
+        "config_file_dialog",
+        "Choose Configuration File",
+        [".json", ".*"],
+        "config_path",
+    )
 
-        with dpg.window(
-            label="Partdb Error",
-            autosize=True,
-            pos=(200, 200),
-            show=False,
-            tag="error_popup",
-        ):
-            # TODO: make OK open configuration file editor?
-            dpg.add_text(
-                f"Invalid database path in configuration file: '{model.config_db_path}'"
-            )
-            dpg.add_separator()
-            with dpg.group(horizontal=True):
-
-                def close_callback():
-                    dpg.configure_item("error_popup", show=False)
-
-                dpg.add_button(label="OK", callback=close_callback)
-                dpg.add_button(label="Cancel", callback=close_callback)
-        if model.config_db_path_error and not model.config_file_error:
-            dpg.show_item("error_popup")
-            dpg.focus_item("error_popup")
+    create_config_editor_dialog()
+    create_startup_error_dialog()
+    create_main_window()
+    handle_startup_errors()
 
 
 def gui_main():
