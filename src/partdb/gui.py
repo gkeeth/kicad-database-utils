@@ -351,18 +351,10 @@ with dpg.window(tag="primary_window"):
             dpg.add_table(
                 label="Components in Selected Tables",
                 header_row=True,
-                pad_outerX=True,
-                # policy=dpg.mvTable_SizingFixedFit,
                 resizable=True,
-                # hideable=True,
-                # scrollX=True,
-                # scrollY=True,
-                # borders_innerH=False,
-                # borders_innerV=False,
                 no_host_extendX=True,
                 borders_outerH=True,
                 borders_outerV=True,
-                # row_background=True,  # this makes it impossible to see the selection
                 tag="components_table",
             )
             update_component_display()
@@ -372,7 +364,6 @@ with dpg.window(tag="primary_window"):
                 label="Selected Component",
                 header_row=True,
                 resizable=True,
-                scrollY=True,
                 borders_outerH=True,
                 borders_outerV=True,
                 tag="selected_component_table",
