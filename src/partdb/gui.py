@@ -104,6 +104,12 @@ def component_type_selection_callback(sender, app_data):
 
 
 def component_selection_callback(sender, app_data, user_data):
+    """On selection of a component in the component list, deselect all the other
+    components, load the selected component into the model, and display it in
+    the component editor.
+
+    user_data is a list of tuples of (IPN for row, tag of selectable widget for row)
+    """
     for IPN, row in user_data:
         if row != sender:
             # deselect other rows in the table
@@ -121,7 +127,9 @@ def show_demo_callback():
 
 
 def config_setup_ok_callback(sender, app_data):
-    # write values from dialog to config file, then reload the config
+    """Write values from dialog to config file, then reload the config and hide
+    window.
+    """
     config_path = dpg.get_value("config_path")
     config.make_config_file(
         config_path=config_path,
@@ -135,7 +143,7 @@ def config_setup_ok_callback(sender, app_data):
 
 
 def config_setup_cancel_callback(sender, app_data):
-    # reset values in dialog/registry to model values
+    """reset values in dialog/registry to model values, then hide window. """
     dpg.set_value(value=model.config_path, item="config_path")
     dpg.set_value(value=model.config_db_path, item="config_db_path")
     dpg.set_value(
