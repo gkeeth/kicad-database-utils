@@ -20,4 +20,14 @@ python -m pip install -r requirements.txt
 python -m pip install -e .
 ```
 
+## Running
 
+Run the CLI tool as `partdb`. Usage help is available with the `--help` option.
+
+Run the GUI tool as `partdb_gui`.
+
+## Licensing
+
+This tool is released under the MIT license.
+
+The Noto Sans and Noto Sans Mono fonts are redistributed under the terms of the OFL.
