@@ -8,10 +8,22 @@ from partdb.gui_model import Partdb_Model
 model = Partdb_Model()
 
 
+def load_fonts():
+    with dpg.font_registry():
+        with dpg.font("NotoSans-Regular.ttf", 16, tag="sans"):
+            # remap GREEK SMALL LETTER MU to MICRO
+            dpg.add_char_remap(0x03BC, 0x00B5)
+            dpg.bind_font("sans")
+        with dpg.font("NotoSansMono-Regular.ttf", 16, tag="mono"):
+            # remap GREEK SMALL LETTER MU to MICRO
+            dpg.add_char_remap(0x03BC, 0x00B5)
+
+
 def update_component_type_display():
     dpg.configure_item(
         "component_type_list", items=model.tables, num_items=max(2, len(model.tables))
     )
+    dpg.bind_item_font(item="component_type_list", font="mono")
 
 
 def update_component_display():
@@ -32,6 +44,7 @@ def update_component_display():
                     user_data=rows,
                     callback=component_selection_callback,
                 )
+                dpg.bind_item_font(item=tag, font="mono")
                 # each column's selectable gets assigned its own tag, but
                 # because we use span_columns, the overall row tag corresponds
                 # to the first tag.
@@ -70,9 +83,10 @@ def update_selected_component_display():
         for field in priority_fields + other_fields:
             with dpg.table_row(parent="selected_component_table"):
                 dpg.add_text(field)
-                dpg.add_input_text(
+                input_tag = dpg.add_input_text(
                     default_value=model.selected_component[field], width=-1
                 )
+                dpg.bind_item_font(item=input_tag, font="mono")
 
 
 def load_database():
@@ -340,6 +354,8 @@ def create_main_window():
 
 
 def build_gui():
+    load_fonts()
+
     database_file_extensions = [".db", ".*"]
     create_file_dialog(
         "override_database_file_dialog",
