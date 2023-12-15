@@ -389,9 +389,9 @@ def create_main_window():
         # TODO: check if we need to update the selected component when the table
         # changes, so that we aren't trying to update a component that has been
         # unloaded by the model
+        dpg.add_text("Component Types")
         dpg.add_listbox(
             model.tables,
-            label="Component Types",
             callback=component_type_selection_callback,
             tag="component_type_list",
         )
@@ -399,9 +399,8 @@ def create_main_window():
 
         with dpg.group(horizontal=True):
             with dpg.child_window(autosize_x=False, width=500):
-                dpg.add_text("Components in Selected Tables")
+                dpg.add_text("Components in Selected Table")
                 dpg.add_table(
-                    label="Components in Selected Tables",
                     header_row=True,
                     resizable=True,
                     no_host_extendX=True,
@@ -413,7 +412,6 @@ def create_main_window():
             with dpg.child_window(autosize_x=True):
                 dpg.add_text("Selected Component")
                 dpg.add_table(
-                    label="Selected Component",
                     header_row=True,
                     resizable=True,
                     borders_outerH=True,
