@@ -24,7 +24,6 @@ def update_component_type_display():
     dpg.configure_item(
         "component_type_list", items=model.tables, num_items=max(2, len(model.tables))
     )
-    dpg.bind_item_font(item="component_type_list", font="mono")
 
 
 def update_component_display():
