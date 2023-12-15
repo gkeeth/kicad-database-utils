@@ -48,6 +48,13 @@ class Partdb_Model:
         self.config_db_path_error = True
         print(f"invalid database specified in config: '{db_path}'")
 
+    def create_new_database(self, path):
+        """Create and select new database. Path must not exist prior to this
+        function (must be checked externally).
+        """
+        db.initialize_database(path)
+        self.selected_db_path = path
+
     def load_table_names_from_database(self):
         con = db.connect_to_database(self.selected_db_path)
         self.tables = []

@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import dearpygui.dearpygui as dpg
+import os
 
 from partdb import config
 from partdb.gui_model import Partdb_Model
@@ -56,6 +57,7 @@ def update_component_display():
 
 
 def update_selected_component_display():
+    # TODO: make it more attractive when the database is empty?
     # TODO: add handler to text inputs to track modification
     # TODO: make this auto-select first component on loading database
     # TODO: validators for any of these? e.g. exclude_from_* are 0/1 only
@@ -94,6 +96,7 @@ def load_database():
     update_component_type_display()
     model.load_components_from_selected_tables()
     update_component_display()
+    update_selected_component_display()
 
 
 def default_database_callback(sender, app_data):
@@ -102,12 +105,30 @@ def default_database_callback(sender, app_data):
     load_database()
 
 
+def create_database_callback(sender, app_data, user_data):
+    filepath = app_data["file_path_name"]
+    if not os.path.exists(filepath):
+        dpg.set_value(value=filepath, item=user_data)
+        model.create_new_database(filepath)
+        load_database()
+    else:
+        # we could show an error here
+        dpg.show_item(sender)
+
+
 def choose_database_callback(sender, app_data, user_data):
+    if app_data["file_path_name"]:
+        filepath = app_data["file_path_name"]
     for file in app_data["selections"]:
         filepath = app_data["selections"][file]
+    if os.path.exists(filepath):
         dpg.set_value(value=filepath, item=user_data)
         model.selected_db_path = dpg.get_value(user_data)
-    load_database()
+        load_database()
+    else:
+        # it'd be better to not clear the filename field. Possible to set the
+        # filename again? Or move the file exists check to the OK callback?
+        dpg.show_item(sender)
 
 
 def component_type_selection_callback(sender, app_data):
@@ -177,6 +198,10 @@ def config_setup_cancel_callback(sender, app_data):
     dpg.hide_item("config_setup_window")
 
 
+def show_create_database_file_dialog_callback():
+    dpg.show_item("create_database_file_dialog")
+
+
 def show_override_database_file_dialog_callback():
     dpg.show_item("override_database_file_dialog")
 
@@ -196,6 +221,7 @@ def create_file_dialog(tag, label, extensions, target_variable, callback=None):
         height=400,
         show=False,
         file_count=1,
+        default_filename="",
         callback=callback,
         user_data=target_variable,
         tag=tag,
@@ -282,7 +308,10 @@ def create_main_window():
     with dpg.window(tag="primary_window"):
         with dpg.menu_bar():
             with dpg.menu(label="Setup"):
-                dpg.add_menu_item(label="New Database...")  # TODO: callback
+                dpg.add_menu_item(
+                    label="New Database...",
+                    callback=show_create_database_file_dialog_callback,
+                )
                 dpg.add_menu_item(
                     label="Load Database...",
                     callback=show_override_database_file_dialog_callback,
@@ -300,7 +329,7 @@ def create_main_window():
             )
             dpg.add_button(
                 label="Choose Database",
-                callback=lambda: dpg.show_item("override_database_file_dialog"),
+                callback=show_override_database_file_dialog_callback,
             )
             dpg.add_button(label="Default Database", callback=default_database_callback)
 
@@ -357,6 +386,13 @@ def build_gui():
     load_fonts()
 
     database_file_extensions = [".db", ".*"]
+    create_file_dialog(
+        "create_database_file_dialog",
+        "Create New Database",
+        database_file_extensions,
+        "override_db_path",
+        callback=create_database_callback,
+    )
     create_file_dialog(
         "override_database_file_dialog",
         "Choose Database",
