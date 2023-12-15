@@ -56,10 +56,10 @@ def update_component_display():
 
 
 def update_selected_component_display():
-    # TODO: make it more attractive when the database is empty?
     # TODO: add handler to text inputs to track modification
     # TODO: make this auto-select first component on loading database
     # TODO: validators for any of these? e.g. exclude_from_* are 0/1 only
+    # TODO: add buttons to pick symbols/footprints
     dpg.delete_item("selected_component_table", children_only=True)
     dpg.add_table_column(label="Field", parent="selected_component_table")
     dpg.add_table_column(label="Value", parent="selected_component_table")
@@ -80,14 +80,20 @@ def update_selected_component_display():
         "DPN2",
     ]
     other_fields = sorted(set(model.selected_component.keys()) - set(priority_fields))
-    if model.selected_component:
-        for field in priority_fields + other_fields:
-            with dpg.table_row(parent="selected_component_table"):
-                dpg.add_text(field)
-                input_tag = dpg.add_input_text(
-                    default_value=model.selected_component[field], width=-1
-                )
-                dpg.bind_item_font(item=input_tag, font="mono")
+    # we still show the priority (common) fields when we don't have a
+    # component loaded, but we make them read-only
+    enabled = bool(model.selected_component)
+    for field in priority_fields + other_fields:
+        with dpg.table_row(parent="selected_component_table"):
+            dpg.add_text(field)
+            input_tag = dpg.add_input_text(
+                default_value=model.selected_component.get(field, ""), width=-1,
+                enabled=enabled,
+            )
+            if field == "IPN":
+                # IPN is always read-only
+                dpg.configure_item(input_tag, enabled=False)
+            dpg.bind_item_font(item=input_tag, font="mono")
 
 
 def load_database():
