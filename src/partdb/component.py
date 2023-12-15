@@ -93,6 +93,7 @@ def create_component_from_dict(columns_and_values):
 
 class Component(ABC):
     primary_key = "IPN"
+    true_false_fields = ["exclude_from_bom", "exclude_from_board"]
 
     def __init__(
         self,

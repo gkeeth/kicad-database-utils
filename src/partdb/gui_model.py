@@ -15,6 +15,7 @@ class Partdb_Model:
         self.selected_db_path = self.config_db_path
         self.load_table_names_from_database()
         self.load_components_from_selected_tables()
+        self.modified_components = {}
 
     def load_config(self, override_config_path=None):
         if override_config_path:
@@ -69,6 +70,9 @@ class Partdb_Model:
         self.components_in_selected_tables = []
         self.selected_component = {}
         if con:
+            # Note: components in the dict list will contain extra keys if this
+            # is run on more than one table at a time (union of all keys in all
+            # tables)
             self.components_in_selected_tables = db.dump_database_to_dict_list(
                 con, self.selected_table
             )

@@ -4,6 +4,7 @@ import dearpygui.dearpygui as dpg
 import os
 
 from partdb import config
+from partdb.component import Component
 from partdb.gui_model import Partdb_Model
 
 model = Partdb_Model()
@@ -36,10 +37,15 @@ def update_component_display():
     rows = []
     for comp in components:
         row_tag = None
+        modified = comp["IPN"] in model.modified_components
         with dpg.table_row(parent="components_table"):
             for col in priority_cols:
+                label = comp[col]
+                if modified and col == "IPN":
+                    label = "* " + label
+                    # TODO: make this bold or more obvious somehow?
                 tag = dpg.add_selectable(
-                    label=comp[col],
+                    label=label,
                     span_columns=True,
                     user_data=rows,
                     callback=component_selection_callback,
@@ -55,10 +61,25 @@ def update_component_display():
     dpg.configure_item("components_table", policy=dpg.mvTable_SizingStretchProp)
 
 
+def component_field_modified_callback(caller, app_data, user_data):
+    IPN = model.selected_component["IPN"]
+    field_name = user_data
+    new_value = app_data
+    if field_name in Component.true_false_fields:
+        new_value = int(new_value)
+    if IPN not in model.modified_components:
+        model.modified_components[IPN] = dict(model.selected_component)
+        update_component_display()
+    model.modified_components[IPN][field_name] = new_value
+    if model.modified_components[IPN] == model.selected_component:
+        del model.modified_components[IPN]
+        update_component_display()
+
+
 def update_selected_component_display():
-    # TODO: add handler to text inputs to track modification
+    # TODO: make save/reset buttons work
+    # TODO: prompt to save changes when exiting/loading new database/loading new table?/etc
     # TODO: make this auto-select first component on loading database
-    # TODO: validators for any of these? e.g. exclude_from_* are 0/1 only
     # TODO: add buttons to pick symbols/footprints
     dpg.delete_item("selected_component_table", children_only=True)
     dpg.add_table_column(label="Field", parent="selected_component_table")
@@ -83,20 +104,38 @@ def update_selected_component_display():
     # we still show the priority (common) fields when we don't have a
     # component loaded, but we make them read-only
     enabled = bool(model.selected_component)
+    # if the component has been modified previously, load the modified version
+    IPN = model.selected_component.get("IPN")
+    if IPN in model.modified_components:
+        component = model.modified_components[IPN]
+    else:
+        component = model.selected_component
     for field in priority_fields + other_fields:
         with dpg.table_row(parent="selected_component_table"):
             dpg.add_text(field)
-            input_tag = dpg.add_input_text(
-                default_value=model.selected_component.get(field, ""), width=-1,
-                enabled=enabled,
-            )
-            if field == "IPN":
-                # IPN is always read-only
-                dpg.configure_item(input_tag, enabled=False)
-            dpg.bind_item_font(item=input_tag, font="mono")
+            if field in Component.true_false_fields:
+                dpg.add_checkbox(
+                    default_value=bool(component.get(field, 0)),
+                    enabled=enabled,
+                    callback=component_field_modified_callback,
+                    user_data=field,
+                )
+            else:
+                input_tag = dpg.add_input_text(
+                    default_value=component.get(field, ""),
+                    width=-1,
+                    enabled=enabled,
+                    callback=component_field_modified_callback,
+                    user_data=field,
+                )
+                if field == "IPN":
+                    # IPN is always read-only
+                    dpg.configure_item(input_tag, enabled=False)
+                dpg.bind_item_font(item=input_tag, font="mono")
 
 
 def load_database():
+    model.modified_components = {}
     model.load_table_names_from_database()
     update_component_type_display()
     model.load_components_from_selected_tables()
@@ -141,6 +180,7 @@ def component_type_selection_callback(sender, app_data):
     model.selected_table = [app_data]
     model.load_components_from_selected_tables()
     update_component_display()
+    update_selected_component_display()
 
 
 def component_selection_callback(sender, app_data, user_data):
