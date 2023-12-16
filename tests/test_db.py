@@ -181,6 +181,26 @@ class TestDatabaseFunctions(unittest.TestCase):
             "Error: component 'R0002' not in table 'resistor'\n", stderr_mock.getvalue()
         )
 
+    def test_dump_database_to_nested_dict(self):
+        r1 = self.create_dummy_component()
+        r2 = self.create_dummy_component(value="val2")
+        c1 = self.create_dummy_component(
+            "C", capacitance="cap", voltage="volt", dielectric="X7R"
+        )
+        components = [c1, r1, r2]
+        for comp in components:
+            db.add_component_to_db(self.con, comp)
+        expected = {
+            "resistor": {
+                "R0001": dict(r1.columns),
+                "R0002": dict(r2.columns),
+            },
+            "capacitor": {
+                "C0001": dict(c1.columns),
+            },
+        }
+        self.assertEqual(expected, db.dump_database_to_nested_dict(self.con))
+
     def test_dump_database_to_csv_full(self):
         r1 = self.create_dummy_component()
         r2 = self.create_dummy_component(value="val2")

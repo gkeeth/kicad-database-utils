@@ -147,6 +147,30 @@ def remove_component_from_db(con, part_number):
     print_message(f"No component matching '{part_number}' found")
 
 
+def dump_database_to_nested_dict(con):
+    """
+    Return a nested dict containing all components in the database, organized
+    by table and IPN.
+
+    Args:
+        con: database connection object.
+
+    Returns:
+        a dict of dict of dicts.
+        - The outer dict maps table name -> components in that table.
+        - The middle dict maps IPN -> component dict.
+        - The inner dict maps component field names -> field values.
+    """
+    database = {}
+    tables = get_table_names(con)
+    con.row_factory = sqlite3.Row
+    cur = con.cursor()
+    for table in tables:
+        res = cur.execute(f"SELECT * FROM {table}")
+        database[table] = {row["IPN"]: dict(row) for row in res}
+    return database
+
+
 def dump_database_to_dict_list(con, tables, columns=[]):
     """
     Return a list of dicts of each row in the database, one dict per row.
