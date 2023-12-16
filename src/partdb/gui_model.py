@@ -1,6 +1,7 @@
 import os
 
 from partdb import config, db
+from partdb.component import table_to_component_type
 
 
 class Partdb_Model:
@@ -48,6 +49,9 @@ class Partdb_Model:
         self.config_db_path = db_path
         self.config_db_path_error = True
         print(f"invalid database specified in config: '{db_path}'")
+
+    def get_table_friendly_names(self):
+        return [table_to_component_type[table].friendly_name for table in self.tables]
 
     def create_new_database(self, path):
         """Create and select new database. Path must not exist prior to this

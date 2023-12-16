@@ -4,7 +4,7 @@ import dearpygui.dearpygui as dpg
 import os
 
 from partdb import config
-from partdb.component import Component
+from partdb.component import Component, friendly_name_to_component_type
 from partdb.gui_model import Partdb_Model
 
 model = Partdb_Model()
@@ -22,9 +22,8 @@ def load_fonts():
 
 
 def update_component_type_display():
-    dpg.configure_item(
-        "component_type_list", items=model.tables, num_items=max(2, len(model.tables))
-    )
+    names = model.get_table_friendly_names()
+    dpg.configure_item("component_type_list", items=names, num_items=max(2, len(names)))
 
 
 def update_component_display():
@@ -177,7 +176,7 @@ def choose_database_callback(sender, app_data, user_data):
 
 def component_type_selection_callback(sender, app_data):
     # load components from selected tables and populate table grid
-    model.selected_table = [app_data]
+    model.selected_table = [friendly_name_to_component_type[app_data].table]
     model.load_components_from_selected_tables()
     update_component_display()
     update_selected_component_display()
@@ -381,7 +380,7 @@ def create_main_window():
         # TODO: multiselect, or try a dropdown
         # see https://github.com/hoffstadt/DearPyGui/issues/380
         # dpg.add_combo(
-        #     model.tables,
+        #     model.get_table_friendly_names(),
         #     label="Component Types",
         #     callback=component_type_selection_callback,
         #     tag="component_type_list",
@@ -391,7 +390,7 @@ def create_main_window():
         # unloaded by the model
         dpg.add_text("Component Types")
         dpg.add_listbox(
-            model.tables,
+            model.get_table_friendly_names(),
             callback=component_type_selection_callback,
             tag="component_type_list",
         )
