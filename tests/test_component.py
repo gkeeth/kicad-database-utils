@@ -100,6 +100,32 @@ class TestComponentOutputs(unittest.TestCase):
         self.assertTrue(self.resistor.already_in_db(con))
 
 
+class TestComponentTypeRegistries(unittest.TestCase):
+    expected_component_types = [
+        component.Resistor,
+        component.Capacitor,
+        component.OpAmp,
+        component.Microcontroller,
+        component.VoltageRegulator,
+        component.Diode,
+        component.LED,
+        component.BJT,
+    ]
+
+    def test_component_type_registry(self):
+        self.assertEqual(
+            self.expected_component_types, component.component_type_registry
+        )
+
+    def test_table_to_component_type(self):
+        expected = {comp.table: comp for comp in self.expected_component_types}
+        self.assertEqual(expected, component.table_to_component_type)
+
+    def test_frendly_name_to_component_type(self):
+        expected = {comp.friendly_name: comp for comp in self.expected_component_types}
+        self.assertEqual(expected, component.friendly_name_to_component_type)
+
+
 class TestParameterUtils(unittest.TestCase):
     def test_process_resistance(self):
         testcases = [

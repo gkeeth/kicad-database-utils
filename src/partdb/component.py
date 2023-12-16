@@ -26,13 +26,18 @@ TODO
 
 
 component_type_registry = []
+table_to_component_type = {}
+friendly_name_to_component_type = {}
 
 
 def component(cls):
     """Decorator for component classes. Adds the component to the
-    component_type_registry.
+    component_type_registry and table_to_component_type and
+    friendly_name_to_component_type maps.
     """
     component_type_registry.append(cls)
+    table_to_component_type[cls.table] = cls
+    friendly_name_to_component_type[cls.friendly_name] = cls
     return cls
 
 
@@ -330,6 +335,7 @@ class Component(ABC):
 @component
 class Resistor(Component):
     table = "resistor"
+    friendly_name = "Resistor"
     IPN_prefix = ["R"]
     kicad_footprint_map = {
         "0201": "Resistor_SMD:R_0201_0603Metric",
@@ -416,6 +422,7 @@ class Resistor(Component):
 @component
 class Capacitor(Component):
     table = "capacitor"
+    friendly_name = "Capacitor"
     IPN_prefix = ["C"]
     kicad_footprint_map = {
         "0201": "Capacitor_SMD:C_0201_0603Metric",
@@ -645,6 +652,7 @@ class Capacitor(Component):
 @component
 class OpAmp(Component):
     table = "opamp"
+    friendly_name = "Op Amp"
     IPN_prefix = ["OPAMP"]
     kicad_footprint_map = {
         '8-SOIC (0.154", 3.90mm Width)': "Package_SO:SOIC-8_3.9x4.9mm_P1.27mm",
@@ -698,6 +706,7 @@ class OpAmp(Component):
 @component
 class Microcontroller(Component):
     table = "microcontroller"
+    friendly_name = "Microcontroller"
     IPN_prefix = ["MCU"]
     kicad_footprint_map = {
         "8-SOIC": "Package_SO:SOIC-8_3.9x4.9mm_P1.27mm",
@@ -779,6 +788,7 @@ class Microcontroller(Component):
 @component
 class VoltageRegulator(Component):
     table = "voltage_regulator"
+    friendly_name = "Voltage Regulator"
     IPN_prefix = ["VREG"]
     kicad_footprint_map = {
         "TO-220-3": "Package_TO_SOT_THT:TO-220-3_Vertical",
@@ -843,6 +853,7 @@ class VoltageRegulator(Component):
 @component
 class Diode(Component):
     table = "diode"
+    friendly_name = "Diode"
     IPN_prefix = ["D"]
     kicad_footprint_map = {
         "DO-35": "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal",
@@ -928,6 +939,7 @@ class Diode(Component):
 @component
 class LED(Component):
     table = "led"
+    friendly_name = "LED"
     IPN_prefix = ["LED"]
     kicad_footprint_map = {
         "0603": "LED_SMD:LED_0603_1608Metric",
@@ -1058,6 +1070,7 @@ class LED(Component):
 @component
 class BJT(Component):
     table = "transistor_bjt"
+    friendly_name = "BJT"
     IPN_prefix = ["NPN", "PNP"]
     kicad_footprint_map = {
         "TO-92-3": "Package_TO_SOT_THT:TO-92_Inline",
