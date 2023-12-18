@@ -4,7 +4,7 @@ import dearpygui.dearpygui as dpg
 import os
 
 from partdb import config
-from partdb.component import Component, friendly_name_to_component_type
+from partdb.component import Component
 from partdb.gui_model import Partdb_Model
 
 model = Partdb_Model()
@@ -29,7 +29,8 @@ def update_component_type_display():
 def update_component_display():
     priority_cols = ["IPN", "description", "MPN"]
     dpg.delete_item("components_table", children_only=True)
-    components = model.components_in_selected_tables
+    # TODO: make this use a model property instead of returning a list
+    components = model.get_components_in_selected_tables()
     for col in priority_cols:
         dpg.add_table_column(label=col, parent="components_table")
 
@@ -134,10 +135,8 @@ def update_selected_component_display():
 
 
 def load_database():
-    model.modified_components = {}
-    model.load_table_names_from_database()
+    model.load_components_from_database()
     update_component_type_display()
-    model.load_components_from_selected_tables()
     update_component_display()
     update_selected_component_display()
 
@@ -175,9 +174,7 @@ def choose_database_callback(sender, app_data, user_data):
 
 
 def component_type_selection_callback(sender, app_data):
-    # load components from selected tables and populate table grid
-    model.selected_table = [friendly_name_to_component_type[app_data].table]
-    model.load_components_from_selected_tables()
+    model.select_table(app_data)
     update_component_display()
     update_selected_component_display()
 

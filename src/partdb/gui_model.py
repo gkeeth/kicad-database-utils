@@ -1,7 +1,7 @@
 import os
 
 from partdb import config, db
-from partdb.component import table_to_component_type
+from partdb.component import friendly_name_to_component_type, table_to_component_type
 
 
 class Partdb_Model:
@@ -14,9 +14,7 @@ class Partdb_Model:
         self.config_db_path = ""
         self.load_config()
         self.selected_db_path = self.config_db_path
-        self.load_table_names_from_database()
-        self.load_components_from_selected_tables()
-        self.modified_components = {}
+        self.load_components_from_database()
 
     def load_config(self, override_config_path=None):
         if override_config_path:
@@ -53,6 +51,13 @@ class Partdb_Model:
     def get_table_friendly_names(self):
         return [table_to_component_type[table].friendly_name for table in self.tables]
 
+    def get_components_in_selected_tables(self):
+        return [
+            self.components[table][comp]
+            for table in self.selected_table
+            for comp in self.components[table]
+        ]
+
     def create_new_database(self, path):
         """Create and select new database. Path must not exist prior to this
         function (must be checked externally).
@@ -60,30 +65,39 @@ class Partdb_Model:
         db.initialize_database(path)
         self.selected_db_path = path
 
-    def load_table_names_from_database(self):
+    def _select_first_component_in_selected_table(self):
+        if self.selected_table:
+            components_in_table = self.components[self.selected_table[0]]
+            if components_in_table:
+                first_IPN = list(components_in_table.keys())[0]
+                self.selected_component = components_in_table[first_IPN]
+
+    def load_components_from_database(self):
         con = db.connect_to_database(self.selected_db_path)
         self.tables = []
-        if con:
-            self.tables = db.get_table_names(con)
         self.selected_table = []
-        if self.tables:
-            self.selected_table = [self.tables[0]]
-
-    def load_components_from_selected_tables(self):
-        con = db.connect_to_database(self.selected_db_path)
-        self.components_in_selected_tables = []
+        self.components = {}
         self.selected_component = {}
+        self.modified_components = {}
         if con:
-            # Note: components in the dict list will contain extra keys if this
-            # is run on more than one table at a time (union of all keys in all
-            # tables)
-            self.components_in_selected_tables = db.dump_database_to_dict_list(
-                con, self.selected_table
-            )
-            if self.components_in_selected_tables:
-                self.selected_component = self.components_in_selected_tables[0]
+            self.components = db.dump_database_to_nested_dict(con)
+            self.tables = list(self.components.keys())
+            if self.tables:
+                self.selected_table = [self.tables[0]]
+                self._select_first_component_in_selected_table()
 
     def load_component_by_IPN(self, IPN):
         self.selected_component = next(
-            (c for c in self.components_in_selected_tables if c.get("IPN") == IPN), {}
+            (
+                c
+                for c in self.get_components_in_selected_tables()
+                if c.get("IPN") == IPN
+            ),
+            {},
         )
+
+    def select_table(self, table_friendly_name):
+        self.selected_table = [
+            friendly_name_to_component_type[table_friendly_name].table
+        ]
+        self._select_first_component_in_selected_table()
