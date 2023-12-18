@@ -11,7 +11,7 @@ from partdb import db
 from partdb.print_utils import set_verbose
 
 
-class TestDatabaseFunctions(unittest.TestCase):
+class TestDatabaseFunctionsBase(unittest.TestCase):
     db_path = "unittests.db"
 
     @staticmethod
@@ -103,6 +103,8 @@ class TestDatabaseFunctions(unittest.TestCase):
             os.remove(self.db_path)
         set_verbose(False)
 
+
+class TestBasicDatabaseFunctions(TestDatabaseFunctionsBase):
     def test_add_table_automatically_created(self):
         db.add_component_to_db(self.con, self.resistor)
 
@@ -181,54 +183,43 @@ class TestDatabaseFunctions(unittest.TestCase):
             "Error: component 'R0002' not in table 'resistor'\n", stderr_mock.getvalue()
         )
 
-    def test_dump_database_to_nested_dict(self):
-        r1 = self.create_dummy_component()
-        r2 = self.create_dummy_component(value="val2")
-        c1 = self.create_dummy_component(
+
+class TestDatabaseDumpFunctions(TestDatabaseFunctionsBase):
+    def setUp(self):
+        super().setUp()
+        self.r1 = self.create_dummy_component()
+        self.r2 = self.create_dummy_component(
+            value="val2", MPN="mpn2", DPN1="dpn1a", DPN2="dpn2a"
+        )
+        self.c1 = self.create_dummy_component(
             "C", capacitance="cap", voltage="volt", dielectric="X7R"
         )
-        components = [c1, r1, r2]
-        for comp in components:
+        self.components = [self.c1, self.r1, self.r2]
+        for comp in self.components:
             db.add_component_to_db(self.con, comp)
+
+    def test_dump_database_to_nested_dict(self):
         expected = {
             "resistor": {
-                "R0001": dict(r1.columns),
-                "R0002": dict(r2.columns),
+                "R0001": dict(self.r1.columns),
+                "R0002": dict(self.r2.columns),
             },
             "capacitor": {
-                "C0001": dict(c1.columns),
+                "C0001": dict(self.c1.columns),
             },
         }
         self.assertEqual(expected, db.dump_database_to_nested_dict(self.con))
 
     def test_dump_database_to_csv_full(self):
-        r1 = self.create_dummy_component()
-        r2 = self.create_dummy_component(value="val2")
-        c1 = self.create_dummy_component(
-            "C", capacitance="cap", voltage="volt", dielectric="X7R"
-        )
-        components = [c1, r1, r2]
-        for comp in components:
-            db.add_component_to_db(self.con, comp)
-
-        expected_keys = self.get_superset_keys(components)
-        expected = self.get_csv_for_components(components, expected_keys)
+        expected_keys = self.get_superset_keys(self.components)
+        expected = self.get_csv_for_components(self.components, expected_keys)
 
         dump = db.dump_database_to_csv(self.con, tables=None)
 
         self.assertEqual(expected, dump)
 
     def test_dump_database_to_csv_filter_tables(self):
-        r1 = self.create_dummy_component()
-        r2 = self.create_dummy_component(value="val2")
-        c1 = self.create_dummy_component(
-            "C", capacitance="cap", voltage="volt", dielectric="X7R"
-        )
-        components = [c1, r1, r2]
-        for comp in components:
-            db.add_component_to_db(self.con, comp)
-
-        resistors = [r1, r2]
+        resistors = [self.r1, self.r2]
         expected_keys = self.get_superset_keys(resistors)
         expected = self.get_csv_for_components(resistors, expected_keys)
 
@@ -237,19 +228,10 @@ class TestDatabaseFunctions(unittest.TestCase):
         self.assertEqual(expected, dump)
 
     def test_dump_database_to_csv_minimal(self):
-        r1 = self.create_dummy_component()
-        r2 = self.create_dummy_component(value="val2")
-        c1 = self.create_dummy_component(
-            "C", capacitance="cap", voltage="volt", dielectric="X7R"
-        )
-        components = [c1, r1, r2]
-        for comp in components:
-            db.add_component_to_db(self.con, comp)
-
         expected_keys = (
             "distributor1,DPN1,distributor2,DPN2,kicad_symbol,kicad_footprint"
         )
-        expected = self.get_csv_for_components(components, expected_keys)
+        expected = self.get_csv_for_components(self.components, expected_keys)
 
         dump = db.dump_database_to_csv(
             self.con, tables=None, columns=db.minimal_columns
@@ -258,11 +240,6 @@ class TestDatabaseFunctions(unittest.TestCase):
         self.assertEqual(expected, dump)
 
     def test_remove_by_IPN(self):
-        r1 = self.create_dummy_component()
-        r2 = self.create_dummy_component(value="val2")
-        for comp in [r1, r2]:
-            db.add_component_to_db(self.con, comp)
-
         db.remove_component_from_db(self.con, "R0001")
 
         res = self.cur.execute("SELECT IPN from resistor").fetchall()
@@ -270,56 +247,38 @@ class TestDatabaseFunctions(unittest.TestCase):
         self.assertIn(("R0002",), res)
 
     def test_remove_by_MPN(self):
-        r1 = self.create_dummy_component()
-        r2 = self.create_dummy_component(MPN="mpn2")
-        for comp in [r1, r2]:
-            db.add_component_to_db(self.con, comp)
-
-        db.remove_component_from_db(self.con, "mpn")
+        db.remove_component_from_db(self.con, "mpn2")
 
         res = self.cur.execute("SELECT IPN from resistor").fetchall()
-        self.assertNotIn(("R0001",), res)
-        self.assertIn(("R0002",), res)
+        self.assertNotIn(("R0002",), res)
+        self.assertIn(("R0001",), res)
 
     def test_remove_by_DPN1(self):
-        r1 = self.create_dummy_component()
-        r2 = self.create_dummy_component(value="val2", DPN1="dpn1a")
-        for comp in [r1, r2]:
-            db.add_component_to_db(self.con, comp)
-
-        db.remove_component_from_db(self.con, "dpn1")
+        db.remove_component_from_db(self.con, "dpn1a")
 
         res = self.cur.execute("SELECT IPN from resistor").fetchall()
-        self.assertNotIn(("R0001",), res)
-        self.assertIn(("R0002",), res)
+        self.assertNotIn(("R0002",), res)
+        self.assertIn(("R0001",), res)
 
     def test_remove_by_DPN2(self):
-        r1 = self.create_dummy_component()  # default DPN2="dpn2"
-        r2 = self.create_dummy_component(value="val2", DPN2="dpn2a")
-        for comp in [r1, r2]:
-            db.add_component_to_db(self.con, comp)
-
-        db.remove_component_from_db(self.con, "dpn2")
+        db.remove_component_from_db(self.con, "dpn2a")
 
         res = self.cur.execute("SELECT IPN from resistor").fetchall()
-        self.assertNotIn(("R0001",), res)
-        self.assertIn(("R0002",), res)
+        self.assertNotIn(("R0002",), res)
+        self.assertIn(("R0001",), res)
 
     def test_remove_skip_multiple_hits(self):
-        r1 = self.create_dummy_component()
-        r2 = self.create_dummy_component(value="val2")
-        for comp in [r1, r2]:
-            db.add_component_to_db(self.con, comp)
+        r = self.create_dummy_component(MPN="mpn2b")  # R0003
+        db.add_component_to_db(self.con, r)
 
         db.remove_component_from_db(self.con, "dpn2")
 
         res = self.cur.execute("SELECT IPN from resistor").fetchall()
         self.assertIn(("R0001",), res)
-        self.assertIn(("R0002",), res)
+        self.assertIn(("R0003",), res)
 
     @patch("sys.stdout", new_callable=io.StringIO)
     def test_remove_no_hits(self, stdout_mock):
-        db.add_component_to_db(self.con, self.resistor)
         set_verbose(True)
         db.remove_component_from_db(self.con, "R9999")
         res = self.cur.execute("SELECT IPN from resistor")
