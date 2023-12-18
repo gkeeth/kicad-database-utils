@@ -84,6 +84,14 @@ def component_field_modified_callback(caller, app_data, user_data):
         update_component_display()
 
 
+def discard_component_changes_callback(sender, app_data):
+    # This discards all changes, but it might be better to just discard
+    # the current component's changes
+    model.modified_components = {}
+    update_component_display()
+    update_selected_component_display()
+
+
 def update_selected_component_display():
     # TODO: make save/reset buttons work
     # TODO: prompt to save changes when exiting/loading new database/loading new table?/etc
@@ -424,7 +432,10 @@ def create_main_window():
                 update_selected_component_display()
                 with dpg.group(tag="button_group", horizontal=True):
                     dpg.add_button(label="Save Changes")
-                    dpg.add_button(label="Discard Changes")
+                    dpg.add_button(
+                        label="Discard Changes",
+                        callback=discard_component_changes_callback,
+                    )
                     dpg.add_button(label="Add New Component")
 
 
