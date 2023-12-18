@@ -134,7 +134,8 @@ def update_selected_component_display():
                 dpg.bind_item_font(item=input_tag, font="mono")
 
 
-def load_database():
+def load_database(db_path):
+    model.selected_db_path = db_path
     model.load_components_from_database()
     update_component_type_display()
     update_component_display()
@@ -143,8 +144,7 @@ def load_database():
 
 def default_database_callback(sender, app_data):
     dpg.set_value(value=model.config_db_path, item="override_db_path")
-    model.selected_db_path = dpg.get_value("override_db_path")
-    load_database()
+    load_database(dpg.get_value("override_db_path"))
 
 
 def create_database_callback(sender, app_data, user_data):
@@ -152,7 +152,7 @@ def create_database_callback(sender, app_data, user_data):
     if not os.path.exists(filepath):
         dpg.set_value(value=filepath, item=user_data)
         model.create_new_database(filepath)
-        load_database()
+        load_database(filepath)
     else:
         # we could show an error here
         dpg.show_item(sender)
@@ -165,8 +165,7 @@ def choose_database_callback(sender, app_data, user_data):
         filepath = app_data["selections"][file]
     if os.path.exists(filepath):
         dpg.set_value(value=filepath, item=user_data)
-        model.selected_db_path = dpg.get_value(user_data)
-        load_database()
+        load_database(dpg.get_value(user_data))
     else:
         # it'd be better to not clear the filename field. Possible to set the
         # filename again? Or move the file exists check to the OK callback?
