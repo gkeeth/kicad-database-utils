@@ -13,10 +13,18 @@ model = Partdb_Model()
 def load_fonts():
     with dpg.font_registry():
         with dpg.font("NotoSans-Regular.ttf", 16, tag="sans"):
+            # load GREEK CAPITAL LETTER OMEGA
+            dpg.add_font_chars([0x03A9])
+            # remap OHM SIGN to GREEK CAPITAL LETTER OMEGA
+            dpg.add_char_remap(0x2126, 0x03A9)
             # remap GREEK SMALL LETTER MU to MICRO
             dpg.add_char_remap(0x03BC, 0x00B5)
             dpg.bind_font("sans")
         with dpg.font("NotoSansMono-Regular.ttf", 16, tag="mono"):
+            # load GREEK CAPITAL LETTER OMEGA
+            dpg.add_font_chars([0x03A9])
+            # remap OHM SIGN to GREEK CAPITAL LETTER OMEGA
+            dpg.add_char_remap(0x2126, 0x03A9)
             # remap GREEK SMALL LETTER MU to MICRO
             dpg.add_char_remap(0x03BC, 0x00B5)
 
