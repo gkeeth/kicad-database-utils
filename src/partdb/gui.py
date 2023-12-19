@@ -70,18 +70,8 @@ def update_component_display():
 
 
 def component_field_modified_callback(caller, app_data, user_data):
-    IPN = model.selected_component["IPN"]
-    field_name = user_data
-    new_value = app_data
-    if field_name in Component.true_false_fields:
-        new_value = int(new_value)
-    if IPN not in model.modified_components:
-        model.modified_components[IPN] = dict(model.selected_component)
-        update_component_display()
-    model.modified_components[IPN][field_name] = new_value
-    if model.modified_components[IPN] == model.selected_component:
-        del model.modified_components[IPN]
-        update_component_display()
+    model.modify_component(field_name=user_data, new_value=app_data)
+    update_component_display()
 
 
 def discard_component_changes_callback(sender, app_data):

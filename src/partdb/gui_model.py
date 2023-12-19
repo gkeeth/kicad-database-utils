@@ -1,6 +1,7 @@
 import os
 
 from partdb import config, db
+from partdb.component import Component
 from partdb.component import friendly_name_to_component_type, table_to_component_type
 
 
@@ -101,3 +102,16 @@ class Partdb_Model:
             friendly_name_to_component_type[table_friendly_name].table
         ]
         self._select_first_component_in_selected_table()
+
+    def modify_component(self, field_name, new_value):
+        IPN = self.selected_component["IPN"]
+        if field_name in Component.true_false_fields:
+            new_value = int(new_value)
+        if IPN not in self.modified_components:
+            self.modified_components[IPN] = dict(self.selected_component)
+        self.modified_components[IPN][field_name] = new_value
+        if self.modified_components[IPN] == self.selected_component:
+            # if the modification takes the modified component back in line with
+            # the original unmodified component, remove it from the collection of
+            # modified components
+            del self.modified_components[IPN]
