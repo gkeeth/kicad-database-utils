@@ -115,3 +115,38 @@ class Partdb_Model:
             # the original unmodified component, remove it from the collection of
             # modified components
             del self.modified_components[IPN]
+
+    def is_checkbox_field(self, field):
+        return field in Component.true_false_fields
+
+    def get_component_data_for_display(self):
+        priority_fields = [
+            "IPN",
+            "description",
+            "keywords",
+            "datasheet",
+            "kicad_symbol",
+            "kicad_footprint",
+            "manufacturer",
+            "exclude_from_bom",
+            "exclude_from_board",
+            "MPN",
+            "distributor1",
+            "DPN1",
+            "distributor2",
+            "DPN2",
+        ]
+        other_fields = sorted(set(self.selected_component.keys()) - set(priority_fields))
+        fields = priority_fields + other_fields
+        # if there's no component loaded, we still show the priority (common)
+        # fields, but we make them read-onlly
+        enabled = bool(self.selected_component)
+        # if the component has been modified previously, load the modified version
+        IPN = self.selected_component.get("IPN")
+        if IPN in self.modified_components:
+            component = self.modified_components[IPN]
+        else:
+            component = self.selected_component
+
+        return fields, component, enabled
+

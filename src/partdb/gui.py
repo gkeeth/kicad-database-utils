@@ -4,7 +4,6 @@ import dearpygui.dearpygui as dpg
 import os
 
 from partdb import config
-from partdb.component import Component
 from partdb.gui_model import Partdb_Model
 
 model = Partdb_Model()
@@ -90,36 +89,12 @@ def update_selected_component_display():
     dpg.delete_item("selected_component_table", children_only=True)
     dpg.add_table_column(label="Field", parent="selected_component_table")
     dpg.add_table_column(label="Value", parent="selected_component_table")
-    priority_fields = [
-        "IPN",
-        "description",
-        "keywords",
-        "datasheet",
-        "kicad_symbol",
-        "kicad_footprint",
-        "manufacturer",
-        "exclude_from_bom",
-        "exclude_from_board",
-        "MPN",
-        "distributor1",
-        "DPN1",
-        "distributor2",
-        "DPN2",
-    ]
-    other_fields = sorted(set(model.selected_component.keys()) - set(priority_fields))
-    # we still show the priority (common) fields when we don't have a
-    # component loaded, but we make them read-only
-    enabled = bool(model.selected_component)
-    # if the component has been modified previously, load the modified version
-    IPN = model.selected_component.get("IPN")
-    if IPN in model.modified_components:
-        component = model.modified_components[IPN]
-    else:
-        component = model.selected_component
-    for field in priority_fields + other_fields:
+
+    fields, component, enabled = model.get_component_data_for_display()
+    for field in fields:
         with dpg.table_row(parent="selected_component_table"):
             dpg.add_text(field)
-            if field in Component.true_false_fields:
+            if model.is_checkbox_field(field):
                 dpg.add_checkbox(
                     default_value=bool(component.get(field, 0)),
                     enabled=enabled,
