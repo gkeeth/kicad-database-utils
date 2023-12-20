@@ -136,7 +136,9 @@ class Partdb_Model:
             "distributor2",
             "DPN2",
         ]
-        other_fields = sorted(set(self.selected_component.keys()) - set(priority_fields))
+        other_fields = sorted(
+            set(self.selected_component.keys()) - set(priority_fields)
+        )
         fields = priority_fields + other_fields
         # if there's no component loaded, we still show the priority (common)
         # fields, but we make them read-onlly
@@ -149,4 +151,3 @@ class Partdb_Model:
             component = self.selected_component
 
         return fields, component, enabled
-
