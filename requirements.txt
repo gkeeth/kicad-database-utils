@@ -2,3 +2,5 @@ digikey-api
 mouser
 tabulate
 platformdirs
+dearpygui
+dearpygui_ext

@@ -1,12 +1,14 @@
 #!/usr/bin/env python
 
 import dearpygui.dearpygui as dpg
+from dearpygui_ext.themes import create_theme_imgui_light
 import os
 
 from partdb import config
 from partdb.gui_model import Partdb_Model
 
 model = Partdb_Model()
+themes = {}
 
 
 def load_fonts():
@@ -26,6 +28,12 @@ def load_fonts():
             dpg.add_char_remap(0x2126, 0x03A9)
             # remap GREEK SMALL LETTER MU to MICRO
             dpg.add_char_remap(0x03BC, 0x00B5)
+
+
+def create_themes():
+    with dpg.theme() as themes["dark"]:
+        pass
+    themes["light"] = create_theme_imgui_light()
 
 
 def update_component_type_display():
@@ -66,6 +74,19 @@ def update_component_display():
         rows.append((comp["IPN"], row_tag))
 
     dpg.configure_item("components_table", policy=dpg.mvTable_SizingStretchProp)
+
+
+def theme_callback(caller, app_data):
+    dark = "dark_theme_menu_item"
+    light = "light_theme_menu_item"
+    if caller == dark:
+        dpg.set_value(item=dark, value=True)
+        dpg.set_value(item=light, value=False)
+        dpg.bind_theme(themes["dark"])
+    else:
+        dpg.set_value(item=dark, value=False)
+        dpg.set_value(item=light, value=True)
+        dpg.bind_theme(themes["light"])
 
 
 def component_field_modified_callback(caller, app_data, user_data):
@@ -328,7 +349,7 @@ def handle_model_errors():
 def create_main_window():
     with dpg.window(tag="primary_window"):
         with dpg.menu_bar():
-            with dpg.menu(label="Setup"):
+            with dpg.menu(label="File"):
                 dpg.add_menu_item(
                     label="New Database...",
                     callback=show_create_database_file_dialog_callback,
@@ -342,6 +363,20 @@ def create_main_window():
                     callback=show_config_editor,
                 )
                 dpg.add_menu_item(label="Show Demo...", callback=show_demo_callback)
+            with dpg.menu(label="Preferences"):
+                dpg.add_menu_item(
+                    label="Light Theme",
+                    tag="light_theme_menu_item",
+                    check=True,
+                    callback=theme_callback,
+                )
+                dpg.add_menu_item(
+                    label="Dark Theme",
+                    tag="dark_theme_menu_item",
+                    check=True,
+                    default_value=True,
+                    callback=theme_callback,
+                )
 
         with dpg.group(horizontal=True):
             dpg.add_input_text(
@@ -406,6 +441,7 @@ def create_main_window():
 
 def build_gui():
     load_fonts()
+    create_themes()
 
     database_file_extensions = [".db", ".*"]
     create_file_dialog(
