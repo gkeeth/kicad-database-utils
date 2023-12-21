@@ -193,7 +193,7 @@ def component_selection_callback(sender, app_data, user_data):
             dpg.set_value(row, False)
         else:
             desired_IPN = IPN
-    model.load_component_by_IPN(desired_IPN)
+    model.select_component_by_IPN(desired_IPN)
     update_selected_component_display()
 
 

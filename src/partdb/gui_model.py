@@ -6,12 +6,13 @@ from partdb.component import friendly_name_to_component_type, table_to_component
 
 
 class Partdb_Model:
-    def __init__(self):
-        self.init_errors = []
+    def __init__(self, config_path=None):
         self.config_file_error = True
         self.config_db_path_error = True
         self.config_data = {}
-        self.config_path = config.DEFAULT_CONFIG_PATH
+        if not config_path:
+            config_path = config.DEFAULT_CONFIG_PATH
+        self.config_path = config_path
         self.config_db_path = ""
         self.load_config()
         self.selected_db_path = self.config_db_path
@@ -29,7 +30,6 @@ class Partdb_Model:
             self.config_path = config_path
             self.config_file_error = False
         except FileNotFoundError:
-            print(f"invalid config file specified: '{self.config_path}'")
             self.config_file_error = True
 
         self.config_data = config.config_data
@@ -47,7 +47,6 @@ class Partdb_Model:
                 return
         self.config_db_path = db_path
         self.config_db_path_error = True
-        print(f"invalid database specified in config: '{db_path}'")
 
     def get_table_friendly_names(self):
         return [table_to_component_type[table].friendly_name for table in self.tables]
@@ -87,7 +86,7 @@ class Partdb_Model:
                 self.selected_table = [self.tables[0]]
                 self._select_first_component_in_selected_table()
 
-    def load_component_by_IPN(self, IPN):
+    def select_component_by_IPN(self, IPN):
         self.selected_component = next(
             (
                 c
