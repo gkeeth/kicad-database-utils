@@ -94,10 +94,28 @@ def component_field_modified_callback(caller, app_data, user_data):
     update_component_display()
 
 
-def discard_component_changes_callback(sender, app_data):
-    # This discards all changes, but it might be better to just discard
-    # the current component's changes
+def save_all_changes_callback():
+    model.save_all_components()
+    update_component_display()
+    update_selected_component_display()
+
+
+def discard_all_changes_callback():
     model.modified_components = {}
+    update_component_display()
+    update_selected_component_display()
+
+
+def save_component_changes_callback():
+    model.save_component(model.selected_component["IPN"])
+    update_component_display()
+    update_selected_component_display()
+
+
+def discard_component_changes_callback():
+    IPN = model.selected_component["IPN"]
+    if IPN in model.modified_components:
+        del model.modified_components[IPN]
     update_component_display()
     update_selected_component_display()
 
@@ -431,7 +449,10 @@ def create_main_window():
                 )
                 update_selected_component_display()
                 with dpg.group(tag="button_group", horizontal=True):
-                    dpg.add_button(label="Save Changes")
+                    dpg.add_button(
+                        label="Save Changes",
+                        callback=save_component_changes_callback
+                    )
                     dpg.add_button(
                         label="Discard Changes",
                         callback=discard_component_changes_callback,
