@@ -1,7 +1,7 @@
 import os
 
 from partdb import config, db
-from partdb.component import Component
+from partdb.component import Component, create_component_from_dict
 from partdb.component import friendly_name_to_component_type, table_to_component_type
 
 
@@ -107,9 +107,11 @@ class Partdb_Model:
         if field_name in Component.true_false_fields:
             new_value = int(new_value)
         if IPN not in self.modified_components:
-            self.modified_components[IPN] = dict(self.selected_component)
-        self.modified_components[IPN][field_name] = new_value
-        if self.modified_components[IPN] == self.selected_component:
+            self.modified_components[IPN] = (
+                self.selected_table[0], dict(self.selected_component)
+            )
+        self.modified_components[IPN][1][field_name] = new_value
+        if self.modified_components[IPN][1] == self.selected_component:
             # if the modification takes the modified component back in line with
             # the original unmodified component, remove it from the collection of
             # modified components
@@ -145,8 +147,22 @@ class Partdb_Model:
         # if the component has been modified previously, load the modified version
         IPN = self.selected_component.get("IPN")
         if IPN in self.modified_components:
-            component = self.modified_components[IPN]
+            component = self.modified_components[IPN][1]
         else:
             component = self.selected_component
 
         return fields, component, enabled
+
+    def save_component(self, IPN):
+        # TODO: this won't work for new components that don't have IPNs yet
+        con = db.connect_to_database(self.selected_db_path)
+        comp = create_component_from_dict(self.modified_components[IPN][1])
+        db.add_component_to_db(con, comp, update=IPN)
+        table = self.modified_components[IPN][0]
+        self.components[table][IPN] = self.modified_components[IPN][1]
+        self.select_component_by_IPN(IPN)
+        del self.modified_components[IPN]
+
+    def save_all_components(self):
+        for IPN in list(self.modified_components.keys()):
+            self.save_component(IPN)

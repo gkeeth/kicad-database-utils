@@ -116,7 +116,7 @@ class TestGuiModel(unittest.TestCase):
         orig_value = self.model.components["capacitor"][IPN]["value"]
         new_value = "new_value"
         self.model.modify_component("value", new_value)
-        self.assertEqual(new_value, self.model.modified_components[IPN]["value"])
+        self.assertEqual(new_value, self.model.modified_components[IPN][1]["value"])
         self.assertEqual(orig_value, self.model.components["capacitor"][IPN]["value"])
 
         self.model.modify_component("value", orig_value)
@@ -138,7 +138,7 @@ class TestGuiModel(unittest.TestCase):
         self.model.select_component_by_IPN("R0001")
         self.model.modify_component("value", "new_value")
         fields, component, enabled = self.model.get_component_data_for_display()
-        self.assertEqual(self.model.modified_components["R0001"], component)
+        self.assertEqual(self.model.modified_components["R0001"][1], component)
 
     def test_get_component_data_for_display_no_component_loaded(self):
         self.model.select_component_by_IPN("fake_ipn")
@@ -147,3 +147,30 @@ class TestGuiModel(unittest.TestCase):
         self.assertEqual("DPN2", fields[-1])
         self.assertEqual({}, component)
         self.assertFalse(enabled)
+
+    def test_save_component(self):
+        expected = dict(self.model.selected_component)
+        expected["value"] = "new_value"
+        IPN = self.model.selected_component["IPN"]
+        self.model.modify_component("value", "new_value")
+        self.model.save_component(IPN)
+        self.assertEqual(expected, self.model.selected_component)
+        self.assertEqual(expected, self.model.components["capacitor"][IPN])
+        self.assertEqual({}, self.model.modified_components)
+
+    def test_save_all_components(self):
+        expected1 = dict(self.model.selected_component)
+        expected1["value"] = "new_value1"
+        IPN1 = self.model.selected_component["IPN"]
+        self.model.modify_component("value", "new_value1")
+        self.model.select_table("Resistor")
+        IPN2 = "R0001"
+        self.model.select_component_by_IPN(IPN2)
+        expected2 = dict(self.model.selected_component)
+        expected2["value"] = "new_value2"
+        self.model.modify_component("value", "new_value2")
+        self.model.save_all_components()
+        self.assertEqual(expected1, self.model.components["capacitor"][IPN1])
+        self.assertEqual(expected2, self.model.components["resistor"][IPN2])
+        self.assertEqual(expected2, self.model.selected_component)
+        self.assertEqual({}, self.model.modified_components)
