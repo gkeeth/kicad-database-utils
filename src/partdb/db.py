@@ -18,9 +18,21 @@ minimal_columns = [
     "kicad_footprint",
 ]
 
+# TODO: add database schema migration
+# - any time you attempt to write to database, need to check that db's schema
+#   matches CURRENT_SCHEMA_VERSION, and if not, we need to migrate the db to
+#   the current schema. This could be done whenever you try to write, or it
+#   could be done when you try to open the db. It's easier to do it in one
+#   place (in connect_to_database(), for example), but that will unconditionally
+#   migrate even if you're just trying to read the database.
+# TODO: figure out if the problem is on reading the database or on writing
+
+SCHEMA_VERSION = 1
 
 def initialize_database(db_path):
     """Create a new, empty database file without any tables.
+
+    Initializes the schema to the current version.
 
     Args:
         db_path: absolute path to database.
@@ -28,6 +40,8 @@ def initialize_database(db_path):
     if os.path.isfile(db_path):
         sys.exit(f"Error: {db_path} already exists and cannot be re-initialized.")
     con = sqlite3.connect(f"file:{db_path}", uri=True)
+    cur = con.cursor()
+    cur.execute(f"PRAGMA user_version={SCHEMA_VERSION}")
     con.close()
 
 

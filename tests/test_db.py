@@ -105,6 +105,11 @@ class TestDatabaseFunctionsBase(unittest.TestCase):
 
 
 class TestBasicDatabaseFunctions(TestDatabaseFunctionsBase):
+    def test_schema_version_stored(self):
+        res = self.cur.execute("PRAGMA user_version").fetchall()
+
+        self.assertIn((db.SCHEMA_VERSION,), res)
+
     def test_add_table_automatically_created(self):
         db.add_component_to_db(self.con, self.resistor)
 
