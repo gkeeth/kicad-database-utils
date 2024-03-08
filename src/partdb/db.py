@@ -25,7 +25,6 @@ minimal_columns = [
 #   could be done when you try to open the db. It's easier to do it in one
 #   place (in connect_to_database(), for example), but that will unconditionally
 #   migrate even if you're just trying to read the database.
-# TODO: figure out if the problem is on reading the database or on writing
 
 SCHEMA_VERSION = 1
 

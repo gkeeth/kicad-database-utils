@@ -289,9 +289,10 @@ class Component(ABC):
             with.
         """
         column_names = self.columns.keys()
+        columns = ",".join(column_names)
         column_keys = ":" + ", :".join(column_names)
         command = "INSERT OR REPLACE" if update else "INSERT"
-        insert_string = f"{command} INTO {self.table} VALUES({column_keys})"
+        insert_string = f"{command} INTO {self.table} ({columns}) VALUES({column_keys})"
         return (insert_string, self.columns)
 
     def to_csv(self, header=True):
