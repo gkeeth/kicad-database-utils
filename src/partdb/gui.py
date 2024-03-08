@@ -140,9 +140,7 @@ def discard_component_changes_callback():
 
 
 def update_selected_component_display():
-    # TODO: make save/reset buttons work
     # TODO: prompt to save changes when exiting/loading new db/loading new table?/etc
-    # TODO: make this auto-select first component on loading database
     # TODO: add buttons to pick symbols/footprints
     dpg.delete_item("selected_component_table", children_only=True)
     dpg.add_table_column(label="Field", parent="selected_component_table")
