@@ -381,7 +381,60 @@ def handle_model_errors():
     if model.config_file_error:
         show_config_editor()
     if model.config_db_path_error and not model.config_file_error:
+        # TODO: we should create this once and then show it here
         create_db_path_error_dialog(model.config_db_path)
+
+
+def create_unsaved_changes_dialog():
+    with dpg.window(
+        label="Save Changes?",
+        tag="unsaved_changes_dialog",
+        show=False,
+    ):
+        dpg.add_text("Save unsaved changes before closing?")
+        with dpg.group(horizontal=True):
+
+            def unsaved_changes_callback(sender):
+                print("in unsaved_changes_callback")
+                if sender == "discard_changes_button":
+                    model.modified_components = {}
+                    print("calling discard's stop_dearpygui()")
+                    dpg.stop_dearpygui()
+                elif sender == "save_changes_button":
+                    model.save_all_components()
+                    print("calling save's stop_dearpygui()")
+                    dpg.stop_dearpygui()
+                elif sender == "cancel_button":
+                    dpg.hide_item("unsaved_changes_dialog")
+
+            dpg.add_button(
+                label="Discard Changes",
+                tag="discard_changes_button",
+                callback=unsaved_changes_callback,
+            )
+            dpg.add_button(
+                label="Cancel",
+                tag="cancel_button",
+                callback=unsaved_changes_callback,
+            )
+            dpg.add_button(
+                label="Save Changes",
+                tag="save_changes_button",
+                callback=unsaved_changes_callback,
+            )
+
+
+def exit_callback():
+    print("in exit_callback()")
+    if model.modified_components:
+        print("unsaved components!")
+        dialog_tag = "unsaved_changes_dialog"
+        dpg.set_item_pos(dialog_tag, get_centered_dialog_position(dialog_tag))
+        dpg.show_item(dialog_tag)
+        return
+
+    print("calling stop_dearpygui()")
+    dpg.stop_dearpygui()
 
 
 def create_main_window():
@@ -512,6 +565,7 @@ def build_gui():
         "config_path",
     )
 
+    create_unsaved_changes_dialog()
     create_config_editor_dialog()
     create_main_window()
     handle_model_errors()
@@ -520,11 +574,13 @@ def build_gui():
 def main():
     dpg.create_context()
     build_gui()
-    dpg.create_viewport(title="KiCad Part Database")
+    dpg.create_viewport(title="KiCad Part Database", disable_close=True)
     dpg.setup_dearpygui()
     dpg.show_viewport()
     dpg.set_primary_window("primary_window", True)
+    dpg.set_exit_callback(exit_callback)
     dpg.start_dearpygui()
+    print("back in main!")
     dpg.destroy_context()
 
 
