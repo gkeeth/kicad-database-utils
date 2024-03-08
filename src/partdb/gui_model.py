@@ -54,8 +54,8 @@ class Partdb_Model:
     def get_components_in_selected_tables(self):
         return [
             self.components[table][comp]
-            for table in self.selected_table
-            for comp in self.components[table]
+            for table in sorted(self.selected_table)
+            for comp in sorted(self.components[table])
         ]
 
     def create_new_database(self, path):
@@ -67,9 +67,9 @@ class Partdb_Model:
 
     def _select_first_component_in_selected_table(self):
         if self.selected_table:
-            components_in_table = self.components[self.selected_table[0]]
+            components_in_table = self.components[sorted(self.selected_table)[0]]
             if components_in_table:
-                first_IPN = list(components_in_table.keys())[0]
+                first_IPN = sorted(components_in_table.keys())[0]
                 self.selected_component = components_in_table[first_IPN]
 
     def load_components_from_database(self):
