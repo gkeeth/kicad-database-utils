@@ -11,6 +11,25 @@ model = Partdb_Model()
 themes = {}
 
 
+def get_viewport_center():
+    x = dpg.get_viewport_width() / 2
+    y = dpg.get_viewport_height() / 2
+    return (x, y)
+
+
+def get_centered_dialog_position(tag):
+    x, y = get_viewport_center()
+    dx = dpg.get_item_width(tag) / 2
+    dy = dpg.get_item_height(tag) / 2
+    # on first display, the height/width hasn't always been calculated yet,
+    # so fudge them to make it a little closer to centered
+    if dx == 0:
+        dx = 100
+    if dy == 0:
+        dy = 100
+    return (x - dx, y - dy)
+
+
 def load_fonts():
     with dpg.font_registry():
         with dpg.font("NotoSans-Regular.ttf", 16, tag="sans"):
@@ -222,8 +241,10 @@ def show_demo_callback():
 
 
 def show_config_editor():
-    dpg.show_item("config_setup_window")
-    dpg.focus_item("config_setup_window")
+    tag = "config_setup_window"
+    dpg.show_item(tag)
+    dpg.set_item_pos(tag, get_centered_dialog_position(tag))
+    dpg.focus_item(tag)
 
 
 def config_setup_ok_callback(sender, app_data):
@@ -298,7 +319,6 @@ def create_config_editor_dialog():
         width=700,
         # autosize=True,
         # no_resize=False,
-        pos=(100, 100),
         on_close=config_setup_cancel_callback,
         tag="config_setup_window",
     ):
@@ -340,7 +360,9 @@ def create_config_editor_dialog():
 
 
 def create_db_path_error_dialog(db_path):
-    with dpg.window(label="Partdb Error", autosize=True, pos=(200, 200)) as tag:
+    with dpg.window(
+        label="Partdb Error", autosize=True, pos=get_viewport_center()
+    ) as tag:
         dpg.add_text(f"Invalid database path in configuration file: '{db_path}'")
         dpg.add_text("Edit configuration file now?")
         dpg.add_separator()
