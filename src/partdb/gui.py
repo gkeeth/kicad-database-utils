@@ -395,14 +395,11 @@ def create_unsaved_changes_dialog():
         with dpg.group(horizontal=True):
 
             def unsaved_changes_callback(sender):
-                print("in unsaved_changes_callback")
                 if sender == "discard_changes_button":
                     model.modified_components = {}
-                    print("calling discard's stop_dearpygui()")
                     dpg.stop_dearpygui()
                 elif sender == "save_changes_button":
                     model.save_all_components()
-                    print("calling save's stop_dearpygui()")
                     dpg.stop_dearpygui()
                 elif sender == "cancel_button":
                     dpg.hide_item("unsaved_changes_dialog")
@@ -425,15 +422,12 @@ def create_unsaved_changes_dialog():
 
 
 def exit_callback():
-    print("in exit_callback()")
     if model.modified_components:
-        print("unsaved components!")
         dialog_tag = "unsaved_changes_dialog"
         dpg.set_item_pos(dialog_tag, get_centered_dialog_position(dialog_tag))
         dpg.show_item(dialog_tag)
         return
 
-    print("calling stop_dearpygui()")
     dpg.stop_dearpygui()
 
 
@@ -580,7 +574,6 @@ def main():
     dpg.set_primary_window("primary_window", True)
     dpg.set_exit_callback(exit_callback)
     dpg.start_dearpygui()
-    print("back in main!")
     dpg.destroy_context()
 
 
