@@ -1,2 +1,2 @@
 IPN,datasheet,description,keywords,value,exclude_from_bom,exclude_from_board,kicad_symbol,kicad_footprint,manufacturer,MPN,distributor1,DPN1,distributor2,DPN2,ic_max,vce_max,power_max,ft,bjt_type,package
-NPN,https://www.onsemi.com/pdf/datasheet/pzt3904-d.pdf,"200mA Ic, 40V Vce, 625mW, 300MHz NPN BJT, TO-92-3",bjt transistor npn,${MPN},0,0,Device:Q_NPN_EBC,Package_TO_SOT_THT:TO-92_Inline,onsemi,2N3904BU,Digikey,2N3904FS-ND,,,200mA,40V,625mW,300MHz,NPN,TO-92-3
+NPN,<datasheet>,"200mA Ic, 40V Vce, 625mW, 300MHz NPN BJT, TO-92-3",bjt transistor npn,${MPN},0,0,Device:Q_NPN_EBC,Package_TO_SOT_THT:TO-92_Inline,onsemi,2N3904BU,Digikey,2N3904FS-ND,,,200mA,40V,625mW,300MHz,NPN,TO-92-3

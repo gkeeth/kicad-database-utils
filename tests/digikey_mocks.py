@@ -3,7 +3,6 @@ from unittest.mock import MagicMock
 
 def _create_digikey_generic_mock(
     category,
-    datasheet,
     mfg,
     MPN,
     digikey_PN,
@@ -20,7 +19,7 @@ def _create_digikey_generic_mock(
         mock_part.family.value = family
     if series:
         mock_part.series.value = series
-    mock_part.primary_datasheet = datasheet
+    mock_part.primary_datasheet = "<datasheet>"
     mock_part.manufacturer.value = mfg
     mock_part.manufacturer_part_number = MPN
     mock_part.digi_key_part_number = digikey_PN
@@ -266,10 +265,6 @@ mock_resistor = create_digikey_resistor_mock(
     power="0.1W",
     composition="Thin Film",
     package="0603",
-    datasheet=(
-        "https://www.yageo.com/upload/media/product/productsearch/"
-        "datasheet/rchip/PYu-RT_1-to-0.01_RoHS_L_15.pdf"
-    ),
     mfg="YAGEO",
     MPN="RT0603FRE07100RL",
     digikey_PN="YAG2320CT-ND",
@@ -282,10 +277,6 @@ mock_jumper = create_digikey_resistor_mock(
     power="-",
     composition="Thick Film",
     package="0603",
-    datasheet=(
-        "https://www.yageo.com/upload/media/product/productsearch/"
-        "datasheet/rchip/PYu-RC_Group_51_RoHS_L_12.pdf"
-    ),
     mfg="YAGEO",
     MPN="RC0603JR-070RL",
     digikey_PN="311-0.0GRCT-ND",
@@ -294,10 +285,6 @@ mock_jumper = create_digikey_resistor_mock(
 
 mock_ceramic_capacitor = create_digikey_capacitor_mock(
     family="Ceramic Capacitors",
-    datasheet=(
-        "https://mm.digikey.com/Volume0/opasdata/d220001/medias/"
-        "docus/1068/CL21B334KBFNNNE_Spec.pdf"
-    ),
     mfg="Samsung Electro-Mechanics",
     MPN="CL21B334KBFNNNE",
     digikey_PN="1276-1123-1-ND",
@@ -311,7 +298,6 @@ mock_ceramic_capacitor = create_digikey_capacitor_mock(
 
 mock_electrolytic_capacitor = create_digikey_capacitor_mock(
     family="Aluminum Electrolytic Capacitors",
-    datasheet=("https://www.nichicon.co.jp/english/series_items/catalog_pdf/e-ucy.pdf"),
     mfg="Nichicon",
     MPN="UCY2G100MPD1TD",
     digikey_PN="493-13313-1-ND",
@@ -328,9 +314,6 @@ mock_electrolytic_capacitor = create_digikey_capacitor_mock(
 
 mock_unpolarized_electrolytic_capacitor = create_digikey_capacitor_mock(
     family="Aluminum Electrolytic Capacitors",
-    datasheet=(
-        "https://industrial.panasonic.com/cdbs/www-data/pdf/RDF0000/ABA0000C1053.pdf"
-    ),
     mfg="Panasonic Electronic Components",
     MPN="ECE-A1HN100UB",
     digikey_PN="10-ECE-A1HN100UBCT-ND",
@@ -346,7 +329,6 @@ mock_unpolarized_electrolytic_capacitor = create_digikey_capacitor_mock(
 
 
 mock_opamp = create_digikey_opamp_mock(
-    datasheet="https://www.ti.com/lit/ds/snas326k/snas326k.pdf",
     mfg="Texas Instruments",
     MPN="LM4562MAX/NOPB",
     digikey_PN="296-35279-1-ND",
@@ -359,7 +341,6 @@ mock_opamp = create_digikey_opamp_mock(
 
 
 mock_microcontroller = create_digikey_microcontroller_mock(
-    datasheet=("https://www.st.com/resource/en/datasheet/stm32f042k4.pdf"),
     mfg="STMicroelectronics",
     MPN="STM32F042K4T6TR",
     digikey_PN="STM32F042K4T6TR-ND",
@@ -370,11 +351,6 @@ mock_microcontroller = create_digikey_microcontroller_mock(
 
 
 mock_vreg_pos_adj = create_digikey_vreg_mock(
-    datasheet=(
-        "https://www.ti.com/general/docs/suppproductinfo.tsp?"
-        "distId=10&gotoUrl=https%3A%2F%2Fwww.ti.com%2Flit%2Fgpn"
-        "%2Flm117hv"
-    ),
     mfg="Texas Instruments",
     MPN="LM317HVT/NOPB",
     digikey_PN="LM317HVT/NOPB-ND",
@@ -388,11 +364,6 @@ mock_vreg_pos_adj = create_digikey_vreg_mock(
 
 
 mock_vreg_neg_fixed = create_digikey_vreg_mock(
-    datasheet=(
-        "https://www.ti.com/general/docs/suppproductinfo.tsp?"
-        "distId=10&gotoUrl=https%3A%2F%2Fwww.ti.com"
-        "%2Flit%2Fgpn%2Flm79"
-    ),
     mfg="Texas Instruments",
     MPN="LM7912CT/NOPB",
     digikey_PN="LM7912CT/NOPB-ND",
@@ -406,7 +377,6 @@ mock_vreg_neg_fixed = create_digikey_vreg_mock(
 
 
 mock_diode = create_digikey_diode_mock(
-    datasheet=("https://www.onsemi.com/download/data-sheet/pdf/1n914-d.pdf"),
     mfg="onsemi",
     MPN="1N4148TR",
     digikey_PN="1N4148FSCT-ND",
@@ -418,7 +388,6 @@ mock_diode = create_digikey_diode_mock(
 
 
 mock_schottky_diode = create_digikey_diode_mock(
-    datasheet=("https://www.diodes.com/assets/Datasheets/ds30098.pdf"),
     mfg="Diodes Incorporated",
     MPN="BAT54WS-7-F",
     digikey_PN="BAT54WS-FDICT-ND",
@@ -430,7 +399,6 @@ mock_schottky_diode = create_digikey_diode_mock(
 
 
 mock_zener_diode = create_digikey_diode_mock(
-    datasheet=("https://www.diodes.com/assets/Datasheets/ds18010.pdf"),
     mfg="Diodes Incorporated",
     MPN="MMSZ5231B-7-F",
     digikey_PN="MMSZ5231B-FDICT-ND",
@@ -441,7 +409,6 @@ mock_zener_diode = create_digikey_diode_mock(
 
 
 mock_diode_array = create_digikey_diode_mock(
-    datasheet=("https://www.mccsemi.com/pdf/Products/BAV99(SOT-23).pdf"),
     mfg="Micro Commercial Co",
     MPN="BAV99-TP",
     digikey_PN="BAV99TPMSCT-ND",
@@ -454,10 +421,6 @@ mock_diode_array = create_digikey_diode_mock(
 
 
 mock_led = create_digikey_LED_mock(
-    datasheet=(
-        "https://optoelectronics.liteon.com/upload/download/"
-        "DS22-2000-222/LTST-C191KFKT.pdf"
-    ),
     mfg="Lite-On Inc.",
     MPN="LTST-C191KFKT",
     digikey_PN="160-1445-1-ND",
@@ -469,9 +432,6 @@ mock_led = create_digikey_LED_mock(
 
 
 mock_rgb_led = create_digikey_LED_mock(
-    datasheet=(
-        "https://www.KingbrightUSA.com/images/catalog/SPEC/WP154A4SUREQBFZGC.pdf"
-    ),
     mfg="Kingbright",
     MPN="WP154A4SUREQBFZGC",
     digikey_PN="754-1615-ND",
@@ -484,10 +444,6 @@ mock_rgb_led = create_digikey_LED_mock(
 
 
 mock_addressable_led = create_digikey_LED_mock(
-    datasheet=(
-        "https://www.inolux-corp.com/datasheet/SMDLED/"
-        "Addressable%20LED/IN-PI554FCH.pdf"
-    ),
     mfg="Inolux",
     MPN="IN-PI554FCH",
     digikey_PN="1830-1106-1-ND",
@@ -499,7 +455,6 @@ mock_addressable_led = create_digikey_LED_mock(
 
 
 mock_bjt = create_digikey_BJT_mock(
-    datasheet="https://www.onsemi.com/pdf/datasheet/pzt3904-d.pdf",
     mfg="onsemi",
     MPN="2N3904BU",
     digikey_PN="2N3904FS-ND",
@@ -513,7 +468,6 @@ mock_bjt = create_digikey_BJT_mock(
 
 
 mock_bjt_array = create_digikey_BJT_mock(
-    datasheet="https://www.onsemi.com/pdf/datasheet/ffb3904-d.pdf",
     mfg="onsemi",
     MPN="MMPQ3904",
     digikey_PN="MMPQ3904FSCT-ND",
@@ -527,7 +481,6 @@ mock_bjt_array = create_digikey_BJT_mock(
 
 
 mock_connector = create_digikey_connector_mock(
-    datasheet="https://www.literature.molex.com/SQLImages/kelmscott/Molex/PDF_Images/987651-0406.PDF",
     mfg="Molex",
     MPN="1719710004",
     digikey_PN="WM22646-ND",

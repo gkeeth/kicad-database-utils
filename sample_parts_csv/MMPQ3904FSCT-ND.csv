@@ -1,2 +1,2 @@
 IPN,datasheet,description,keywords,value,package,exclude_from_bom,exclude_from_board,kicad_symbol,kicad_footprint,manufacturer,MPN,distributor1,DPN1,distributor2,DPN2,ic_max,vce_max,power_max,ft,bjt_type
-NPN,https://www.onsemi.com/pdf/datasheet/ffb3904-d.pdf,"200mA Ic, 40V Vce, 1W, 250MHz 4xNPN BJT array, 16-SOIC",bjt transistor npn,${MPN},16-SOIC,0,0,Device:Q_NPN_QUAD_FAKE,Package_SO:SOIC-16_3.9x9.9mm_P1.27mm,onsemi,MMPQ3904,Digikey,MMPQ3904FSCT-ND,,,200mA,40V,1W,250MHz,4xNPN
+NPN,<datasheet>,"200mA Ic, 40V Vce, 1W, 250MHz 4xNPN BJT array, 16-SOIC",bjt transistor npn,${MPN},16-SOIC,0,0,Device:Q_NPN_QUAD_FAKE,Package_SO:SOIC-16_3.9x9.9mm_P1.27mm,onsemi,MMPQ3904,Digikey,MMPQ3904FSCT-ND,,,200mA,40V,1W,250MHz,4xNPN

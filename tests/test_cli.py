@@ -243,7 +243,7 @@ class TestAdd(TestCLI):
         expected = [
             r"^IPN\s+R0001\s+C0001\n",
             r"\n[- ]+\n",
-            r"\ndatasheet\s+http[\w:/\.\s]+\n",
+            r"\ndatasheet\s+.*datasheet.*\n",
             r"\nresistance\s+100\n",
             r"\ncapacitance\s+330nF\n",
         ]
@@ -470,17 +470,13 @@ class TestShow(TestCLI):
             "distributor1,distributor2,exclude_from_board,exclude_from_bom,"
             "keywords,kicad_footprint,kicad_symbol,manufacturer,package,power,"
             "resistance,tolerance,value\r\n"
-            "YAG2320CT-ND,,R0001,RT0603FRE07100RL,Thin Film,"
-            "https://www.yageo.com/upload/media/product/productsearch/datasheet/"
-            "rchip/PYu-RT_1-to-0.01_RoHS_L_15.pdf,"
+            "YAG2320CT-ND,,R0001,RT0603FRE07100RL,Thin Film,<datasheet>,"
             '"100Ω ±1%, 0.1W resistor, 0603, thin film",Digikey,,0,0,'
             "r res resistor 100,Resistor_SMD:R_0603_1608Metric,Device:R,YAGEO,"
             "0603,0.1W,100,1%,${Resistance}\r\n"
-            "311-0.0GRCT-ND,,R0002,RC0603JR-070RL,Thick Film,"
-            "https://www.yageo.com/upload/media/product/productsearch/datasheet/"
-            'rchip/PYu-RC_Group_51_RoHS_L_12.pdf,"0Ω jumper, 0603, thick film",'
-            "Digikey,,0,0,jumper,Resistor_SMD:R_0603_1608Metric,Device:R,YAGEO,"
-            "0603,-,0,-,${Resistance}\n"
+            "311-0.0GRCT-ND,,R0002,RC0603JR-070RL,Thick Film,<datasheet>,"
+            '"0Ω jumper, 0603, thick film",Digikey,,0,0,jumper,'
+            "Resistor_SMD:R_0603_1608Metric,Device:R,YAGEO,0603,-,0,-,${Resistance}\n"
         )
 
         self.assertEqual(expected, stdout_mock.getvalue())

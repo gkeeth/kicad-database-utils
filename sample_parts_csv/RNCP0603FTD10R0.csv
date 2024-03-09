@@ -1,2 +1,2 @@
 IPN,datasheet,description,keywords,value,exclude_from_bom,exclude_from_board,kicad_symbol,kicad_footprint,manufacturer,MPN,distributor1,DPN1,distributor2,DPN2,resistance,tolerance,power,composition,package
-R,https://www.seielect.com/catalog/sei-rncp.pdf,10Ω ±1% 0.125W Resistor 0603 Thin Film,r res resistor 10,${Resistance},0,0,Device:R,Resistor_SMD:R_0603_1608Metric,Stackpole Electronics Inc,RNCP0603FTD10R0,Digikey,RNCP0603FTD10R0CT-ND,,,10,1%,0.125W,ThinFilm,0603
+R,<datasheet>,10Ω ±1% 0.125W Resistor 0603 Thin Film,r res resistor 10,${Resistance},0,0,Device:R,Resistor_SMD:R_0603_1608Metric,Stackpole Electronics Inc,RNCP0603FTD10R0,Digikey,RNCP0603FTD10R0CT-ND,,,10,1%,0.125W,ThinFilm,0603

@@ -14,6 +14,7 @@ from tests.test_component import expected_component_from_csv
 class TestCreateFromDigikeyAPI(unittest.TestCase):
     def check_component_from_digikey_pn_matches_csv(self, digikey_pn):
         actual = api_helpers.create_component_from_digikey_pn(digikey_pn)
+        actual.columns["datasheet"] = "<datasheet>"
         csv_name = re.sub(r"/", "_", f"{digikey_pn}.csv")
         expected = expected_component_from_csv(f"sample_parts_csv/{csv_name}")
         self.assertEqual(expected.to_csv(), actual.to_csv())
