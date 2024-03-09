@@ -229,7 +229,9 @@ class Component(ABC):
     def type_matches_IPN(cls, IPN):
         """Returns true if the component type is appropriate based on the given
         IPN."""
-        return any(IPN.startswith(prefix) for prefix in cls.IPN_prefix)
+        match = re.match(r"[a-zA-Z]+", IPN)
+        part_prefix = match.group() if match else None
+        return any(part_prefix == cls_prefix for cls_prefix in cls.IPN_prefix)
 
     @staticmethod
     @abstractmethod
@@ -424,7 +426,7 @@ class Resistor(Component):
 class Capacitor(Component):
     table = "capacitor"
     friendly_name = "Capacitor"
-    IPN_prefix = ["C"]
+    IPN_prefix = ["C", "CP"]
     kicad_footprint_map = {
         "0201": "Capacitor_SMD:C_0201_0603Metric",
         "0402": "Capacitor_SMD:C_0402_1005Metric",
