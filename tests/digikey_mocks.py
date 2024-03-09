@@ -9,6 +9,7 @@ def _create_digikey_generic_mock(
     digikey_PN,
     subcategory=None,
     family=None,
+    series=None,
     parameters={},
 ):
     mock_part = MagicMock()
@@ -17,6 +18,8 @@ def _create_digikey_generic_mock(
         mock_part.limited_taxonomy.children = [MagicMock(value=subcategory)]
     if family:
         mock_part.family.value = family
+    if series:
+        mock_part.series.value = series
     mock_part.primary_datasheet = datasheet
     mock_part.manufacturer.value = mfg
     mock_part.manufacturer_part_number = MPN
@@ -220,6 +223,38 @@ def create_digikey_BJT_mock(
             "Single Bipolar Transistors - Bipolar (BJT) - "
             "Single Bipolar Transistors"
         ),
+        parameters=parameters,
+        **kwargs,
+    )
+
+def create_digikey_connector_mock(
+    positions,
+    rows,
+    mounting_type,
+    pitch,
+    series,
+    shrouding,
+    connector_type,
+    contact_type,
+    fastening_type,
+    features,
+    **kwargs
+):
+    parameters = {
+        "Number of Positions": positions,
+        "Number of Rows": rows,
+        "Mounting Type": mounting_type,
+        "Pitch - Mating": pitch,
+        "Shrouding": shrouding,
+        "Connector Type": connector_type,
+        "Contact Type": contact_type,
+        "Fastening Type": fastening_type,
+        "Features": features,
+    }
+
+    return _create_digikey_generic_mock(
+        category="Connectors, Interconnects",
+        series=series,
         parameters=parameters,
         **kwargs,
     )
@@ -488,4 +523,22 @@ mock_bjt_array = create_digikey_BJT_mock(
     power_max="1W",
     ft="250MHz",
     package="16-SOIC",
+)
+
+
+mock_connector = create_digikey_connector_mock(
+    datasheet="https://www.literature.molex.com/SQLImages/kelmscott/Molex/PDF_Images/987651-0406.PDF",
+    mfg="Molex",
+    MPN="1719710004",
+    digikey_PN="WM22646-ND",
+    positions="4",
+    rows="1",
+    pitch="0.100\" (2.54mm)",
+    series="SL 171971",
+    shrouding="Shrouded",
+    connector_type="Header",
+    mounting_type="Through Hole",
+    contact_type="Male Pin",
+    fastening_type="Latch Holder",
+    features="Polarizing Key",
 )

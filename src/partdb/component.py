@@ -1163,3 +1163,95 @@ class BJT(Component):
         data["kicad_footprint"] = cls._get_sym_or_fp_from_user(data["DPN1"])
 
         return cls(**data)
+
+
+@component
+class Connector(Component):
+    table = "connector"
+    friendly_name = "Connector"
+    IPN_prefix = ["CONN"]
+
+    def __init__(self, positions, rows, pitch, mounting_type, **kwargs):
+        super().__init__(**kwargs)
+        self.columns["positions"] = positions
+        self.columns["rows"] = rows
+        self.columns["pitch"] = pitch
+        self.columns["mounting_type"] = mounting_type
+
+    @staticmethod
+    def type_matches_digikey_part(digikey_part):
+        part_type = digikey_part.limited_taxonomy.value
+        return part_type == "Connectors, Interconnects"
+
+    @classmethod
+    def from_digikey(cls, digikey_part):
+        data = cls.get_digikey_common_data(digikey_part)
+
+        for p in digikey_part.parameters:
+            if p.parameter == "Number of Positions":
+                data["positions"] = p.value
+            elif p.parameter == "Number of Rows":
+                data["rows"] = p.value
+            elif p.parameter == "Mounting Type":
+                data["mounting_type"] = p.value
+                if "Through Hole" in p.value:
+                    mounting_type = "Through Hole"
+                elif "Surface Mount" in p.value:
+                    mounting_type = "Surface Mount"
+                else:
+                    mounting_type = "unknown mounting type"
+                if "Right Angle" in p.value:
+                    orientation = "Horizontal"
+                else:
+                    orientation = "Vertical"
+            elif p.parameter == "Pitch - Mating":
+                if "0.100\"" in p.value:
+                    data["pitch"] = "0.1\""
+                else:
+                    data["pitch"] = p.value
+            elif p.parameter == "Shrouding":
+                if "shrouded" in p.value.lower():
+                    shrouded = "Shrouded"
+                else:
+                    shrouded = "Unshrouded"
+            elif p.parameter == "Connector Type":
+                if "header" in p.value.lower():
+                    connector_type = "Header"
+                else:
+                    connector_type = "unknown connector type"
+            elif p.parameter == "Contact Type":
+                if p.value == "Male Pin":
+                    contact_type = "Pins"
+                else:
+                    contact_type = "unknown contact type"
+            elif p.parameter == "Fastening Type":
+                if "Latch" in p.value:
+                    latch = "Latch"
+                else:
+                    latch = ""
+            elif p.parameter == "Features":
+                if "Polarizing Key" in p.value:
+                    polarization = "Polarizing Key"
+                else:
+                    polarization = ""
+
+        series = digikey_part.series.value
+
+        data["IPN"] = cls.IPN_prefix[0]
+        cols = int(int(data["positions"]) / int(data["rows"]))
+        data["package"] = f"{data['rows']}x{cols:02}"
+        data["description"] = (
+            f"{data['manufacturer']} {series} {data['package']} "
+            f"{shrouded} {connector_type}, {contact_type}, "
+            f"{mounting_type}, {orientation}"
+        )
+        if latch:
+            data["description"] += f", {latch}"
+        if polarization:
+            data["description"] += f", {polarization}"
+        data["keywords"] = ""
+        data["value"] = "${MPN}"
+        data["kicad_symbol"] = cls._get_sym_or_fp_from_user(data["DPN1"], fp=False)
+        data["kicad_footprint"] = cls._get_sym_or_fp_from_user(data["DPN1"])
+
+        return cls(**data)
