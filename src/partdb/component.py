@@ -1182,11 +1182,8 @@ class Connector(Component):
     friendly_name = "Connector"
     IPN_prefix = ["CONN"]
 
-    def __init__(self, positions, rows, pitch, mounting_type, **kwargs):
+    def __init__(self, mounting_type, **kwargs):
         super().__init__(**kwargs)
-        self.columns["positions"] = positions
-        self.columns["rows"] = rows
-        self.columns["pitch"] = pitch
         self.columns["mounting_type"] = mounting_type
 
     @staticmethod
@@ -1200,9 +1197,9 @@ class Connector(Component):
 
         for p in digikey_part.parameters:
             if p.parameter == "Number of Positions":
-                data["positions"] = p.value
+                positions = p.value
             elif p.parameter == "Number of Rows":
-                data["rows"] = p.value
+                rows = p.value
             elif p.parameter == "Mounting Type":
                 data["mounting_type"] = p.value
                 if "Through Hole" in p.value:
@@ -1217,9 +1214,9 @@ class Connector(Component):
                     orientation = "Vertical"
             elif p.parameter == "Pitch - Mating":
                 if '0.100"' in p.value:
-                    data["pitch"] = '0.1"'
+                    pitch = '2.54mm'
                 else:
-                    data["pitch"] = p.value
+                    pitch = p.value
             elif p.parameter == "Shrouding":
                 if "unshrouded" in p.value.lower():
                     shrouded = "Unshrouded"
@@ -1231,7 +1228,7 @@ class Connector(Component):
                 if "header" in p.value.lower():
                     connector_type = "Header"
                 else:
-                    connector_type = "unknown connector type"
+                    connector_type = p.value
             elif p.parameter == "Contact Type":
                 if p.value == "Male Pin":
                     contact_type = "Pins"
@@ -1251,13 +1248,13 @@ class Connector(Component):
         series = digikey_part.series.value
 
         data["IPN"] = cls.IPN_prefix[0]
-        cols = int(int(data["positions"]) / int(data["rows"]))
-        data["package"] = f"{data['rows']}x{cols:02}"
-        data["description"] = f"{data['manufacturer']} {series} {data['package']} "
+        cols = int(int(positions) / int(rows))
+        data["package"] = connector_type
+        data["description"] = f"{data['manufacturer']} {series} {rows}x{cols:02} "
         if shrouded:
             data["description"] += f"{shrouded} "
         data["description"] += (
-            f"{connector_type}, {contact_type}, {mounting_type}, {orientation}"
+            f"{connector_type}, {contact_type}, {pitch}, {mounting_type}, {orientation}"
         )
         if latch:
             data["description"] += f", {latch}"

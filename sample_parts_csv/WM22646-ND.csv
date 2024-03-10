@@ -1,2 +1,2 @@
-IPN,datasheet,description,keywords,value,package,exclude_from_bom,exclude_from_board,kicad_symbol,kicad_footprint,manufacturer,MPN,distributor1,DPN1,distributor2,DPN2,positions,rows,pitch,mounting_type
-CONN,<datasheet>,"Molex SL 171971 1x04 Shrouded Header, Pins, Through Hole, Vertical, Latch, Polarizing Key",,${MPN},1x04,0,0,Connector:Conn_01x04_Pin,Connector_Molex:Molex_SL_171971-0004_1x04_P2.54mm_Vertical,Molex,1719710004,Digikey,WM22646-ND,,,4,1,0.1",Through Hole
+IPN,datasheet,description,keywords,value,package,exclude_from_bom,exclude_from_board,kicad_symbol,kicad_footprint,manufacturer,MPN,distributor1,DPN1,distributor2,DPN2,mounting_type
+CONN,<datasheet>,"Molex SL 171971 1x04 Shrouded Header, Pins, 2.54mm, Through Hole, Vertical, Latch, Polarizing Key",,${MPN},Header,0,0,Connector:Conn_01x04_Pin,Connector_Molex:Molex_SL_171971-0004_1x04_P2.54mm_Vertical,Molex,1719710004,Digikey,WM22646-ND,,,Through Hole
