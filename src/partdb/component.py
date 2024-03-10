@@ -1216,8 +1216,8 @@ class Connector(Component):
                 else:
                     orientation = "Vertical"
             elif p.parameter == "Pitch - Mating":
-                if "0.100\"" in p.value:
-                    data["pitch"] = "0.1\""
+                if '0.100"' in p.value:
+                    data["pitch"] = '0.1"'
                 else:
                     data["pitch"] = p.value
             elif p.parameter == "Shrouding":

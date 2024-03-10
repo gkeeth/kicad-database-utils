@@ -108,7 +108,8 @@ class Partdb_Model:
             new_value = int(new_value)
         if IPN not in self.modified_components:
             self.modified_components[IPN] = (
-                self.selected_table[0], dict(self.selected_component)
+                self.selected_table[0],
+                dict(self.selected_component),
             )
         self.modified_components[IPN][1][field_name] = new_value
         if self.modified_components[IPN][1] == self.selected_component:

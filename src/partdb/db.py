@@ -28,6 +28,7 @@ minimal_columns = [
 
 SCHEMA_VERSION = 1
 
+
 def initialize_database(db_path):
     """Create a new, empty database file without any tables.
 

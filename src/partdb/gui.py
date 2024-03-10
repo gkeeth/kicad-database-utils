@@ -517,8 +517,7 @@ def create_main_window():
                 update_selected_component_display()
                 with dpg.group(tag="button_group", horizontal=True):
                     dpg.add_button(
-                        label="Save Changes",
-                        callback=save_component_changes_callback
+                        label="Save Changes", callback=save_component_changes_callback
                     )
                     dpg.add_button(
                         label="Discard Changes",

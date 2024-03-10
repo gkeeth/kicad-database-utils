@@ -62,11 +62,26 @@ class TestComponentOutputs(unittest.TestCase):
 
     def test_to_sql(self):
         columns = [
-            "IPN", "datasheet", "description", "keywords", "value", "package",
-            "exclude_from_bom", "exclude_from_board", "kicad_symbol",
-            "kicad_footprint", "manufacturer", "MPN", "distributor1",
-            "DPN1", "distributor2", "DPN2", "resistance", "tolerance",
-            "power", "composition"
+            "IPN",
+            "datasheet",
+            "description",
+            "keywords",
+            "value",
+            "package",
+            "exclude_from_bom",
+            "exclude_from_board",
+            "kicad_symbol",
+            "kicad_footprint",
+            "manufacturer",
+            "MPN",
+            "distributor1",
+            "DPN1",
+            "distributor2",
+            "DPN2",
+            "resistance",
+            "tolerance",
+            "power",
+            "composition",
         ]
         column_names = ",".join(columns)
         column_keys = ":" + ", :".join(columns)
@@ -554,7 +569,7 @@ class TestConnectorFromDigikeyPart(TestFromDigikeyPart):
         "partdb.component.input",
         side_effect=[
             "Connector:Conn_01x04_Pin",
-            "Connector_Molex:Molex_SL_171971-0004_1x04_P2.54mm_Vertical"
+            "Connector_Molex:Molex_SL_171971-0004_1x04_P2.54mm_Vertical",
         ],
     )
     def test_shrouded_connector_from_digikey(self, mock_input):
@@ -564,7 +579,7 @@ class TestConnectorFromDigikeyPart(TestFromDigikeyPart):
         "partdb.component.input",
         side_effect=[
             "Connector:Conn_02x03_Pin",
-            "Connector_PinHeader_2.54mm:PinHeader_2x03_P2.54mm_Vertical"
+            "Connector_PinHeader_2.54mm:PinHeader_2x03_P2.54mm_Vertical",
         ],
     )
     def test_unshrouded_connector_from_digikey(self, mock_input):

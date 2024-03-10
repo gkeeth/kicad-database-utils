@@ -112,7 +112,7 @@ class TestCreateFromDigikeyAPI(unittest.TestCase):
         "partdb.component.input",
         side_effect=[
             "Connector:Conn_01x04_Pin",
-            "Connector_Molex:Molex_SL_171971-0004_1x04_P2.54mm_Vertical"
+            "Connector_Molex:Molex_SL_171971-0004_1x04_P2.54mm_Vertical",
         ],
     )
     def test_connector_from_digikey_pn(self, mock_input):

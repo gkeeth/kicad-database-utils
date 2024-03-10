@@ -226,6 +226,7 @@ def create_digikey_BJT_mock(
         **kwargs,
     )
 
+
 def create_digikey_connector_mock(
     positions,
     rows,
@@ -237,7 +238,7 @@ def create_digikey_connector_mock(
     contact_type,
     fastening_type,
     features,
-    **kwargs
+    **kwargs,
 ):
     parameters = {
         "Number of Positions": positions,
@@ -486,7 +487,7 @@ mock_shrouded_connector = create_digikey_connector_mock(
     digikey_PN="WM22646-ND",
     positions="4",
     rows="1",
-    pitch="0.100\" (2.54mm)",
+    pitch='0.100" (2.54mm)',
     series="SL 171971",
     shrouding="Shrouded",
     connector_type="Header",
@@ -502,7 +503,7 @@ mock_unshrouded_connector = create_digikey_connector_mock(
     digikey_PN="609-3218-ND",
     positions="6",
     rows="2",
-    pitch="0.100\" (2.54mm)",
+    pitch='0.100" (2.54mm)',
     series="BERGSTIK® II",
     shrouding="Unshrouded",
     connector_type="Header",
