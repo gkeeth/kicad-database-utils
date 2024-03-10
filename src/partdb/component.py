@@ -267,7 +267,7 @@ class Component(ABC):
         """Return a dict of the common data from a digikey part object."""
         common_data = {
             "datasheet": digikey_part.primary_datasheet,
-            "manufacturer": digikey_part.manufacturer.value,
+            "manufacturer": cls.process_manufacturer(digikey_part.manufacturer.value),
             "MPN": digikey_part.manufacturer_part_number,
             "distributor1": "Digikey",
             "DPN1": digikey_part.digi_key_part_number,
@@ -1221,10 +1221,12 @@ class Connector(Component):
                 else:
                     data["pitch"] = p.value
             elif p.parameter == "Shrouding":
-                if "shrouded" in p.value.lower():
+                if "unshrouded" in p.value.lower():
+                    shrouded = "Unshrouded"
+                elif "shrouded" in p.value.lower():
                     shrouded = "Shrouded"
                 else:
-                    shrouded = "Unshrouded"
+                    shrouded = ""
             elif p.parameter == "Connector Type":
                 if "header" in p.value.lower():
                     connector_type = "Header"
@@ -1251,10 +1253,11 @@ class Connector(Component):
         data["IPN"] = cls.IPN_prefix[0]
         cols = int(int(data["positions"]) / int(data["rows"]))
         data["package"] = f"{data['rows']}x{cols:02}"
-        data["description"] = (
-            f"{data['manufacturer']} {series} {data['package']} "
-            f"{shrouded} {connector_type}, {contact_type}, "
-            f"{mounting_type}, {orientation}"
+        data["description"] = f"{data['manufacturer']} {series} {data['package']} "
+        if shrouded:
+            data["description"] += f"{shrouded} "
+        data["description"] += (
+            f"{connector_type}, {contact_type}, {mounting_type}, {orientation}"
         )
         if latch:
             data["description"] += f", {latch}"

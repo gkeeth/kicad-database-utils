@@ -548,6 +548,7 @@ class TestBJTFromDigikeyPart(TestFromDigikeyPart):
     def test_bjt_array_from_digikey(self, mock_input):
         self.check_component_matches_csv(digikey_mocks.mock_bjt_array)
 
+
 class TestConnectorFromDigikeyPart(TestFromDigikeyPart):
     @patch(
         "partdb.component.input",
@@ -556,8 +557,18 @@ class TestConnectorFromDigikeyPart(TestFromDigikeyPart):
             "Connector_Molex:Molex_SL_171971-0004_1x04_P2.54mm_Vertical"
         ],
     )
-    def test_connector_from_digikey(self, mock_input):
-        self.check_component_matches_csv(digikey_mocks.mock_connector)
+    def test_shrouded_connector_from_digikey(self, mock_input):
+        self.check_component_matches_csv(digikey_mocks.mock_shrouded_connector)
+
+    @patch(
+        "partdb.component.input",
+        side_effect=[
+            "Connector:Conn_02x03_Pin",
+            "Connector_PinHeader_2.54mm:PinHeader_2x03_P2.54mm_Vertical"
+        ],
+    )
+    def test_unshrouded_connector_from_digikey(self, mock_input):
+        self.check_component_matches_csv(digikey_mocks.mock_unshrouded_connector)
 
 
 if __name__ == "__main__":

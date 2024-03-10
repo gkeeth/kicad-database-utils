@@ -480,7 +480,7 @@ mock_bjt_array = create_digikey_BJT_mock(
 )
 
 
-mock_connector = create_digikey_connector_mock(
+mock_shrouded_connector = create_digikey_connector_mock(
     mfg="Molex",
     MPN="1719710004",
     digikey_PN="WM22646-ND",
@@ -494,4 +494,20 @@ mock_connector = create_digikey_connector_mock(
     contact_type="Male Pin",
     fastening_type="Latch Holder",
     features="Polarizing Key",
+)
+
+mock_unshrouded_connector = create_digikey_connector_mock(
+    mfg="Amphenol ICC (FCI)",
+    MPN="67996-406HLF",
+    digikey_PN="609-3218-ND",
+    positions="6",
+    rows="2",
+    pitch="0.100\" (2.54mm)",
+    series="BERGSTIK® II",
+    shrouding="Unshrouded",
+    connector_type="Header",
+    mounting_type="Through Hole",
+    contact_type="Male Pin",
+    fastening_type="Push-Pull",
+    features="-",
 )
