@@ -191,6 +191,17 @@ class Component(ABC):
             return "-"
 
     @staticmethod
+    def process_manufacturer(mfg):
+        """Return a short form of the manufacturer's name, if one is known, or
+        the full name if no short name is known.
+        """
+        short_mfg_names = {
+            "Amphenol ICC (FCI)": "Amphenol",
+        }
+
+        return short_mfg_names.get(mfg, mfg)
+
+    @staticmethod
     def process_smd_package(param):
         """If param contains an SMD package name at the beginning, like 0805,
         return that substring. Otherwise return the original string.

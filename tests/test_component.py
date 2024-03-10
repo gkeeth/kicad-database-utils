@@ -167,6 +167,14 @@ class TestParameterUtils(unittest.TestCase):
             with self.subTest(Tolerance=tol):
                 self.assertEqual(expected, Component.process_tolerance(tol))
 
+    def test_process_manufacturer(self):
+        testcases = [
+            ("Molex", "Molex"),
+            ("Amphenol", "Amphenol ICC (FCI)"),
+        ]
+        for expected, mfg in testcases:
+            self.assertEqual(expected, Component.process_manufacturer(mfg))
+
     def test_process_power(self):
         testcases = [
             ("1W", "1"),
