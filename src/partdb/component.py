@@ -1182,9 +1182,8 @@ class Connector(Component):
     friendly_name = "Connector"
     IPN_prefix = ["CONN"]
 
-    def __init__(self, mounting_type, **kwargs):
+    def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.columns["mounting_type"] = mounting_type
 
     @staticmethod
     def type_matches_digikey_part(digikey_part):
@@ -1195,13 +1194,25 @@ class Connector(Component):
     def from_digikey(cls, digikey_part):
         data = cls.get_digikey_common_data(digikey_part)
 
+        positions = ""
+        rows = ""
+        mounting_type = ""
+        orientation = ""
+        connector_type = ""
+        contact_type = ""
+        pitch = ""
+        shrouded = ""
+        latch = ""
+        polarization = ""
+        diameter = ""
+        signal_lines = ""
+        switch = ""
         for p in digikey_part.parameters:
             if p.parameter == "Number of Positions":
                 positions = p.value
             elif p.parameter == "Number of Rows":
                 rows = p.value
             elif p.parameter == "Mounting Type":
-                data["mounting_type"] = p.value
                 if "Through Hole" in p.value:
                     mounting_type = "Through Hole"
                 elif "Surface Mount" in p.value:
@@ -1214,7 +1225,7 @@ class Connector(Component):
                     orientation = "Vertical"
             elif p.parameter == "Pitch - Mating":
                 if '0.100"' in p.value:
-                    pitch = '2.54mm'
+                    pitch = "2.54mm"
                 else:
                     pitch = p.value
             elif p.parameter == "Shrouding":
@@ -1224,16 +1235,27 @@ class Connector(Component):
                     shrouded = "Shrouded"
                 else:
                     shrouded = ""
+            elif p.parameter == "Industry Recognized Mating Diameter":
+                if "3.50mm" in p.value:
+                    diameter = "3.5mm"
+                elif "6.35mm" in p.value:
+                    diameter = "6.35mm"
+                elif "2.50mm" in p.value:
+                    diameter = "2.5mm"
+                else:
+                    diameter = p.value
             elif p.parameter == "Connector Type":
                 if "header" in p.value.lower():
                     connector_type = "Header"
                 else:
                     connector_type = p.value
             elif p.parameter == "Contact Type":
-                if p.value == "Male Pin":
+                if "female" in p.value.lower():
+                    contact_type = "Sockets"
+                elif "male" in p.value.lower():
                     contact_type = "Pins"
                 else:
-                    contact_type = "unknown contact type"
+                    contact_type = ""
             elif p.parameter == "Fastening Type":
                 if "Latch" in p.value:
                     latch = "Latch"
@@ -1244,22 +1266,38 @@ class Connector(Component):
                     polarization = "Polarizing Key"
                 else:
                     polarization = ""
+            elif p.parameter == "Signal Lines":
+                signal_lines = p.value
+            elif p.parameter == "Internal Switch":
+                switch = p.value
 
         series = digikey_part.series.value
 
         data["IPN"] = cls.IPN_prefix[0]
-        cols = int(int(positions) / int(rows))
         data["package"] = connector_type
-        data["description"] = f"{data['manufacturer']} {series} {rows}x{cols:02} "
+        description = f"{data['manufacturer']} {series} "
+        if positions and rows:
+            cols = int(int(positions) / int(rows))
+            description += f"{rows}x{cols:02} "
         if shrouded:
-            data["description"] += f"{shrouded} "
-        data["description"] += (
-            f"{connector_type}, {contact_type}, {pitch}, {mounting_type}, {orientation}"
-        )
+            description += f"{shrouded} "
+        if diameter:
+            description += f"{diameter} "
+        description += f"{connector_type}, "
+        if contact_type:
+            description += f"{contact_type}, "
+        if pitch:
+            description += f"{pitch}, "
+        description += f"{mounting_type}, {orientation}"
         if latch:
-            data["description"] += f", {latch}"
+            description += f", {latch}"
         if polarization:
-            data["description"] += f", {polarization}"
+            description += f", {polarization}"
+        if signal_lines:
+            description += f", {signal_lines}"
+        if switch:
+            description += f", {switch}"
+        data["description"] = description
         data["keywords"] = ""
         data["value"] = "${MPN}"
         data["kicad_symbol"] = cls._get_sym_or_fp_from_user(data["DPN1"], fp=False)

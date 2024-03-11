@@ -585,6 +585,16 @@ class TestConnectorFromDigikeyPart(TestFromDigikeyPart):
     def test_unshrouded_connector_from_digikey(self, mock_input):
         self.check_component_matches_csv(digikey_mocks.mock_unshrouded_connector)
 
+    @patch(
+        "partdb.component.input",
+        side_effect=[
+            "Connector_Audio:AudioJack3_SwitchT",
+            "Connector_Audio:Jack_3.5mm_CUI_SJ-3524-SMT_Horizontal",
+        ],
+    )
+    def test_trs_connector_from_digikey(self, mock_input):
+        self.check_component_matches_csv(digikey_mocks.mock_trs_connector)
+
 
 if __name__ == "__main__":
     unittest.main()

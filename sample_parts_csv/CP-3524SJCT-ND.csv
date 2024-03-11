@@ -1,0 +1,2 @@
+IPN,datasheet,description,keywords,value,package,exclude_from_bom,exclude_from_board,kicad_symbol,kicad_footprint,manufacturer,MPN,distributor1,DPN1,distributor2,DPN2
+CONN,<datasheet>,"CUI SJ 3.5mm Phone Jack, Surface Mount, Horizontal, Stereo (3 Conductor, TRS), Single Switch",,${MPN},Phone Jack,0,0,Connector_Audio:AudioJack3_SwitchT,Connector_Audio:Jack_3.5mm_CUI_SJ-3524-SMT_Horizontal,CUI,SJ-3524-SMT-TR,Digikey,CP-3524SJCT-ND,,

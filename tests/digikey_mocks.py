@@ -228,29 +228,44 @@ def create_digikey_BJT_mock(
 
 
 def create_digikey_connector_mock(
-    positions,
-    rows,
     mounting_type,
-    pitch,
     series,
-    shrouding,
     connector_type,
-    contact_type,
-    fastening_type,
     features,
+    positions="",
+    rows="",
+    pitch="",
+    shrouding="",
+    contact_type="",
+    fastening_type="",
+    diameter="",
+    signal_lines="",
+    switch="",
     **kwargs,
 ):
     parameters = {
-        "Number of Positions": positions,
-        "Number of Rows": rows,
         "Mounting Type": mounting_type,
-        "Pitch - Mating": pitch,
-        "Shrouding": shrouding,
         "Connector Type": connector_type,
-        "Contact Type": contact_type,
-        "Fastening Type": fastening_type,
         "Features": features,
     }
+    if positions:
+        parameters["Number of Positions"] = positions
+    if rows:
+        parameters["Number of Rows"] = rows
+    if pitch:
+        parameters["Pitch - Mating"] = pitch
+    if shrouding:
+        parameters["Shrouding"] = shrouding
+    if contact_type:
+        parameters["Contact Type"] = contact_type
+    if fastening_type:
+        parameters["Fastening Type"] = fastening_type
+    if diameter:
+        parameters["Industry Recognized Mating Diameter"] = diameter
+    if signal_lines:
+        parameters["Signal Lines"] = signal_lines
+    if switch:
+        parameters["Internal Switch"] = switch
 
     return _create_digikey_generic_mock(
         category="Connectors, Interconnects",
@@ -511,4 +526,17 @@ mock_unshrouded_connector = create_digikey_connector_mock(
     contact_type="Male Pin",
     fastening_type="Push-Pull",
     features="-",
+)
+
+mock_trs_connector = create_digikey_connector_mock(
+    mfg="CUI",
+    MPN="SJ-3524-SMT-TR",
+    digikey_PN="CP-3524SJCT-ND",
+    series="SJ",
+    connector_type="Phone Jack",
+    mounting_type="Surface Mount, Right Angle",
+    features="Board Guide",
+    diameter='3.50mm (0.141", 1/8", Mini Plug) - Headphone',
+    signal_lines="Stereo (3 Conductor, TRS)",
+    switch="Single Switch",
 )

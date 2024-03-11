@@ -1,2 +1,2 @@
-IPN,datasheet,description,keywords,value,package,exclude_from_bom,exclude_from_board,kicad_symbol,kicad_footprint,manufacturer,MPN,distributor1,DPN1,distributor2,DPN2,mounting_type
-CONN,<datasheet>,"Amphenol BERGSTIK® II 2x03 Unshrouded Header, Pins, 2.54mm, Through Hole, Vertical",,${MPN},Header,0,0,Connector:Conn_02x03_Pin,Connector_PinHeader_2.54mm:PinHeader_2x03_P2.54mm_Vertical,Amphenol,67996-406HLF,Digikey,609-3218-ND,,,Through Hole
+IPN,datasheet,description,keywords,value,package,exclude_from_bom,exclude_from_board,kicad_symbol,kicad_footprint,manufacturer,MPN,distributor1,DPN1,distributor2,DPN2
+CONN,<datasheet>,"Amphenol BERGSTIK® II 2x03 Unshrouded Header, Pins, 2.54mm, Through Hole, Vertical",,${MPN},Header,0,0,Connector:Conn_02x03_Pin,Connector_PinHeader_2.54mm:PinHeader_2x03_P2.54mm_Vertical,Amphenol,67996-406HLF,Digikey,609-3218-ND,,
