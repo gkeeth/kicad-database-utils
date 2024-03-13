@@ -549,11 +549,12 @@ class Capacitor(Component):
             (e.g. "" or "D5.00mm_H10.0mm_P2.00mm")
         """
 
+        package_short = ""
+        package_dims = ""
         if data["package"] in cls.kicad_footprint_map:
             data["kicad_footprint"] = cls.kicad_footprint_map[data["package"]]
             package_short = data["package"]
-            package_dims = ""
-        elif data["package"] == "Radial, Can":
+        else:
             data["kicad_footprint"] = cls._get_sym_or_fp_from_user(data["DPN1"])
             pol = "P" if polarization == "Polarized" else ""
             try:
@@ -563,11 +564,13 @@ class Capacitor(Component):
             except KeyError:
                 print_error("unknown package dimensions: {e}")
                 return None
-            package_short = "Radial"
-            package_dims = f"D{diameter}_H{height}_P{pitch}"
+            if data["package"] == "Radial, Can":
+                package_short = "Radial"
+                package_dims = f"D{diameter}_H{height}_P{pitch}"
+            elif data["package"] == "Radial, Can - SMD":
+                package_short = "Radial_SMD"
+                package_dims = f"D{diameter}_H{height}"
             data["package"] = f"C{pol}_{package_short}_{package_dims}"
-        else:
-            data["kicad_footprint"] = cls._get_sym_or_fp_from_user(data["DPN1"])
 
         return package_short, package_dims
 
