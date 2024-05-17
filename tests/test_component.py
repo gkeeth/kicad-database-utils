@@ -609,7 +609,6 @@ class TestComparatorFromDigikeyPart(TestFromDigikeyPart):
     def test_opencollector_comparator_from_digikey(self, mock_input):
         self.check_component_matches_csv(digikey_mocks.mock_opencollector_comparator)
 
-
     @patch(
         "partdb.component.input",
         side_effect=[

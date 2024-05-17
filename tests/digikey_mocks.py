@@ -275,9 +275,7 @@ def create_digikey_connector_mock(
     )
 
 
-def create_digikey_comparator_mock(
-    output, package, short_package, num_units, **kwargs
-):
+def create_digikey_comparator_mock(output, package, short_package, num_units, **kwargs):
     parameters = {
         "Output Type": output,
         "Package / Case": package,
@@ -287,9 +285,10 @@ def create_digikey_comparator_mock(
 
     return _create_digikey_generic_mock(
         category="Integrated Circuits (ICs)",
-        subcategory=(
-            "Linear - Comparators"
-        ),
+        subcategory="Linear - Comparators",
+        parameters=parameters,
+        **kwargs,
+    )
 
 
 def create_digikey_switch_mock(series, circuit, switch_function, mounting, **kwargs):
