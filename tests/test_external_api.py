@@ -118,6 +118,16 @@ class TestCreateFromDigikeyAPI(unittest.TestCase):
     def test_connector_from_digikey_pn(self, mock_input):
         self.check_component_from_digikey_pn_matches_csv("WM22646-ND")
 
+    @patch(
+        "partdb.component.input",
+        side_effect=[
+            "Comparator:LM393",
+            "Package_SO:SOIC-8_3.9x4.9mm_P1.27mm",
+        ],
+    )
+    def test_opencollector_comparator_from_digikey(self, mock_input):
+        self.check_component_from_digikey_pn_matches_csv("497-1593-1-ND")
+
 
 if __name__ == "__main__":
     unittest.main()
