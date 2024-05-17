@@ -561,6 +561,16 @@ mock_trs_connector = create_digikey_connector_mock(
     switch="Single Switch",
 )
 
+mock_opencollector_comparator = create_digikey_comparator_mock(
+    mfg="STMicroelectronics",
+    MPN="LM393DT",
+    digikey_PN="497-1593-1-ND",
+    package='8-SOIC (0.154", 3.90mm Width)',
+    short_package="8-SOIC",
+    output="Open-Collector, Rail-to-Rail",
+    num_units="2",
+)
+
 mock_pushpull_comparator = create_digikey_comparator_mock(
     mfg="Texas Instruments",
     MPN="TLV7211AIDBVR",

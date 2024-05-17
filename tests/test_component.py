@@ -601,11 +601,22 @@ class TestComparatorFromDigikeyPart(TestFromDigikeyPart):
     @patch(
         "partdb.component.input",
         side_effect=[
+            "Comparator:LM393",
+            "Package_SO:SOIC-8_3.9x4.9mm_P1.27mm",
+        ],
+    )
+    def test_opencollector_comparator_from_digikey(self, mock_input):
+        self.check_component_matches_csv(digikey_mocks.mock_opencollector_comparator)
+
+
+    @patch(
+        "partdb.component.input",
+        side_effect=[
             "Comparator:MCP6561R",
             "Package_TO_SOT_SMD:SOT-23-5",
         ],
     )
-    def test_comparator_from_digikey(self, mock_input):
+    def test_pushpull_comparator_from_digikey(self, mock_input):
         self.check_component_matches_csv(digikey_mocks.mock_pushpull_comparator)
 
 

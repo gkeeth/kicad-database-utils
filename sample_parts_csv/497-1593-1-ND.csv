@@ -1,0 +1,2 @@
+IPN,datasheet,description,keywords,value,exclude_from_bom,exclude_from_board,kicad_symbol,kicad_footprint,manufacturer,MPN,distributor1,DPN1,distributor2,DPN2,num_units,output,package
+COMP,<datasheet>,"Dual comparator, open-collector output, 8-SOIC",comparator,${MPN},0,0,Comparator:LM393,Package_SO:SOIC-8_3.9x4.9mm_P1.27mm,STMicroelectronics,LM393DT,Digikey,497-1593-1-ND,,,2,Open-Collector,"8-SOIC (0.154"", 3.90mm Width)"

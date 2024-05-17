@@ -1335,7 +1335,12 @@ class Comparator(Component):
 
         for p in digikey_part.parameters:
             if p.parameter == "Output Type":
-                data["output"] = p.value
+                if "Open-Collector" in p.value:
+                    data["output"] = "Open-Collector"
+                elif "Push-Pull" in p.value:
+                    data["output"] = "Push-Pull"
+                else:
+                    data["output"] = p.value
             elif p.parameter == "Package / Case":
                 data["package"] = p.value
             elif p.parameter == "Supplier Device Package":
