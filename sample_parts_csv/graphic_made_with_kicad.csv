@@ -1,0 +1,2 @@
+IPN,datasheet,description,keywords,value,package,exclude_from_bom,exclude_from_board,kicad_symbol,kicad_footprint,manufacturer,MPN,distributor1,DPN1,distributor2,DPN2
+GRAPHIC,<datasheet>,"""Made With KiCad"" graphic, silkscreen, 2.5mm tall",,Made With KiCad,graphic,1,0,Graphic_gkeeth:Logo_MadeWithKiCad,Symbol:KiCad-Logo2_5mm_SilkScreen,,,,,,

@@ -131,6 +131,7 @@ class TestComponentTypeRegistries(unittest.TestCase):
         component.Connector,
         component.Comparator,
         component.Switch,
+        component.Graphic,
     ]
 
     def test_component_type_registry(self):

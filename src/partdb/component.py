@@ -1418,3 +1418,17 @@ class Switch(Component):
         data["kicad_footprint"] = cls._get_sym_or_fp_from_user(data["DPN1"])
 
         return cls(**data)
+
+
+@component
+class Graphic(Component):
+    table = "graphic"
+    friendly_name = "Graphic"
+    IPN_prefix = ["GRAPHIC"]
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+    @staticmethod
+    def type_matches_digikey_part(digikey_part):
+        return False  # graphics never come from digikey parts
