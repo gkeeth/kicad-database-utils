@@ -1,0 +1,2 @@
+IPN,datasheet,description,keywords,value,exclude_from_bom,exclude_from_board,kicad_symbol,kicad_footprint,manufacturer,MPN,distributor1,DPN1,distributor2,DPN2,circuit,switch_function,mounting,package
+SW,<datasheet>,"C&K PTS645 tactile switch, SPST-NO",button push,${MPN},0,0,Switch:SW_Push,Button_Switch_SMD:SW_SPST_PTS645,C&K,PTS645SM43SMTR92 LFS,Digikey,CKN9112CT-ND,,,SPST-NO,Off-Mom,Surface Mount,PTS645

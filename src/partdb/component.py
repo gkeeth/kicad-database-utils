@@ -1364,3 +1364,57 @@ class Comparator(Component):
         cls._determine_footprint(data, data["package"])
 
         return cls(**data)
+
+
+@component
+class Switch(Component):
+    table = "switch"
+    friendly_name = "Switch"
+    IPN_prefix = ["SW", "BUT"]
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+    @staticmethod
+    def type_matches_digikey_part(digikey_part):
+        part_type = digikey_part.limited_taxonomy.value
+        return part_type == "Switches"
+
+    @classmethod
+    def from_digikey(cls, digikey_part):
+        data = cls.get_digikey_common_data(digikey_part)
+
+        for p in digikey_part.parameters:
+            if p.parameter == "Circuit":
+                data["circuit"] = p.value
+            elif p.parameter == "Switch Function":
+                data["switch_function"] = p.value
+            elif p.parameter == "Mounting Type":
+                data["mounting"] = p.value
+
+        series = digikey_part.series.value
+        sub_type = digikey_part.limited_taxonomy.children[0].value
+
+        if sub_type == "Tactile Switches":
+            data["IPN"] = cls.IPN_prefix[1]
+        else:
+            data["IPN"] = cls.IPN_prefix[0]
+        data["IPN"] = cls.IPN_prefix[0]
+        data["package"] = series
+        description = f"{data['manufacturer']} {series}"
+        if sub_type == "Tactile Switches":
+            description += " tactile switch, "
+        else:
+            description += " switch, "
+        description += f"{data['circuit']}"
+        data["description"] = description
+        if sub_type == "Tactile Switches":
+            data["keywords"] = "button push"
+        else:
+            data["keywords"] = ""
+
+        data["value"] = "${MPN}"
+        data["kicad_symbol"] = cls._get_sym_or_fp_from_user(data["DPN1"], fp=False)
+        data["kicad_footprint"] = cls._get_sym_or_fp_from_user(data["DPN1"])
+
+        return cls(**data)

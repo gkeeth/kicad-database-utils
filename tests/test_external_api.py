@@ -128,6 +128,16 @@ class TestCreateFromDigikeyAPI(unittest.TestCase):
     def test_opencollector_comparator_from_digikey(self, mock_input):
         self.check_component_from_digikey_pn_matches_csv("497-1593-1-ND")
 
+    @patch(
+        "partdb.component.input",
+        side_effect=[
+            "Switch:SW_Push",
+            "Button_Switch_SMD:SW_SPST_PTS645",
+        ],
+    )
+    def test_tactile_switch_from_digikey(self, mock_input):
+        self.check_component_from_digikey_pn_matches_csv("CKN9112CT-ND")
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -290,6 +290,19 @@ def create_digikey_comparator_mock(
         subcategory=(
             "Linear - Comparators"
         ),
+
+
+def create_digikey_switch_mock(series, circuit, switch_function, mounting, **kwargs):
+    parameters = {
+        "Circuit": circuit,
+        "Switch Function": switch_function,
+        "Mounting Type": mounting,
+    }
+
+    return _create_digikey_generic_mock(
+        category="Switches",
+        subcategory="Tactile Switches",
+        series=series,
         parameters=parameters,
         **kwargs,
     )
@@ -579,4 +592,14 @@ mock_pushpull_comparator = create_digikey_comparator_mock(
     short_package="SOT-23-5",
     output="Push-Pull",
     num_units="1",
+)
+
+mock_tactile_switch = create_digikey_switch_mock(
+    mfg="C&K",
+    MPN="PTS645SM43SMTR92 LFS",
+    digikey_PN="CKN9112CT-ND",
+    series="PTS645",
+    circuit="SPST-NO",
+    switch_function="Off-Mom",
+    mounting="Surface Mount",
 )

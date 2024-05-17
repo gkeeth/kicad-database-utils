@@ -130,6 +130,7 @@ class TestComponentTypeRegistries(unittest.TestCase):
         component.BJT,
         component.Connector,
         component.Comparator,
+        component.Switch,
     ]
 
     def test_component_type_registry(self):
@@ -618,6 +619,18 @@ class TestComparatorFromDigikeyPart(TestFromDigikeyPart):
     )
     def test_pushpull_comparator_from_digikey(self, mock_input):
         self.check_component_matches_csv(digikey_mocks.mock_pushpull_comparator)
+
+
+class TestSwitchFromDigikeyPart(TestFromDigikeyPart):
+    @patch(
+        "partdb.component.input",
+        side_effect=[
+            "Switch:SW_Push",
+            "Button_Switch_SMD:SW_SPST_PTS645",
+        ],
+    )
+    def test_tactile_switch_from_digikey(self, mock_input):
+        self.check_component_matches_csv(digikey_mocks.mock_tactile_switch)
 
 
 if __name__ == "__main__":
