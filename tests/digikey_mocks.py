@@ -275,6 +275,26 @@ def create_digikey_connector_mock(
     )
 
 
+def create_digikey_comparator_mock(
+    output, package, short_package, num_units, **kwargs
+):
+    parameters = {
+        "Output Type": output,
+        "Package / Case": package,
+        "Supplier Device Package": short_package,
+        "Number of Elements": num_units,
+    }
+
+    return _create_digikey_generic_mock(
+        category="Integrated Circuits (ICs)",
+        subcategory=(
+            "Linear - Comparators"
+        ),
+        parameters=parameters,
+        **kwargs,
+    )
+
+
 mock_resistor = create_digikey_resistor_mock(
     resistance="100Ω",
     tolerance="±1%",
@@ -539,4 +559,14 @@ mock_trs_connector = create_digikey_connector_mock(
     diameter='3.50mm (0.141", 1/8", Mini Plug) - Headphone',
     signal_lines="Stereo (3 Conductor, TRS)",
     switch="Single Switch",
+)
+
+mock_pushpull_comparator = create_digikey_comparator_mock(
+    mfg="Texas Instruments",
+    MPN="TLV7211AIDBVR",
+    digikey_PN="296-21866-1-ND",
+    package="SC-74A, SOT-753",
+    short_package="SOT-23-5",
+    output="Push-Pull",
+    num_units="1",
 )

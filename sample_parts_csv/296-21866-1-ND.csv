@@ -1,0 +1,2 @@
+IPN,datasheet,description,keywords,value,exclude_from_bom,exclude_from_board,kicad_symbol,kicad_footprint,manufacturer,MPN,distributor1,DPN1,distributor2,DPN2,num_units,output,package
+COMP,<datasheet>,"Single comparator, push-pull output, SOT-23-5",comparator,${MPN},0,0,Comparator:MCP6561R,Package_TO_SOT_SMD:SOT-23-5,Texas Instruments,TLV7211AIDBVR,Digikey,296-21866-1-ND,,,1,Push-Pull,"SC-74A, SOT-753"

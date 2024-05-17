@@ -129,6 +129,7 @@ class TestComponentTypeRegistries(unittest.TestCase):
         component.LED,
         component.BJT,
         component.Connector,
+        component.Comparator,
     ]
 
     def test_component_type_registry(self):
@@ -594,6 +595,18 @@ class TestConnectorFromDigikeyPart(TestFromDigikeyPart):
     )
     def test_trs_connector_from_digikey(self, mock_input):
         self.check_component_matches_csv(digikey_mocks.mock_trs_connector)
+
+
+class TestComparatorFromDigikeyPart(TestFromDigikeyPart):
+    @patch(
+        "partdb.component.input",
+        side_effect=[
+            "Comparator:MCP6561R",
+            "Package_TO_SOT_SMD:SOT-23-5",
+        ],
+    )
+    def test_comparator_from_digikey(self, mock_input):
+        self.check_component_matches_csv(digikey_mocks.mock_pushpull_comparator)
 
 
 if __name__ == "__main__":

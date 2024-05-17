@@ -1307,3 +1307,55 @@ class Connector(Component):
         data["kicad_footprint"] = cls._get_sym_or_fp_from_user(data["DPN1"])
 
         return cls(**data)
+
+
+@component
+class Comparator(Component):
+    table = "comparator"
+    friendly_name = "Comparator"
+    IPN_prefix = ["COMP"]
+    kicad_footprint_map = {
+        '8-SOIC (0.154", 3.90mm Width)': "Package_SO:SOIC-8_3.9x4.9mm_P1.27mm",
+    }
+
+    def __init__(self, output, num_units, **kwargs):
+        super().__init__(**kwargs)
+        self.columns["output"] = output
+        self.columns["num_units"] = num_units
+
+    @staticmethod
+    def type_matches_digikey_part(digikey_part):
+        part_type = digikey_part.limited_taxonomy.value
+        sub_type = digikey_part.limited_taxonomy.children[0].value
+        return part_type == "Integrated Circuits (ICs)" and "Comparators" in sub_type
+
+    @classmethod
+    def from_digikey(cls, digikey_part):
+        data = cls.get_digikey_common_data(digikey_part)
+
+        for p in digikey_part.parameters:
+            if p.parameter == "Output Type":
+                data["output"] = p.value
+            elif p.parameter == "Package / Case":
+                data["package"] = p.value
+            elif p.parameter == "Supplier Device Package":
+                short_package = p.value
+            elif p.parameter == "Number of Elements":
+                data["num_units"] = p.value
+
+        data["value"] = "${MPN}"
+        data["keywords"] = "comparator"
+
+        num_unit_map = {"1": "Single", "2": "Dual", "4": "Quad"}
+        data["description"] = (
+            f"{num_unit_map[data['num_units']]} comparator, "
+            f"{data['output'].lower()} output, {short_package}"
+        )
+        IPN = cls.IPN_prefix[0]
+        data["IPN"] = re.sub(r"\s+", "", IPN)
+
+        data["kicad_symbol"] = cls._get_sym_or_fp_from_user(data["DPN1"], fp=False)
+
+        cls._determine_footprint(data, data["package"])
+
+        return cls(**data)
