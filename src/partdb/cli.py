@@ -32,6 +32,9 @@ def get_database_path(args, config_data):
 def print_components_from_list_as_table(components):
     """Print all components in list to stdout, formatted as a single plaintext table."""
 
+    if not components:
+        return
+
     # we want to print as column for each part, with the first column being
     # field labels.
     # To do this, we need to transpose the dicts that we get from each component.
