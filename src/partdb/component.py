@@ -1432,3 +1432,9 @@ class Graphic(Component):
     @staticmethod
     def type_matches_digikey_part(digikey_part):
         return False  # graphics never come from digikey parts
+
+    @classmethod
+    def from_digikey(cls, digikey_part):
+        raise NotImplementedError(
+            "Graphic components cannot be made from Digikey parts"
+        )
