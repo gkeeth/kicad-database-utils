@@ -1,2 +1,2 @@
 IPN,datasheet,description,keywords,value,package,exclude_from_bom,exclude_from_board,kicad_symbol,kicad_footprint,manufacturer,MPN,distributor1,DPN1,distributor2,DPN2,voltage,current
-VREG,<datasheet>,"-12V @1.5A out, -35V in, fixed voltage regulator, TO-220-3",voltage regulator vreg,${MPN},TO-220-3,0,0,Regulator_Linear:LM7912_TO220,Package_TO_SOT_THT:TO-220-3_Vertical,Texas Instruments,LM7912CT/NOPB,Digikey,LM7912CT/NOPB-ND,,,-12V,1.5A
+VREG,<datasheet>,"Texas Instruments LM7912CT/NOPB, -12V @1.5A out, -35V in, fixed voltage regulator, TO-220-3",voltage regulator vreg,${MPN},TO-220-3,0,0,Regulator_Linear:LM7912_TO220,Package_TO_SOT_THT:TO-220-3_Vertical,Texas Instruments,LM7912CT/NOPB,Digikey,LM7912CT/NOPB-ND,,,-12V,1.5A

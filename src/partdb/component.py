@@ -853,6 +853,7 @@ class VoltageRegulator(Component):
         else:
             data["voltage"] = f"{vout_min} - {vout_max}"
         data["description"] = (
+            f"{data['manufacturer']} {data['MPN']}, "
             f"{data['voltage']} @{data['current']} out, "
             f"{vin_max} in, "
             f"{output_type} voltage regulator, "
