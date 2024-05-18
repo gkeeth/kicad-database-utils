@@ -4,7 +4,7 @@ import csv
 import re
 import sqlite3
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 from partdb import component
 from partdb.component import Component, Resistor, Capacitor, Microcontroller, LED, BJT
@@ -425,32 +425,6 @@ class TestComponentFromDict(unittest.TestCase):
 
 class TestFromDigikeyPart(unittest.TestCase):
     """Base class for testing Component.from_digikey() methods."""
-
-    @staticmethod
-    def init_mock(
-        category,
-        datasheet,
-        mfg,
-        MPN,
-        digikey_PN,
-        subcategory=None,
-        family=None,
-        parameters={},
-    ):
-        mock_part = MagicMock()
-        mock_part.limited_taxonomy.value = category
-        if subcategory:
-            mock_part.limited_taxonomy.children = [MagicMock(value=subcategory)]
-        if family:
-            mock_part.family.value = family
-        mock_part.primary_datasheet = datasheet
-        mock_part.manufacturer.value = mfg
-        mock_part.manufacturer_part_number = MPN
-        mock_part.digi_key_part_number = digikey_PN
-        mock_part.parameters = [
-            MagicMock(parameter=k, value=parameters[k]) for k in parameters
-        ]
-        return mock_part
 
     def check_component_matches_csv(self, mock_part):
         """Check that the component created from the mock digikey API response
