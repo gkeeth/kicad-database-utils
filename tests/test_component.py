@@ -1,6 +1,7 @@
 #! /usr/bin/env python
 
 import csv
+from io import StringIO
 import re
 import sqlite3
 import unittest
@@ -605,6 +606,34 @@ class TestSwitchFromDigikeyPart(TestFromDigikeyPart):
     )
     def test_tactile_switch_from_digikey(self, mock_input):
         self.check_component_matches_csv(digikey_mocks.mock_tactile_switch)
+
+
+class TestNonDigikeyPart(unittest.TestCase):
+    """
+    Base class for testing Component creation for parts that don't correspond
+    to "real" parts available on Digikey, like graphics.
+
+    Components are created from a source CSV, then roundtripped back to CSV and
+    compared to the original.
+    """
+
+    def check_component_csv_matches_original_csv(self, csv_name):
+        """Check that the component created from the mock digikey API response
+        object matches the golden CSV corresponding to the mock's digikey PN.
+        """
+
+        filename = f"sample_parts_csv/{csv_name}"
+        out_csv = expected_component_from_csv(filename).to_csv()
+        out_dict = next(csv.DictReader(StringIO(out_csv)))
+        with open(filename, "r") as infile:
+            expected_dict = next(csv.DictReader(infile))
+
+        self.assertEqual(expected_dict, out_dict)
+
+
+class TestGraphicPart(TestNonDigikeyPart):
+    def test_graphic_part(self):
+        self.check_component_csv_matches_original_csv("graphic_made_with_kicad.csv")
 
 
 if __name__ == "__main__":
