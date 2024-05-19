@@ -58,6 +58,7 @@ class TestComponentOutputs(unittest.TestCase):
             "R_test,ds,desc,kw,val,0603,0,0,sym,fp,mfg,mpn,dist1,dpn1,dist2,"
             "dpn2,10k,1%,0.125W,ThinFilm\r\n"
         )
+        self.assertEqual(header, self.resistor.to_csv(body=False))
         self.assertEqual(header + values, self.resistor.to_csv())
         self.assertEqual(values, self.resistor.to_csv(header=False))
 

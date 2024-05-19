@@ -308,11 +308,12 @@ class Component(ABC):
         insert_string = f"{command} INTO {self.table} ({columns}) VALUES({column_keys})"
         return (insert_string, self.columns)
 
-    def to_csv(self, header=True):
+    def to_csv(self, header=True, body=True):
         """Create a string containing the component data, formatted as CSV.
 
         Args:
             header: if True, also print a header row containing column names
+            body: if True, print the body (values)
 
         Returns:
             A string containing a CSV representation of the component. If
@@ -323,7 +324,8 @@ class Component(ABC):
             csvwriter = csv.DictWriter(csv_string, fieldnames=self.columns.keys())
             if header:
                 csvwriter.writeheader()
-            csvwriter.writerow(self.columns)
+            if body:
+                csvwriter.writerow(self.columns)
             return csv_string.getvalue()
 
     def already_in_db(self, con):
