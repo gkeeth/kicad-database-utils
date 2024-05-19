@@ -1291,7 +1291,11 @@ class Connector(Component):
 
         data["IPN"] = cls.IPN_prefix[0]
         data["package"] = connector_type
-        description = f"{data['manufacturer']} {series} "
+        description = ""
+        if data["manufacturer"]:
+            description += f"{data['manufacturer']} "
+        if series and series != "-":
+            description += f"{series} "
         if positions and rows:
             cols = int(int(positions) / int(rows))
             description += f"{rows}x{cols:02} "
