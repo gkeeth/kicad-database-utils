@@ -389,6 +389,28 @@ class Resistor(Component):
         return re.sub(" ", "", param)
 
     @staticmethod
+    def make_description(data):
+        if data["resistance"] == "0":
+            composition = data["composition"].lower()
+            data["description"] = f"0Ω jumper, {data['package']}, {composition}"
+        else:
+            data["description"] = (
+                f"{data['resistance']}Ω "
+                f"±{data['tolerance']}, "
+                f"{data['power']} "
+                f"resistor, "
+                f"{data['package']}, "
+                f"{data['composition'].lower()}"
+            )
+
+    @staticmethod
+    def make_keywords(data):
+        if data["resistance"] == "0":
+            data["keywords"] = "jumper"
+        else:
+            data["keywords"] = f"r res resistor {data['resistance']}"
+
+    @staticmethod
     def type_matches_digikey_part(digikey_part):
         return digikey_part.limited_taxonomy.value == "Resistors"
 
@@ -410,20 +432,8 @@ class Resistor(Component):
 
         data["value"] = "${Resistance}"
 
-        if data["resistance"] == "0":
-            composition = data["composition"].lower()
-            data["description"] = f"0Ω jumper, {data['package']}, {composition}"
-            data["keywords"] = "jumper"
-        else:
-            data["description"] = (
-                f"{data['resistance']}Ω "
-                f"±{data['tolerance']}, "
-                f"{data['power']} "
-                f"resistor, "
-                f"{data['package']}, "
-                f"{data['composition'].lower()}"
-            )
-            data["keywords"] = f"r res resistor {data['resistance']}"
+        cls.make_description(data)
+        cls.make_keywords(data)
 
         data["IPN"] = cls.IPN_prefix[0]
         data["kicad_symbol"] = "Device:R"
