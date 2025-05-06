@@ -250,7 +250,7 @@ def _parse_add_args(subparsers):
     parser_add.add_argument(
         "--no-db",
         action="store_true",
-        help="create new component but do not it to the database",
+        help="create new component but do not add it to the database",
     )
     parser_add.add_argument(
         "--update",
